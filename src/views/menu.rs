@@ -1,5 +1,5 @@
-use crate::views::View;
 use crate::app::App;
+use eframe::egui;
 
 pub struct Menu;
 
@@ -13,10 +13,12 @@ impl Menu {
             });
             ui.menu_button("Vue", |ui| {
                 if ui.button("Tableau de bord").clicked() {
-                    app.current_view = View::Dashboard;
+                    app.switch_to_dashboard();
+                    ui.close_menu();
                 }
                 if ui.button("Diagramme de Gantt").clicked() {
-                    app.current_view = View::Gantt;
+                    app.switch_to_gantt();
+                    ui.close_menu();
                 }
             });
         });

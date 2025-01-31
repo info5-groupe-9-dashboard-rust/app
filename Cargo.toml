@@ -5,7 +5,5 @@ edition = "2021"
 
 [dependencies]
 eframe = "0.30.0"
-egui = "0.30.0"
-egui_plot = "0.30.0"
 serde = "1.0.217"
 serde_json = "1.0.138"

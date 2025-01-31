@@ -11,6 +11,6 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         "Dashboard HPC",
         options,
-        Box::new(|_cc| Ok(Box::new(app::App::default()))),
+        Box::new(|_cc| Ok(Box::new(app::App::new()))),
     )
 }

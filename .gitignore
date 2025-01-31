@@ -1,1 +1,28 @@
-/target
+# Rust build directory
+/target/
+
+# IDE specific files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Debug files
+**/*.rs.bk
+
+# Environment files
+.env
+.env.local
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Cargo lock file (comment out if it's an executable project)
+# Cargo.lock
+
+# Binary files
+*.exe
+*.dll
+*.so
+*.dylib
