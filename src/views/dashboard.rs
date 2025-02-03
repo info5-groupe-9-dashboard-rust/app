@@ -1,20 +1,13 @@
 use eframe::egui;
-use crate::models::job::Job;
+use crate::models::application_context::ApplicationContext;
+
 use super::view::View;
 
-pub struct Dashboard {
-    pub jobs: Vec<Job>
-}
+pub struct Dashboard;
 
-impl Dashboard {
-    pub fn new(jobs: Vec<Job>) -> Self {
-        Dashboard {
-            jobs : jobs
-        }
-    }
-
-    pub fn update_jobs(&mut self, jobs: Vec<Job>) {
-        self.jobs = jobs;
+impl Default for Dashboard {
+    fn default() -> Self {
+        Dashboard {}
     }
 }
 
@@ -30,7 +23,7 @@ fn grafana_panel(ui: &mut egui::Ui, title: &str, value: usize, color: egui::Colo
 
 impl View for Dashboard {
 
-    fn render(&mut self, ui: &mut egui::Ui) {
+    fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
 
         fn stat_card(ui: &mut egui::Ui, title: &str, value: usize) {
             ui.group(|ui| {
@@ -46,11 +39,11 @@ impl View for Dashboard {
 
         // Statistics cards
         ui.horizontal_wrapped(|ui| {
-            grafana_panel(ui, "Total Jobs", self.jobs.len(), egui::Color32::from_rgb(40, 120, 215));
+            grafana_panel(ui, "Total Jobs", app.jobs.len(), egui::Color32::from_rgb(40, 120, 215));
             ui.add_space(8.0);
-            grafana_panel(ui, "Running", self.jobs.iter().filter(|j| j.state == "Running").count(), egui::Color32::from_rgb(235, 140, 50));
+            grafana_panel(ui, "Running", app.jobs.iter().filter(|j| j.state == "Running").count(), egui::Color32::from_rgb(235, 140, 50));
             ui.add_space(8.0);
-            grafana_panel(ui, "Waiting", self.jobs.iter().filter(|j| j.state == "Waiting").count(), egui::Color32::from_rgb(200, 200, 50));
+            grafana_panel(ui, "Waiting", app.jobs.iter().filter(|j| j.state == "Waiting").count(), egui::Color32::from_rgb(200, 200, 50));
         });
 
 
@@ -68,7 +61,7 @@ impl View for Dashboard {
                 ui.label("Durée");
             });
 
-            for job in &self.jobs {
+            for job in &app.jobs {
                 ui.horizontal_wrapped(|ui| {
                     ui.label(job.id.to_string());
                     ui.label(job.owner.clone());
