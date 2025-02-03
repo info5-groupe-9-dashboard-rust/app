@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+chrono = "0.4.39"
 eframe = "0.30.0"
+egui-datepicker = "0.3.0"
 serde = "1.0.217"
 serde_json = "1.0.138"

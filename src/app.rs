@@ -3,7 +3,7 @@ use crate::views::view::View;
 use crate::views::menu::Menu;
 use crate::views::dashboard::Dashboard;
 use crate::views::gantt::GanttChart;
-use crate::models::job::Job;
+use crate::models::job::*;
 
 pub struct App {
     pub current_view: Box<dyn View>,
@@ -12,7 +12,7 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let jobs = Job::get_jobs_from_json("src/data/jobs.json");
+        let jobs = get_current_jobs();
         App {
             current_view: Box::new(Dashboard::new(jobs.clone())),
             jobs : jobs

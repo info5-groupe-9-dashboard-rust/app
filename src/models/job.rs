@@ -1,6 +1,7 @@
 use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
+use std::process::Command;
 
 #[derive(Clone)]
 pub struct Job {
@@ -15,6 +16,62 @@ pub struct Job {
     pub scheduled_start: u64,
     pub submission_time: u64,
     pub exit_code: Option<i32>,
+}
+
+/**
+ * Get the current json file and parse it to get the jobs
+ */
+pub fn get_current_jobs() -> Vec<Job> {
+    
+    // Execute SSH command to generate JSON file
+    let ssh_status = Command::new("ssh")
+        .args(["grenoble.g5k", "oarstat -J > /tmp/data.json"])
+        .status();
+
+    if let Err(e) = ssh_status {
+        println!("Failed to execute SSH command: {}", e);
+        return Vec::new();
+    }
+
+    // Execute SCP command to copy the file
+    let scp_status = Command::new("scp")
+        .args(["grenoble.g5k:/tmp/data.json", "./src/data.json"])
+        .status();
+
+    if let Err(e) = scp_status {
+        println!("Failed to copy file via SCP: {}", e);
+        return Vec::new();
+    }
+
+    // Read the jobs from the downloaded JSON file
+    get_jobs_from_json("./src/data/data.json")
+}
+
+
+fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
+    let file_res = File::open(file_path);
+
+    let mut file = match file_res {
+        Ok(file) => file,
+        Err(error) => {
+            println!("Unable to open file: {}", error);
+            return Vec::new();
+        }
+    };
+
+    let mut data = String::new();
+    file.read_to_string(&mut data).expect("Unable to read string");
+
+    let json: Value = serde_json::from_str(&data).expect("Unable to parse JSON");
+    let mut jobs = Vec::new();
+
+    if let Value::Object(map) = json {
+        for (_, value) in map {
+            jobs.push(Job::from_json_value(&value));
+        }
+    }
+
+    jobs
 }
 
 impl Job {
@@ -32,7 +89,7 @@ impl Job {
         println!("Exit Code: {:?}", self.exit_code);
     }
 
-    pub fn from_json_value(json: &Value) -> Self {
+    fn from_json_value(json: &Value) -> Self {
         Job {
             id: json["id"].as_u64().unwrap() as u32,
             owner: json["owner"].as_str().unwrap().to_string(),
@@ -51,31 +108,5 @@ impl Job {
             submission_time: json["submission_time"].as_u64().unwrap(),
             exit_code: json["exit_code"].as_i64().map(|n| n as i32),
         }
-    }
-    
-    pub fn get_jobs_from_json(file_path: &str) -> Vec<Self> {
-        let file_res = File::open(file_path);
-
-        let mut file = match file_res {
-            Ok(file) => file,
-            Err(error) => {
-                println!("Unable to open file: {}", error);
-                return Vec::new();
-            }
-        };
-
-        let mut data = String::new();
-        file.read_to_string(&mut data).expect("Unable to read string");
-    
-        let json: Value = serde_json::from_str(&data).expect("Unable to parse JSON");
-        let mut jobs = Vec::new();
-    
-        if let Value::Object(map) = json {
-            for (_, value) in map {
-                jobs.push(Job::from_json_value(&value));
-            }
-        }
-    
-        jobs
     }
 }
