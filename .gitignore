@@ -1,9 +1,12 @@
 # Rust build directory
 /target/
 
+# Data files
+src/data/
+
 # IDE specific files
 .vscode/
-.idea/
+.idea
 *.sublime-workspace
 *.sublime-project
 
