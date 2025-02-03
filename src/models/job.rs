@@ -33,9 +33,15 @@ pub fn get_current_jobs() -> Vec<Job> {
         return Vec::new();
     }
 
+    // Check if Data folder exists
+    let data_folder = std::path::Path::new("./data");
+    if !data_folder.exists() {
+        std::fs::create_dir(data_folder).expect("Unable to create data folder");
+    }
+
     // Execute SCP command to copy the file
     let scp_status = Command::new("scp")
-        .args(["grenoble.g5k:/tmp/data.json", "./src/data.json"])
+        .args(["grenoble.g5k:/tmp/data.json", "./data/data.json"])
         .status();
 
     if let Err(e) = scp_status {
@@ -44,7 +50,7 @@ pub fn get_current_jobs() -> Vec<Job> {
     }
 
     // Read the jobs from the downloaded JSON file
-    get_jobs_from_json("./src/data/data.json")
+    get_jobs_from_json("./data/data.json")
 }
 
 
