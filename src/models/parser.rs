@@ -76,6 +76,12 @@ pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime
         return Vec::new();
     }
 
+    // Check if Data folder exists
+    let data_folder = std::path::Path::new("./data");
+    if !data_folder.exists() {
+        std::fs::create_dir(data_folder).expect("Unable to create data folder");
+    }
+
     // Execute SSH command to generate JSON file and redirect output
     let ssh_status = Command::new("ssh")
         .args([
