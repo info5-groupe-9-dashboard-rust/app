@@ -30,7 +30,21 @@ impl eframe::App for App {
             self.menu.render(ui, &mut self.application_context);
         });
 
+        // Vérifier les mises à jour
+        self.application_context.check_jobs_update();
+
         CentralPanel::default().show(ctx, |ui| {
+            // Afficher un indicateur de chargement si nécessaire
+            if self.application_context.is_loading {
+                ui.add_space(ui.available_height() * 0.4); // Push content down to vertical center
+                ui.vertical_centered(|ui| {
+                    ui.heading("Chargement des données...");
+                    // Optionnel : ajouter une animation de chargement
+                    ui.spinner();
+                });
+                return;
+            }
+            
             match self.application_context.view_type {
                 crate::views::view::ViewType::Dashboard => {
                     self.dashboard_view.render(ui, &mut self.application_context);
