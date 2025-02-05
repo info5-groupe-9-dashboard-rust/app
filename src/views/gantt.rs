@@ -21,17 +21,17 @@ impl Default for GanttChart {
 impl View for GanttChart {
     
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        ui.heading("Diagramme de Gantt - Jobs OAR");
+        ui.heading(t!("app.gantt.title"));
 
         let min_start = app.jobs.iter().map(|job| job.scheduled_start).min().unwrap_or(0);
         let max_end = app.jobs.iter().map(|job| job.scheduled_start + job.walltime).max().unwrap_or(0);
         let total_duration = (max_end - min_start) as f32;
 
         ui.horizontal(|ui| {
-            if ui.button("Zoom +").clicked() {
+            if ui.button(t!("app.gantt.zoom_in")).clicked() {
                 self.zoom *= 1.2;
             }
-            if ui.button("Zoom -").clicked() {
+            if ui.button(t!("app.gantt.zoom_out")).clicked() {
                 self.zoom /= 1.2;
             }
         });

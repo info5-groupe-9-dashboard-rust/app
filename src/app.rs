@@ -38,7 +38,7 @@ impl eframe::App for App {
             if self.application_context.is_loading {
                 ui.add_space(ui.available_height() * 0.4); // Push content down to vertical center
                 ui.vertical_centered(|ui| {
-                    ui.heading("Chargement des données...");
+                    ui.heading(t!("app.loading"));
                     // Optionnel : ajouter une animation de chargement
                     ui.spinner();
                 });

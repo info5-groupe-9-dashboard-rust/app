@@ -1,0 +1,36 @@
+app:
+  title: "Tableau de bord HPC"
+  menu:
+    file: "Fichier"
+    quit: "Quitter"
+    view: "Vue"
+    dashboard: "Tableau de bord"
+    gantt: "Diagramme de Gantt"
+  dashboard:
+    title: "Tableau de bord"
+    metrics:
+      total_jobs: "Total des Jobs"
+      running: "En cours"
+      waiting: "En attente"
+    job_list: "Liste des jobs"
+  gantt:
+    title: "Diagramme de Gantt - Jobs OAR"
+    zoom_in: "Zoom +"
+    zoom_out: "Zoom -"
+  loading: "Chargement des données..."
+  time_selector:
+    button: "Sélection de période"
+    modal:
+      title: "Sélectionner une période"
+      today: "Aujourd'hui"
+      week: "Cette semaine"
+      month: "Ce mois-ci"
+      start_date: "Date de début"
+      start_time: "Heure de début"
+      end_date: "Date de fin"
+      end_time: "Heure de fin"
+      validate: "Valider"
+      cancel: "Annuler"
+    errors:
+      invalid_format: "Veuillez vérifier le format des dates (YYYY-MM-DD) et des heures (HH:MM)."
+      end_before_start: "La date et l'heure de début doivent être antérieures ou égales à celles de fin"

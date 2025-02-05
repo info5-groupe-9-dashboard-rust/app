@@ -18,23 +18,36 @@ impl View for Menu {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.horizontal(|ui| {
             // Menu Fichier
-            ui.menu_button("Fichier", |ui| {
+            ui.menu_button(t!("app.menu.file"), |ui| {
                 if ui.button("Quitter").clicked() {
                     std::process::exit(0);
                 }
             });
 
             // Menu Vue
-            ui.menu_button("Vue", |ui| {
-                if ui.button("Tableau de bord").clicked() {
+            ui.menu_button(t!("app.menu.view"), |ui| {
+                if ui.button(t!("app.menu.dashboard")).clicked() {
                     app.view_type = ViewType::Dashboard;
                     ui.close_menu();
                 }
-                if ui.button("Diagramme de Gantt").clicked() {
+                if ui.button(t!("app.menu.gantt")).clicked() {
                     app.view_type = ViewType::Gantt;
                     ui.close_menu();
                 }
             });
+
+            // Menu Language
+            ui.menu_button("Language", |ui| {
+                if ui.button("English").clicked() {
+                    rust_i18n::set_locale("en");
+                    ui.close_menu();
+                }
+                if ui.button("Français").clicked() {
+                    rust_i18n::set_locale("fr");
+                    ui.close_menu();
+                }
+            });
+
             self.time_selector.ui(ui, app);
         });
     }

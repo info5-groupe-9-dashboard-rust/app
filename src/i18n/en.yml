@@ -1,0 +1,36 @@
+app:
+  title: "HPC Dashboard"
+  menu:
+    file: "File"
+    quit: "Quit"
+    view: "View"
+    dashboard: "Dashboard"
+    gantt: "Gantt Chart"
+  dashboard:
+    title: "Dashboard"
+    metrics:
+      total_jobs: "Total Jobs"
+      running: "Running"
+      waiting: "Waiting"
+    job_list: "Job List"
+  gantt:
+    title: "Gantt Chart - OAR Jobs"
+    zoom_in: "Zoom +"
+    zoom_out: "Zoom -"
+  loading: "Loading data..."
+  time_selector:
+    button: "Time Selection"
+    modal:
+      title: "Select a period"
+      today: "Today"
+      week: "This week"
+      month: "This month"
+      start_date: "Start date"
+      start_time: "Start time"
+      end_date: "End date"
+      end_time: "End time"
+      validate: "Validate"
+      cancel: "Cancel"
+    errors:
+      invalid_format: "Please check the format of dates (YYYY-MM-DD) and times (HH:MM)."
+      end_before_start: "Start date and time must be before or equal to end date and time"

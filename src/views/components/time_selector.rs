@@ -31,7 +31,7 @@ impl TimeSelector {
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         // Bouton pour ouvrir le sélecteur de période
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui.button("Sélection de période").clicked() {
+            if ui.button(t!("app.time_selector.button")).clicked() {
                 // Ouvrir la fenêtre modale en pré-remplissant les champs avec les valeurs actuelles
                 self.date_selector_open = true;
                 self.temp_start_date = app.start_date.date_naive().to_string();
@@ -44,14 +44,14 @@ impl TimeSelector {
 
         // Fenêtre modale pour la sélection de période
         if self.date_selector_open {
-            egui::Window::new("Sélection de période")
+            egui::Window::new(t!("app.time_selector.modal.title"))
                 .collapsible(false)
                 .resizable(false)
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
                 .show(ui.ctx(), |ui| {
                     ui.horizontal(|ui| {
                         // Boutons de presets
-                        if ui.button("Aujourd'hui").clicked() {
+                        if ui.button(t!("app.time_selector.modal.today")).clicked() {
                             let today = Utc::now().date_naive();
                             self.temp_start_date = today.to_string();
                             self.temp_end_date = today.to_string();
@@ -59,7 +59,7 @@ impl TimeSelector {
                             self.temp_end_time = "23:59".to_owned();
                             self.error = None;
                         }
-                        if ui.button("Cette semaine").clicked() {
+                        if ui.button(t!("app.time_selector.modal.week")).clicked() {
                             let today = Utc::now().date_naive();
                             // Déterminer le lundi et le dimanche de la semaine courante
                             let weekday = today.weekday().number_from_monday() as i64;
@@ -71,7 +71,7 @@ impl TimeSelector {
                             self.temp_end_time = "23:59".to_owned();
                             self.error = None;
                         }
-                        if ui.button("Ce mois-ci").clicked() {
+                        if ui.button(t!("app.time_selector.modal.month")).clicked() {
                             let today = Utc::now().date_naive();
                             let start_of_month = NaiveDate::from_ymd(today.year(), today.month(), 1);
                             // Calcul du dernier jour du mois : on ajoute un mois puis on soustrait un jour
@@ -91,18 +91,18 @@ impl TimeSelector {
                     ui.separator();
 
                     // Saisie manuelle des dates et heures
-                    ui.label("Date de début (YYYY-MM-DD):");
+                    ui.label(t!("app.time_selector.modal.start_date") + " (YYYY-MM-DD):");
                     ui.text_edit_singleline(&mut self.temp_start_date);
 
-                    ui.label("Heure de début (HH:MM):");
+                    ui.label(t!("app.time_selector.modal.start_time") + "(HH:MM):");
                     ui.text_edit_singleline(&mut self.temp_start_time);
 
                     ui.separator();
 
-                    ui.label("Date de fin (YYYY-MM-DD):");
+                    ui.label(t!("app.time_selector.modal.end_date") + " (YYYY-MM-DD):");
                     ui.text_edit_singleline(&mut self.temp_end_date);
 
-                    ui.label("Heure de fin (HH:MM):");
+                    ui.label(t!("app.time_selector.modal.end_time") + "(HH:MM):");
                     ui.text_edit_singleline(&mut self.temp_end_time);
 
                     // Affichage d'un message d'erreur si nécessaire
@@ -112,11 +112,11 @@ impl TimeSelector {
 
                     ui.separator();
                     ui.horizontal(|ui| {
-                        if ui.button("Annuler").clicked() {
+                        if ui.button(t!("app.time_selector.modal.cancel")).clicked() {
                             self.date_selector_open = false;
                         }
 
-                        if ui.button("Appliquer").clicked() {
+                        if ui.button(t!("app.time_selector.modal.validate")).clicked() {
                             // Validation des dates et heures
                             let start_date_res = NaiveDate::parse_from_str(&self.temp_start_date, "%Y-%m-%d");
                             let start_time_res = NaiveTime::parse_from_str(&self.temp_start_time, "%H:%M");
@@ -137,10 +137,10 @@ impl TimeSelector {
                                     println!("Période mise à jour: {} - {}", app.start_date, app.end_date);
                                     self.date_selector_open = false;
                                 } else {
-                                    self.error = Some("La date et l'heure de début doivent être antérieures ou égales à celles de fin.".to_owned());
+                                    self.error = Some(t!("app.time_selector.errors.end_before_start").to_string());
                                 }
                             } else {
-                                self.error = Some("Veuillez vérifier le format des dates (YYYY-MM-DD) et des heures (HH:MM).".to_owned());
+                                self.error = Some(t!("app.time_selector.errors.invalid_format").to_string());
                             }
                         }
                     });
