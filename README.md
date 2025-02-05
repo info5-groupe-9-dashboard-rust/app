@@ -1,30 +1,63 @@
-# Contenu du fichier /rust-dashboard-app/rust-dashboard-app/README.md
+# 🚀 Rust Dashboard App
 
-# Rust Dashboard App
+A modern, blazing-fast dashboard application built with Rust, powered by Eframe and Egui. This elegantly structured MVC project delivers stunning data visualization through an interactive dashboard and Gantt chart interface.
 
-Ce projet est une application de tableau de bord utilisant Eframe, Egui et Puffin. Il est structuré selon le modèle MVC (Modèle-Vue-Contrôleur) et permet de visualiser des données à l'aide d'un tableau de bord et d'un diagramme de Gantt.
+## ✨ Key Features
 
-## Structure du projet
+- 📊 Real-time job monitoring
+- 🎯 Interactive dashboard view
+- 📅 Gantt chart visualization
+- ⏰ Period-based job filtering
+- 🔒 Secure SSH-based data retrieval from HPC clusters
+- ⚡ Loading state indicators
+- 📱 Responsive UI with resizable components
 
-- `src/main.rs`: Point d'entrée de l'application, initialise Eframe et configure la fenêtre principale.
-- `src/app.rs`: Contient la structure `App` qui gère l'état de l'application et les composants de l'interface utilisateur.
-- `src/models/mod.rs`: Exporte les structures de données utilisées, comme `Dashboard` et `GanttChart`.
-- `src/views/mod.rs`: Exporte les fonctions de rendu pour les différentes vues.
-- `src/views/dashboard.rs`: Fonction `render_dashboard` pour dessiner le tableau de bord.
-- `src/views/gantt.rs`: Fonction `render_gantt` pour dessiner le diagramme de Gantt.
-- `src/controllers/mod.rs`: Gère la logique de l'application et les interactions utilisateur.
-- `Cargo.toml`: Fichier de configuration pour Cargo, spécifiant les dépendances et les métadonnées.
-- `.gitignore`: Liste des fichiers à ignorer par Git.
+## 🏗 Project Architecture
 
-## Installation
+```
+src/
+├── main.rs         # Entry point & application bootstrap
+├── app.rs          # Core application state management
+├── models/         # Data structures & business logic
+├── views/          # UI components & layouts
+```
 
-Pour exécuter ce projet, assurez-vous d'avoir Rust et Cargo installés sur votre machine. Clonez le dépôt et exécutez les commandes suivantes :
+## 🛠 Getting Started
+
+### Prerequisites
+
+- 🦀 Rust and Cargo installed
+- 🔑 SSH access to HPC cluster
+- 📦 Git
+
+### Quick Start
 
 ```bash
+# Clone the repository
+git clone https://github.com/info5-groupe-9-dashboard-rust/docs.git
+
+# Build and launch
 cargo build
 cargo run
 ```
 
-## Contribuer
+### ⚙️ Configuration
 
-Les contributions sont les bienvenues ! N'hésitez pas à soumettre des problèmes ou des demandes de tirage.
+Set up SSH access to your HPC cluster (default configuration: "grenoble.g5k").
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+- 🐛 Report bugs
+- 💡 Propose features
+- 🔧 Submit PRs
+
+## 📝 License
+
+This project is open source and available under the MIT License.
+
+## 💖 Support
+
+Star this repo if you find it helpful!
+
