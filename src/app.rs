@@ -4,9 +4,11 @@ use crate::views::view::View;
 use crate::views::menu::Menu;
 use crate::views::dashboard::Dashboard;
 use crate::views::gantt::GanttChart;
+use crate::views::options::Options;
 
 pub struct App {
     pub dashboard_view: Dashboard,
+    pub options_view: Options,
     pub gantt_view: GanttChart,
     pub menu : Menu,
     pub application_context: ApplicationContext,
@@ -17,6 +19,7 @@ impl App {
         App {
             dashboard_view: Dashboard::default(),
             gantt_view: GanttChart::default(),
+            options_view: Options::default(),
             menu: Menu::default(),
             application_context: ApplicationContext::default(),
         }
@@ -51,6 +54,9 @@ impl eframe::App for App {
                 }
                 crate::views::view::ViewType::Gantt => {
                     self.gantt_view.render(ui, &mut self.application_context);
+                }
+                crate::views::view::ViewType::Options => {
+                    self.options_view.render(ui, &mut self.application_context);
                 }
             }
         });

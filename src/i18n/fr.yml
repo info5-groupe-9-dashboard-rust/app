@@ -2,14 +2,26 @@ app:
   title: "Tableau de bord HPC"
   menu:
     file: "Fichier"
+    options: "Options"
     quit: "Quitter"
     view: "Vue"
     dashboard: "Tableau de bord"
     gantt: "Diagramme de Gantt"
+  options:
+    title: "Options"
     language:
-      title: "Langue"
-      en: "Anglais"
+      title: "Langue :"
+      choose: "Choisir une langue"
+      en: "English"
       fr: "Français"
+    theme:
+      title: "Thème :"
+      choose: "Choisir un thème"
+      light: "Clair"
+      dark: "Sombre"
+    font_size:
+      title: "Taille de la police :"
+      choose: "Choisir une taille de police"
   dashboard:
     title: "Tableau de bord"
     metrics:
