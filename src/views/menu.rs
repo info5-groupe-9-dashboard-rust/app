@@ -37,12 +37,12 @@ impl View for Menu {
             });
 
             // Menu Language
-            ui.menu_button("Language", |ui| {
-                if ui.button("English").clicked() {
+            ui.menu_button(t!("app.menu.language.title"), |ui| {
+                if ui.button(t!("app.menu.language.en")).clicked() {
                     rust_i18n::set_locale("en");
                     ui.close_menu();
                 }
-                if ui.button("Français").clicked() {
+                if ui.button(t!("app.menu.language.fr")).clicked() {
                     rust_i18n::set_locale("fr");
                     ui.close_menu();
                 }

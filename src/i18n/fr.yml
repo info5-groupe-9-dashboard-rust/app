@@ -6,6 +6,10 @@ app:
     view: "Vue"
     dashboard: "Tableau de bord"
     gantt: "Diagramme de Gantt"
+    language:
+      title: "Langue"
+      en: "Anglais"
+      fr: "Français"
   dashboard:
     title: "Tableau de bord"
     metrics:
