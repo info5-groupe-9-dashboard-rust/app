@@ -76,26 +76,23 @@ pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime
         return Vec::new();
     }
 
-    // Execute SSH command to generate JSON file
+    // Execute SSH command to generate JSON file and redirect output
     let ssh_status = Command::new("ssh")
-        .args(["grenoble.g5k", &format!("oarstat -J -g \"{}, {}\" > /tmp/data.json",
-            start_date.format("%Y-%m-%d %H:%M:%S"),
-            end_date.format("%Y-%m-%d %H:%M:%S")
-        )])
-        .status();
+        .args([
+            "grenoble.g5k",
+            &format!(
+                "oarstat -J -g \"{}, {}\"",
+                start_date.format("%Y-%m-%d %H:%M:%S"),
+                end_date.format("%Y-%m-%d %H:%M:%S")
+            ),
+        ])
+        .output()
+        .and_then(|output| {
+            std::fs::write("./data/data.json", output.stdout)
+        });
 
     if let Err(e) = ssh_status {
         println!("Failed to execute SSH command: {}", e);
-        return Vec::new();
-    }
-
-    // Execute SCP command to copy the file
-    let scp_status = Command::new("scp")
-        .args(["grenoble.g5k:/tmp/data.json", "./data/data.json"])
-        .status();
-
-    if let Err(e) = scp_status {
-        println!("Failed to copy file via SCP: {}", e);
         return Vec::new();
     }
 
