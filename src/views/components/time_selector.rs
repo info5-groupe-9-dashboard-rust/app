@@ -73,12 +73,12 @@ impl TimeSelector {
                         }
                         if ui.button(t!("app.time_selector.modal.month")).clicked() {
                             let today = Utc::now().date_naive();
-                            let start_of_month = NaiveDate::from_ymd(today.year(), today.month(), 1);
+                            let start_of_month = NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap();
                             // Calcul du dernier jour du mois : on ajoute un mois puis on soustrait un jour
                             let end_of_month = if today.month() == 12 {
-                                NaiveDate::from_ymd(today.year() + 1, 1, 1) - Duration::days(1)
+                                NaiveDate::from_ymd_opt(today.year() + 1, 1, 1).unwrap() - Duration::days(1)
                             } else {
-                                NaiveDate::from_ymd(today.year(), today.month() + 1, 1) - Duration::days(1)
+                                NaiveDate::from_ymd_opt(today.year(), today.month() + 1, 1).unwrap() - Duration::days(1)
                             };
                             self.temp_start_date = start_of_month.to_string();
                             self.temp_end_date = end_of_month.to_string();

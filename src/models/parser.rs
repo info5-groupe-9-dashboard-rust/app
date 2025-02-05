@@ -27,6 +27,7 @@ pub fn test_connection(host: &str) -> bool {
  * Get the current json file and parse it to get the jobs
  * Command: oarstat -J > /tmp/data.json
  */
+#[allow(dead_code)]
 pub fn get_current_jobs() -> Vec<Job> {
     // Test connection first
     if !test_connection("grenoble.g5k") {
