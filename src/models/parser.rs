@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
 use std::process::Command;
-use super::job::Job;
+use super::job::{Job, State};
 
 /**
  * Test SSH connection to the specified host
@@ -136,11 +136,16 @@ fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
     jobs
 }
 
+pub fn parse_state_from_json(json_str: &str) -> Result<State, serde_json::Error> {
+    serde_json::from_str(json_str)
+}
+
 fn from_json_value(json: &Value) -> Job {
     Job {
         id: json["id"].as_str().unwrap_or("0").parse::<u32>().unwrap_or(0),
         owner: json["owner"].as_str().unwrap_or("unknown").to_string(),
-        state: json["state"].as_str().unwrap_or("unknown").to_string(),
+        state: parse_state_from_json(&format!("\"{}\"", json["state"].as_str().unwrap_or("unknown")))
+            .unwrap_or(State::Unknown),
         command: json["command"].as_str().unwrap_or("").to_string(),
         walltime: json["walltime"].as_u64().unwrap_or(0) as u64,
         message: json["message"].as_str().map(|s| s.to_string()),
@@ -152,6 +157,8 @@ fn from_json_value(json: &Value) -> Job {
             .filter_map(|v| v.as_u64().map(|n| n as u32))
             .collect(),
         scheduled_start: json["start_time"].as_u64().unwrap_or(0),
+        start_time: json["start_time"].as_u64().unwrap_or(0),
+        stop_time: json["stop_time"].as_u64().unwrap_or(0),
         submission_time: json["submission_time"].as_u64().unwrap_or(0),
         exit_code: json["exit_code"].as_i64().map(|n| n as i32),
     }
