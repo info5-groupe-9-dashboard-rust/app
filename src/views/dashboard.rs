@@ -2,7 +2,7 @@ use eframe::egui::{self, RichText};
 use crate::models::application_context::ApplicationContext;
 use crate::views::components::metric_box::MetricBox;
 use crate::views::components::job_table::JobTable;
-
+use crate::models::job::State;
 use super::view::View;
 
 pub struct Dashboard;
@@ -34,7 +34,7 @@ impl View for Dashboard {
 
                 let running_jobs = MetricBox::new(
                     t!("app.dashboard.metrics.running").to_string(),
-                    app.jobs.iter().filter(|j| j.state == "Running").count(),
+                    app.jobs.iter().filter(|j| j.state == State::Running).count(),
                     egui::Color32::from_rgb(235, 140, 50),
                 );
                 running_jobs.ui(ui);
@@ -42,7 +42,7 @@ impl View for Dashboard {
 
                 let waiting_jobs = MetricBox::new(
                     t!("app.dashboard.metrics.waiting").to_string(),
-                    app.jobs.iter().filter(|j| j.state == "Waiting").count(),
+                    app.jobs.iter().filter(|j| j.state == State::Waiting).count(),
                     egui::Color32::from_rgb(200, 200, 50),
                 );
                 waiting_jobs.ui(ui);
