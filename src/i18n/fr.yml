@@ -9,6 +9,10 @@ app:
     gantt: "Diagramme de Gantt"
   options:
     title: "Options"
+    save:
+      title: "Enregistrer"
+      success: "Options enregistrées avec succès."
+      error: "Une erreur s'est produite lors de l'enregistrement des options."
     language:
       title: "Langue :"
       choose: "Choisir une langue"
@@ -17,8 +21,8 @@ app:
     theme:
       title: "Thème :"
       choose: "Choisir un thème"
-      light: "Clair"
-      dark: "Sombre"
+      light: "Light"
+      dark: "Dark"
     font_size:
       title: "Taille de la police :"
       choose: "Choisir une taille de police"

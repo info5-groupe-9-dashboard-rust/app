@@ -9,6 +9,10 @@ app:
     gantt: "Gantt Chart"
   options:
     title: "Options"
+    save:
+      title: "Save"
+      success: "Options saved successfully."
+      error: "An error occurred while saving options."
     language:
       title: "Language:"
       choose: "Choose a language"

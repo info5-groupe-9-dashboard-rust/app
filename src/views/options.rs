@@ -1,41 +1,98 @@
 use eframe::egui::{self, RichText};
-use crate::models::application_context::ApplicationContext;
-
+use std::time::{Duration, Instant};
+use crate::models::{
+    application_context::ApplicationContext,
+    application_options::{ApplicationOptions, LanguageOption, ThemeOption},
+};
 use super::view::View;
 use eframe::egui::Grid;
 
-#[derive(Debug, PartialEq, Eq)]
-enum LanguageOption {
-    English,
-    Français,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-enum ThemeOption {
-    Light,
-    Dark,
-}
-
 pub struct Options {
-    selected_language: LanguageOption,
-    selected_theme: ThemeOption,
-    font_size: i32,
+    application_options: ApplicationOptions,
+    save_status: Option<(String, Instant)>,
 }
 
-impl Default for Options {
-    fn default() -> Self {
+impl Options {
+
+    pub fn new(application_options: ApplicationOptions) -> Self {
         Options {
-            selected_language: LanguageOption::English,
-            selected_theme: ThemeOption::Dark,
-            font_size: 16,
+            application_options,
+            save_status: None,
         }
+    }
+
+    pub fn save_to_file(&mut self, file_path: &str) {
+        match serde_json::to_string(&self.application_options)
+            .and_then(|json| std::fs::write(file_path, json).map_err(serde_json::Error::io))
+        {
+            Ok(_) => {
+                self.save_status = Some((t!("app.options.save.success").to_string(), Instant::now()));
+            }
+            Err(_) => {
+                self.save_status = Some((t!("app.options.save.error").to_string(), Instant::now()));
+            }
+        }
+    }
+
+    pub fn load_from_file(file_path: &str) -> Self {
+        let application_options = match std::fs::read_to_string(file_path) {
+            Ok(json) => serde_json::from_str(&json).unwrap_or_else(|_| ApplicationOptions::default()),
+            Err(_) => ApplicationOptions::default(), // Fallback to default if file read fails
+        };
+    
+        Options {
+            application_options,
+            save_status: None, // No status message on initial load
+        }
+    }
+
+    pub fn apply_options(&self, ctx: &egui::Context) {
+        self.apply_theme(ctx);
+        self.apply_language();
+        self.apply_font_size(ctx);
+    }
+
+    fn apply_theme(&self, ctx: &egui::Context) {
+        let new_visuals = match self.application_options.selected_theme {
+            ThemeOption::Dark => egui::Visuals::dark(),
+            ThemeOption::Light => egui::Visuals::light(),
+        };
+
+        if ctx.style().visuals.dark_mode != new_visuals.dark_mode {
+            ctx.set_visuals(new_visuals);
+        }
+    }
+
+    fn apply_language(&self) {
+        rust_i18n::set_locale(match self.application_options.selected_language {
+            LanguageOption::English => "en",
+            LanguageOption::Français => "fr",
+        });
+    }
+
+    fn apply_font_size(&self, ctx: &egui::Context) {
+        let mut style = (*ctx.style()).clone();
+        let font_size = self.application_options.font_size;
+
+        for text_style in [
+            egui::TextStyle::Body,
+            egui::TextStyle::Button,
+            egui::TextStyle::Heading,
+            egui::TextStyle::Monospace,
+            egui::TextStyle::Small,
+        ] {
+            style.text_styles.insert(
+                text_style,
+                egui::FontId::new(font_size as f32, egui::FontFamily::Proportional),
+            );
+        }
+
+        ctx.set_style(style);
     }
 }
 
 impl View for Options {
-
-    fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-
+    fn render(&mut self, ui: &mut egui::Ui, _app: &mut ApplicationContext) {
         ui.heading(RichText::new(t!("app.options.title")).strong());
         ui.add_space(8.0);
 
@@ -44,70 +101,74 @@ impl View for Options {
             .spacing([10.0, 8.0])
             .striped(true)
             .show(ui, |ui| {
-            /* Theme options */
-            ui.label(t!("app.options.theme.title"));
-            egui::ComboBox::from_label(t!("app.options.theme.choose"))
-                .selected_text(format!("{:?}", self.selected_theme))
-                .show_ui(ui, |ui| {
-                if ui.selectable_value(&mut self.selected_theme, ThemeOption::Dark, t!("app.options.theme.dark")).clicked() {
-                    ui.ctx().set_visuals(egui::Visuals::dark());
-                }
-                if ui.selectable_value(&mut self.selected_theme, ThemeOption::Light, t!("app.options.theme.light")).clicked() {
-                    ui.ctx().set_visuals(egui::Visuals::light());
-                }
-                });
-            ui.end_row();
-
-            /* Language options */
-            ui.label(t!("app.options.language.title"));
-            egui::ComboBox::from_label(t!("app.options.language.choose"))
-                .selected_text(format!("{:?}", self.selected_language))
-                .show_ui(ui, |ui| {
-                if ui.selectable_value(&mut self.selected_language, LanguageOption::English, t!("app.options.language.en")).clicked() {
-                    rust_i18n::set_locale("en");
-                }
-                if ui.selectable_value(&mut self.selected_language, LanguageOption::Français, t!("app.options.language.fr")).clicked() {
-                    rust_i18n::set_locale("fr");
-                }
-                });
-            ui.end_row();
-
-            /* Font size options */
-            ui.label(t!("app.options.font_size.title"));
-            egui::ComboBox::from_label(t!("app.options.font_size.choose"))
-                .selected_text(format!("{}", self.font_size))
-                .show_ui(ui, |ui| {
-                    for size in 10..=30 {
-                        if ui.selectable_value(&mut self.font_size, size, size.to_string()).clicked() {
-                            let mut fonts = egui::FontDefinitions::default();
-                            let mut style = egui::Style::default();
-
-                            // Appliquer la taille à tous les styles de texte importants
-                            for text_style in [
-                                egui::TextStyle::Body,
-                                egui::TextStyle::Button,
-                                egui::TextStyle::Heading,
-                                egui::TextStyle::Monospace,
-                                egui::TextStyle::Small,
-                            ] {
-                                style.text_styles.insert(
-                                    text_style,
-                                    egui::FontId::new(size as f32, egui::FontFamily::Proportional),
-                                );
-                            }
-
-                            ui.ctx().set_style(style);
-                            ui.ctx().set_fonts(fonts);
-                        }
-                    }
-                });
-            ui.end_row();
-        });
+                self.render_theme_selector(ui);
+                self.render_language_selector(ui);
+                self.render_font_size_selector(ui);
+            });
 
         ui.add_space(10.0);
 
-        if ui.button("Save").clicked() {
-            // app.save_settings();
+        if ui.button(t!("app.options.save.title")).clicked() {
+            self.save_to_file("options.json");
         }
+
+        // Show the save status message for a few seconds
+        if let Some((message, timestamp)) = &self.save_status {
+            if timestamp.elapsed() < Duration::new(3, 0) {
+                ui.label(message);
+            } else {
+                self.save_status = None; // Clear the message after timeout
+            }
+        }
+    }
+}
+
+impl Options {
+    fn render_theme_selector(&mut self, ui: &mut egui::Ui) {
+        ui.label(t!("app.options.theme.title"));
+        egui::ComboBox::from_label(t!("app.options.theme.choose"))
+            .selected_text(format!("{:?}", self.application_options.selected_theme))
+            .show_ui(ui, |ui| {
+                for (theme, label) in [
+                    (ThemeOption::Dark, t!("app.options.theme.dark")),
+                    (ThemeOption::Light, t!("app.options.theme.light")),
+                ] {
+                    if ui.selectable_value(&mut self.application_options.selected_theme, theme, label).clicked() {
+                        self.apply_theme(ui.ctx());
+                    }
+                }
+            });
+        ui.end_row();
+    }
+
+    fn render_language_selector(&mut self, ui: &mut egui::Ui) {
+        ui.label(t!("app.options.language.title"));
+        egui::ComboBox::from_label(t!("app.options.language.choose"))
+            .selected_text(format!("{:?}", self.application_options.selected_language))
+            .show_ui(ui, |ui| {
+                for (lang, label) in [
+                    (LanguageOption::English, t!("app.options.language.en")),
+                    (LanguageOption::Français, t!("app.options.language.fr")),
+                ] {
+                    if ui.selectable_value(&mut self.application_options.selected_language, lang, label).clicked() {
+                        self.apply_language();
+                    }
+                }
+            });
+        ui.end_row();
+    }
+
+    fn render_font_size_selector(&mut self, ui: &mut egui::Ui) {
+        ui.label(t!("app.options.font_size.title"));
+        egui::ComboBox::from_label(t!("app.options.font_size.choose"))
+            .selected_text(format!("{}", self.application_options.font_size))
+            .show_ui(ui, |ui| {
+                for size in 10..=30 {
+                    if ui.selectable_value(&mut self.application_options.font_size, size, size.to_string()).clicked() {
+                        self.apply_font_size(ui.ctx());
+                    }
+                }
+            });
+        ui.end_row();
     }
 }
