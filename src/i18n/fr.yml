@@ -1,59 +1,67 @@
 app:
-  title: "Tableau de bord HPC"
+  title: 'Tableau de bord HPC'
   menu:
-    file: "Fichier"
-    options: "Options"
-    quit: "Quitter"
-    view: "Vue"
-    dashboard: "Tableau de bord"
-    gantt: "Diagramme de Gantt"
+    file: 'Fichier'
+    options: 'Options'
+    quit: 'Quitter'
+    view: 'Vue'
+    dashboard: 'Tableau de bord'
+    gantt: 'Diagramme de Gantt'
+    filters: 'Filtrer'
   options:
-    title: "Options"
+    title: 'Options'
     save:
-      title: "Enregistrer"
-      success: "Options enregistrées avec succès."
+      title: 'Enregistrer'
+      success: 'Options enregistrées avec succès.'
       error: "Une erreur s'est produite lors de l'enregistrement des options."
     language:
-      title: "Langue :"
-      choose: "Choisir une langue"
-      en: "English"
-      fr: "Français"
+      title: 'Langue :'
+      choose: 'Choisir une langue'
+      en: 'English'
+      fr: 'Français'
     theme:
-      title: "Thème :"
-      choose: "Choisir un thème"
-      light: "Light"
-      dark: "Dark"
+      title: 'Thème :'
+      choose: 'Choisir un thème'
+      light: 'Light'
+      dark: 'Dark'
     font_size:
-      title: "Taille de la police :"
-      choose: "Choisir une taille de police"
+      title: 'Taille de la police :'
+      choose: 'Choisir une taille de police'
   dashboard:
-    title: "Tableau de bord"
+    title: 'Tableau de bord'
     metrics:
-      total_jobs: "Total des Jobs"
-      running: "En cours"
-      waiting: "En attente"
+      total_jobs: 'Total des Jobs'
+      running: 'En cours'
+      waiting: 'En attente'
   gantt:
-    title: "Diagramme de Gantt - Jobs OAR"
-    zoom_in: "Zoom +"
-    zoom_out: "Zoom -"
-  loading: "Chargement des données..."
+    title: 'Diagramme de Gantt - Jobs OAR'
+    zoom_in: 'Zoom +'
+    zoom_out: 'Zoom -'
+  loading: 'Chargement des données...'
   time_selector:
-    button: "Sélection de période"
+    button: 'Sélection de période'
     modal:
-      title: "Sélectionner une période"
+      title: 'Sélectionner une période'
       today: "Aujourd'hui"
-      week: "Cette semaine"
-      month: "Ce mois-ci"
-      start_date: "Date de début"
-      start_time: "Heure de début"
-      end_date: "Date de fin"
-      end_time: "Heure de fin"
-      validate: "Valider"
-      cancel: "Annuler"
+      week: 'Cette semaine'
+      month: 'Ce mois-ci'
+      start_date: 'Date de début'
+      start_time: 'Heure de début'
+      end_date: 'Date de fin'
+      end_time: 'Heure de fin'
+      validate: 'Valider'
+      cancel: 'Annuler'
     errors:
-      invalid_format: "Veuillez vérifier le format des dates (YYYY-MM-DD) et des heures (HH:MM)."
+      invalid_format: 'Veuillez vérifier le format des dates (YYYY-MM-DD) et des heures (HH:MM).'
       end_before_start: "La date et l'heure de début doivent être antérieures ou égales à celles de fin"
   job_table:
-    title: "Liste des jobs"
-    next: "Suivant"
-    previous: "Précédent"
+    title: 'Liste des jobs'
+    next: 'Suivant'
+    previous: 'Précédent'
+  filters:
+    title: 'Filtrer'
+    from: 'De'
+    to: 'À'
+    states: 'Statuts'
+    reset: 'Réinitialiser'
+    apply: 'Appliquer'

@@ -1,6 +1,6 @@
 use eframe::egui;
-use egui_extras::{Column, TableBuilder}; 
-use egui::{Ui, Sense, RichText};
+use egui::{RichText, Sense, Ui};
+use egui_extras::{Column, TableBuilder};
 
 use crate::models::job::Job;
 
@@ -14,7 +14,7 @@ pub struct JobTable {
 
 impl Default for JobTable {
     fn default() -> Self {
-        JobTable { 
+        JobTable {
             page: 0,
             jobs_per_page: 20,
             details_window: Vec::new(),
@@ -24,7 +24,6 @@ impl Default for JobTable {
 
 impl JobTable {
     pub fn ui(&mut self, ui: &mut Ui, jobs: &Vec<Job>) {
-
         egui::CentralPanel::default().show(ui.ctx(), |ui| {
             ui.add_space(10.0);
             ui.heading(RichText::new(t!("app.job_table.title")).strong().size(20.0));
@@ -35,11 +34,21 @@ impl JobTable {
             let total_pages = (jobs.len() as f32 / self.jobs_per_page as f32).ceil() as usize;
 
             ui.horizontal(|ui| {
-                if ui.button(RichText::new(t!("app.job_table.previous")).size(14.0)).clicked() && self.page > 0 {
+                if ui
+                    .button(RichText::new(t!("app.job_table.previous")).size(14.0))
+                    .clicked()
+                    && self.page > 0
+                {
                     self.page -= 1;
                 }
-                ui.label(RichText::new(format!("Page {} / {}", self.page + 1, total_pages)).size(14.0));
-                if ui.button(RichText::new(t!("app.job_table.next")).size(14.0)).clicked() && self.page < total_pages - 1 {
+                ui.label(
+                    RichText::new(format!("Page {} / {}", self.page + 1, total_pages)).size(14.0),
+                );
+                if ui
+                    .button(RichText::new(t!("app.job_table.next")).size(14.0))
+                    .clicked()
+                    && self.page < total_pages - 1
+                {
                     self.page += 1;
                 }
             });
@@ -59,18 +68,38 @@ impl JobTable {
                 .header(20.0, |mut header| {
                     header.col(|ui| {
                         ui.label(RichText::new("Job ID").strong());
+                        if ui.button("Filter").clicked() {
+                            // Ouvrir un menu déroulant pour filtrer par Job ID
+                            // Implémenter la logique pour afficher et appliquer le filtre
+                        }
                     });
                     header.col(|ui| {
                         ui.label(RichText::new("Owner").strong());
+                        if ui.button("Filter").clicked() {
+                            // Ouvrir un menu déroulant pour filtrer par Owner
+                            // Implémenter la logique pour afficher et appliquer le filtre
+                        }
                     });
                     header.col(|ui| {
                         ui.label(RichText::new("State").strong());
+                        if ui.button("Filter").clicked() {
+                            // Ouvrir un menu déroulant pour filtrer par State
+                            // Implémenter la logique pour afficher et appliquer le filtre
+                        }
                     });
                     header.col(|ui| {
                         ui.label(RichText::new("Scheduled Start Time").strong());
+                        if ui.button("Filter").clicked() {
+                            // Ouvrir un menu déroulant pour filtrer par Scheduled Start Time
+                            // Implémenter la logique pour afficher et appliquer le filtre
+                        }
                     });
                     header.col(|ui| {
                         ui.label(RichText::new("Wall Time").strong());
+                        if ui.button("Filter").clicked() {
+                            // Ouvrir un menu déroulant pour filtrer par Wall Time
+                            // Implémenter la logique pour afficher et appliquer le filtre
+                        }
                     });
                 })
                 .body(|mut body| {
@@ -97,7 +126,7 @@ impl JobTable {
                         });
                     }
                 });
-                ui.add_space(10.0);
+            ui.add_space(10.0);
         });
         self.details_window.retain(|w| w.is_open());
 
