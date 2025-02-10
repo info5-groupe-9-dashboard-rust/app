@@ -5,11 +5,15 @@ use crate::views::components::job_table::JobTable;
 use crate::models::job::State;
 use super::view::View;
 
-pub struct Dashboard;
+pub struct Dashboard{
+    job_table: JobTable,
+}
 
 impl Default for Dashboard {
     fn default() -> Self {
-        Dashboard {}
+        Dashboard {
+            job_table: JobTable::default(),
+        }
     }
 }
 
@@ -51,14 +55,7 @@ impl View for Dashboard {
             ui.add_space(10.0);
         });
 
-        /* Central panel : job list */
-        egui::CentralPanel::default().show(ui.ctx(), |ui| {
-            ui.add_space(10.0);
-            ui.heading(RichText::new(t!("app.dashboard.job_list")).strong());
-            ui.add_space(8.0);
-            let job_table = JobTable::new(&app.jobs);
-            job_table.ui(ui);
-            ui.add_space(10.0);
-        });
+        /* Main panel : job table */
+        self.job_table.ui(ui, &app.jobs);
     }
 }

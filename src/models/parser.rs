@@ -147,19 +147,19 @@ fn from_json_value(json: &Value) -> Job {
         state: parse_state_from_json(&format!("\"{}\"", json["state"].as_str().unwrap_or("unknown")))
             .unwrap_or(State::Unknown),
         command: json["command"].as_str().unwrap_or("").to_string(),
-        walltime: json["walltime"].as_u64().unwrap_or(0) as u64,
+        walltime: json["walltime"].as_i64().unwrap_or(0) as i64,
         message: json["message"].as_str().map(|s| s.to_string()),
         queue: json["queue"].as_str().unwrap_or("default").to_string(),
         assigned_resources: json["assigned_resources"]
             .as_array()
             .unwrap_or(&Vec::new())
             .iter()
-            .filter_map(|v| v.as_u64().map(|n| n as u32))
+            .filter_map(|v| v.as_i64().map(|n| n as u32))
             .collect(),
-        scheduled_start: json["start_time"].as_u64().unwrap_or(0),
-        start_time: json["start_time"].as_u64().unwrap_or(0),
-        stop_time: json["stop_time"].as_u64().unwrap_or(0),
-        submission_time: json["submission_time"].as_u64().unwrap_or(0),
+        scheduled_start: json["start_time"].as_i64().unwrap_or(0),
+        start_time: json["start_time"].as_i64().unwrap_or(0),
+        stop_time: json["stop_time"].as_i64().unwrap_or(0),
+        submission_time: json["submission_time"].as_i64().unwrap_or(0),
         exit_code: json["exit_code"].as_i64().map(|n| n as i32),
     }
 }
