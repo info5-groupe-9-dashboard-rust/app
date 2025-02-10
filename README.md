@@ -55,7 +55,7 @@ We welcome contributions! Here's how you can help:
 
 ## 📝 License
 
-This project is open source and available under the MIT License.
+This project is open source and available under the GNU Lesser General Public License (LGPL) version 2.1.
 
 ## 💖 Support
 
