@@ -16,7 +16,6 @@ app:
       total_jobs: "Total des Jobs"
       running: "En cours"
       waiting: "En attente"
-    job_list: "Liste des jobs"
   gantt:
     title: "Diagramme de Gantt - Jobs OAR"
     zoom_in: "Zoom +"
@@ -38,3 +37,7 @@ app:
     errors:
       invalid_format: "Veuillez vérifier le format des dates (YYYY-MM-DD) et des heures (HH:MM)."
       end_before_start: "La date et l'heure de début doivent être antérieures ou égales à celles de fin"
+  job_table:
+    title: "Liste des jobs"
+    next: "Suivant"
+    previous: "Précédent"
