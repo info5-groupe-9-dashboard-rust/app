@@ -24,53 +24,13 @@ pub fn test_connection(host: &str) -> bool {
 }
 
 /**
- * Get the current json file and parse it to get the jobs
- * Command: oarstat -J > /tmp/data.json
- */
-#[allow(dead_code)]
-pub fn get_current_jobs() -> Vec<Job> {
-    // Test connection first
-    if !test_connection("grenoble.g5k") {
-        return Vec::new();
-    }
-    
-    // Execute SSH command to generate JSON file
-    let ssh_status = Command::new("ssh")
-        .args(["grenoble.g5k", "oarstat -J > /tmp/data.json"])
-        .status();
-
-    if let Err(e) = ssh_status {
-        println!("Failed to execute SSH command: {}", e);
-        return Vec::new();
-    }
-
-    // Check if Data folder exists
-    let data_folder = std::path::Path::new("./data");
-    if !data_folder.exists() {
-        std::fs::create_dir(data_folder).expect("Unable to create data folder");
-    }
-
-    // Execute SCP command to copy the file
-    let scp_status = Command::new("scp")
-        .args(["grenoble.g5k:/tmp/data.json", "./data/data.json"])
-        .status();
-
-    if let Err(e) = scp_status {
-        println!("Failed to copy file via SCP: {}", e);
-        return Vec::new();
-    }
-
-    // Read the jobs from the downloaded JSON file
-    get_jobs_from_json("./data/data.json")
-}
-
-/**
  * Get the jobs for the specified period
  * Command: oarstat -J -g "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss" > /tmp/data.json
  * @param start_date: Start date of the period
  * @param end_date: End date of the period
  * @return List of jobs
  */
+#[cfg(not(target_arch = "wasm32"))]
 pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> Vec<Job> {
     // Test connection first
     if !test_connection("grenoble.g5k") {

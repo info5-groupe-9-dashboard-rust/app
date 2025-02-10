@@ -1,11 +1,18 @@
 use chrono::{DateTime, Utc};
 use crate::views::view::ViewType;
-use super::{job::Job, parser::get_current_jobs_for_period};
+use super::job::Job;
 // Ajouter dans application_context.rs
 use std::sync::mpsc::{channel, Sender, Receiver}; 
-use std::thread;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+#[cfg(target_arch = "wasm32")]
+use crate::models::job::mock_jobs;
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::thread;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::models::parser::get_current_jobs_for_period;
 
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>, 
@@ -31,10 +38,21 @@ impl ApplicationContext {
         let end = end_date;
         
         // Lancer dans un thread séparé
-        thread::spawn(move || {
-            let jobs = get_current_jobs_for_period(start, end);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            thread::spawn(move || {
+                let jobs = get_current_jobs_for_period(start, end);
+                sender.send(jobs).unwrap();
+            });
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            // LOG DEBUG
+            // log::info!("update_period: start_date: {:?}, end_date: {:?}", start, end);
+            let jobs = mock_jobs();
             sender.send(jobs).unwrap();
-        });
+        }
     }
 
     pub fn update_refresh_rate(&mut self, new_rate: u64) {
@@ -61,22 +79,24 @@ impl ApplicationContext {
     }
 
     pub fn update_periodically(&mut self) {
-        let start_date = Arc::clone(&self.start_date);
-        let end_date = Arc::clone(&self.end_date);
-        let refresh_rate = Arc::clone(&self.refresh_rate);
-        let sender = self.jobs_sender.clone();
-        thread::spawn(move || {
-            loop {
-                let start = *start_date.lock().unwrap();
-                let end = *end_date.lock().unwrap();
-                let jobs = get_current_jobs_for_period(start, end);
-                sender.send(jobs).unwrap();
-                let rate = *refresh_rate.lock().unwrap();
-                thread::sleep(Duration::from_secs(rate));
-            }
-        });
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let start_date = Arc::clone(&self.start_date);
+            let end_date = Arc::clone(&self.end_date);
+            let refresh_rate = Arc::clone(&self.refresh_rate);
+            let sender = self.jobs_sender.clone();
+            thread::spawn(move || {
+                loop {
+                    let start = *start_date.lock().unwrap();
+                    let end = *end_date.lock().unwrap();
+                    let jobs = get_current_jobs_for_period(start, end);
+                    sender.send(jobs).unwrap();
+                    let rate = *refresh_rate.lock().unwrap();
+                    thread::sleep(Duration::from_secs(rate));
+                }
+            });
+        }
     }
-
 
     pub fn check_jobs_update(&mut self) {
         // Vérifier si de nouvelles données sont disponibles
