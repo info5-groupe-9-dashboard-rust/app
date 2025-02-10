@@ -52,6 +52,14 @@ impl ApplicationContext {
         *end = new_end;
     }
 
+    pub fn get_start_date(&self) -> DateTime<Utc> {
+        *self.start_date.lock().unwrap()
+    }
+
+    pub fn get_end_date(&self) -> DateTime<Utc> {
+        *self.end_date.lock().unwrap()
+    }
+
     pub fn update_periodically(&mut self) {
         let start_date = Arc::clone(&self.start_date);
         let end_date = Arc::clone(&self.end_date);
@@ -100,6 +108,7 @@ impl Default for ApplicationContext {
             is_loading: false,
             refresh_rate: Arc::new(Mutex::new(5)),
         };
+        context.update_period(context.get_start_date(), context.get_end_date());
         context.update_periodically();
         context
     }
