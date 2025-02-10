@@ -30,7 +30,7 @@ impl View for Dashboard {
 
                 let total_jobs = MetricBox::new(
                     t!("app.dashboard.metrics.total_jobs").to_string(),
-                    app.jobs.len(),
+                    app.filtred_jobs.len(),
                     egui::Color32::from_rgb(40, 120, 215),
                 );
                 total_jobs.ui(ui);
@@ -38,7 +38,7 @@ impl View for Dashboard {
 
                 let running_jobs = MetricBox::new(
                     t!("app.dashboard.metrics.running").to_string(),
-                    app.jobs.iter().filter(|j| j.state == State::Running).count(),
+                    app.filtred_jobs.iter().filter(|j| j.state == State::Running).count(),
                     egui::Color32::from_rgb(235, 140, 50),
                 );
                 running_jobs.ui(ui);
@@ -46,7 +46,7 @@ impl View for Dashboard {
 
                 let waiting_jobs = MetricBox::new(
                     t!("app.dashboard.metrics.waiting").to_string(),
-                    app.jobs.iter().filter(|j| j.state == State::Waiting).count(),
+                    app.filtred_jobs.iter().filter(|j| j.state == State::Waiting).count(),
                     egui::Color32::from_rgb(200, 200, 50),
                 );
                 waiting_jobs.ui(ui);
@@ -56,6 +56,6 @@ impl View for Dashboard {
         });
 
         /* Main panel : job table */
-        self.job_table.ui(ui, &app.jobs);
+        self.job_table.ui(ui, &app.filtred_jobs);
     }
 }
