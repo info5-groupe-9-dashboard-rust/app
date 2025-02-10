@@ -7,6 +7,11 @@ app:
     view: "Vue"
     dashboard: "Tableau de bord"
     gantt: "Diagramme de Gantt"
+    refresh_rate:
+      button: "Fréquence de rafraîchissement"
+      refresh_30: "30 secondes"
+      refresh_60: "1 minute"
+      refresh_300: "5 minutes"
   options:
     title: "Options"
     save:
@@ -53,6 +58,8 @@ app:
     errors:
       invalid_format: "Veuillez vérifier le format des dates (YYYY-MM-DD) et des heures (HH:MM)."
       end_before_start: "La date et l'heure de début doivent être antérieures ou égales à celles de fin"
+  refresh_rate_selector:
+    button: "Fréquence de rafraîchissement"
   job_table:
     title: "Liste des jobs"
     next: "Suivant"

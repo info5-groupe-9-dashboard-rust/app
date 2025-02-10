@@ -34,10 +34,10 @@ impl TimeSelector {
             if ui.button(t!("app.time_selector.button")).clicked() {
                 // Ouvrir la fenêtre modale en pré-remplissant les champs avec les valeurs actuelles
                 self.date_selector_open = true;
-                self.temp_start_date = app.start_date.date_naive().to_string();
-                self.temp_start_time = app.start_date.format("%H:%M").to_string();
-                self.temp_end_date = app.end_date.date_naive().to_string();
-                self.temp_end_time = app.end_date.format("%H:%M").to_string();
+                self.temp_start_date = app.get_start_date().date_naive().to_string();
+                self.temp_start_time = app.get_start_date().format("%H:%M").to_string();
+                self.temp_end_date = app.get_end_date().date_naive().to_string();
+                self.temp_end_time = app.get_end_date().format("%H:%M").to_string();
                 self.error = None;
             }
         });
@@ -134,7 +134,7 @@ impl TimeSelector {
                                     // app.start_date = Utc.from_utc_datetime(&start_datetime);
                                     // app.end_date = Utc.from_utc_datetime(&end_datetime);
                                     app.update_period(Utc.from_utc_datetime(&start_datetime), Utc.from_utc_datetime(&end_datetime));
-                                    println!("Période mise à jour: {} - {}", app.start_date, app.end_date);
+                                    println!("Période mise à jour: {} - {}", app.get_start_date(), app.get_end_date());
                                     self.date_selector_open = false;
                                 } else {
                                     self.error = Some(t!("app.time_selector.errors.end_before_start").to_string());
