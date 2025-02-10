@@ -1,6 +1,6 @@
 use eframe::egui;
 use crate::models::job::{Job, State};
-use chrono::DateTime;
+use crate::models::date_converter::format_timestamp;
 
 pub struct JobDetailsWindow {
     open: bool,
@@ -83,13 +83,6 @@ impl JobDetailsWindow {
             // Temps et durée
             ui.group(|ui| {
                 ui.heading("Timing Information");
-                let format_timestamp = |ts: i64| -> String {
-                    if ts == 0 {
-                        "N/A".to_string()
-                    } else {
-                        DateTime::from_timestamp(ts, 0).unwrap_or_default().format("%Y-%m-%d %H:%M:%S UTC").to_string()
-                    }
-                };
 
                 ui.horizontal(|ui| {
                     ui.label("Submission Time: ");
