@@ -9,5 +9,6 @@ pub trait View {
 
 pub enum ViewType {
     Dashboard,
-    Gantt
+    Gantt,
+    Options
 }

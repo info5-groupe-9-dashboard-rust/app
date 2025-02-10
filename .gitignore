@@ -29,3 +29,6 @@ Thumbs.db
 *.dll
 *.so
 *.dylib
+
+# Options file
+options.json

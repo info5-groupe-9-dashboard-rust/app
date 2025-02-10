@@ -2,14 +2,30 @@ app:
   title: "HPC Dashboard"
   menu:
     file: "File"
+    options: "Options"
     quit: "Quit"
     view: "View"
     dashboard: "Dashboard"
     gantt: "Gantt Chart"
+  options:
+    title: "Options"
+    save:
+      title: "Save"
+      success: "Options saved successfully."
+      error: "An error occurred while saving options."
     language:
-      title: "Language"
+      title: "Language:"
+      choose: "Choose a language"
       en: "English"
-      fr: "French"
+      fr: "Français"
+    theme:
+      title: "Theme:"
+      choose: "Choose a theme"
+      light: "Light"
+      dark: "Dark"
+    font_size:
+      title: "Font size:"
+      choose: "Choose a font size"
   dashboard:
     title: "Dashboard"
     metrics:
