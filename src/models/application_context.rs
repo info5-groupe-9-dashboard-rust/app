@@ -40,6 +40,12 @@ impl ApplicationContext {
             self.all_jobs = new_jobs;
             self.is_loading = false;
         }
+        self.filter_jobs();
+    }
+
+    // Convert all_jobs to filtred_jobs applying some filters
+    pub fn filter_jobs(&mut self) {
+        self.filtred_jobs = self.all_jobs.clone();
     }
 }
 
