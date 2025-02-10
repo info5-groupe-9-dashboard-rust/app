@@ -6,7 +6,8 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread;
 
 pub struct ApplicationContext {
-    pub jobs: Vec<Job>,
+    pub all_jobs: Vec<Job>, 
+    pub filtred_jobs: Vec<Job>, 
     pub start_date: DateTime<Utc>,
     pub end_date: DateTime<Utc>,
     pub view_type: ViewType,
@@ -36,7 +37,7 @@ impl ApplicationContext {
     pub fn check_jobs_update(&mut self) {
         // Vérifier si de nouvelles données sont disponibles
         if let Ok(new_jobs) = self.jobs_receiver.try_recv() {
-            self.jobs = new_jobs;
+            self.all_jobs = new_jobs;
             self.is_loading = false;
         }
     }
@@ -47,7 +48,8 @@ impl Default for ApplicationContext {
         let (sender, receiver) = channel();
         let now: DateTime<Utc> = Utc::now();
         let mut context = Self {
-            jobs: Vec::new(),
+            all_jobs: Vec::new(),
+            filtred_jobs: Vec::new(),
             start_date: Utc::now(),
             end_date: Utc::now(), 
             view_type: ViewType::Dashboard,
