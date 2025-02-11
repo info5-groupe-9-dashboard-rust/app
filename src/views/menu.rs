@@ -48,6 +48,22 @@ impl View for Menu {
             if ui.button(t!("app.menu.filters")).clicked() {
                 app.view_type = ViewType::Filtering;
             }
+            // Menu Refresh Rate
+            ui.menu_button(t!("app.menu.refresh_rate.button"), |ui| {
+                if ui.button(t!("app.menu.refresh_rate.refresh_30")).clicked() {
+                    app.update_refresh_rate(30);
+                    ui.close_menu();
+                }
+                if ui.button(t!("app.menu.refresh_rate.refresh_60")).clicked() {
+                    app.update_refresh_rate(60);
+                    ui.close_menu();
+                }
+                if ui.button(t!("app.menu.refresh_rate.refresh_300")).clicked() {
+                    app.update_refresh_rate(300);
+                    ui.close_menu();
+                }
+            });
+
 
             self.time_selector.ui(ui, app);
         });

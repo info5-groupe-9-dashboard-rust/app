@@ -30,20 +30,55 @@ src/
 - 🔑 SSH access to HPC cluster
 - 📦 Git
 
-### Quick Start
+### 🚀 Quick Start
 
-```bash
-# Clone the repository
-git clone https://github.com/info5-groupe-9-dashboard-rust/docs.git
+#### 🧪 Testing Locally
 
-# Build and launch
-cargo build
-cargo run
-```
+1. Set up SSH access to your HPC cluster (default configuration: "grenoble.g5k").
 
-### ⚙️ Configuration
+2. Ensure you have the latest stable Rust:
+    ```bash
+    rustup update
+    ```
 
-Set up SSH access to your HPC cluster (default configuration: "grenoble.g5k").
+3. Launch the application:
+    ```bash
+    cargo run --release
+    ```
+
+#### 🌐 Web Development
+
+Build and run as a web application using WebAssembly:
+
+1. Add WASM target:
+    ```bash
+    rustup target add wasm32-unknown-unknown
+    ```
+
+2. Install Trunk:
+    ```bash
+    cargo install --locked trunk
+    ```
+
+3. Serve locally:
+    ```bash
+    trunk serve
+    ```
+    📝 Access at `http://127.0.0.1:8080/index.html#dev`
+
+> 💡 Append `#dev` to skip PWA caching during development
+
+#### 🚀 Web Deployment
+
+1. Build for production:
+    ```bash
+    trunk build --release
+    ```
+
+2. Deploy the generated `dist` directory to your preferred hosting platform
+
+> 🔥 The app supports offline functionality through service worker caching!
+
 
 ## 🤝 Contributing
 

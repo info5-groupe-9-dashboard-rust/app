@@ -1,13 +1,18 @@
 app:
   title: 'HPC Dashboard'
   menu:
-    file: 'File'
-    options: 'Options'
-    quit: 'Quit'
-    view: 'View'
-    dashboard: 'Dashboard'
-    gantt: 'Gantt Chart'
     filters: 'Filter'
+    file: "File"
+    options: "Options"
+    quit: "Quit"
+    view: "View"
+    dashboard: "Dashboard"
+    gantt: "Gantt Chart"
+    refresh_rate:
+      button: "Refresh Rate"
+      refresh_30: "30 seconds"
+      refresh_60: "1 minute"
+      refresh_300: "5 minutes"
   options:
     title: 'Options'
     save:
@@ -65,3 +70,4 @@ app:
     states: 'States'
     reset: 'Reset'
     apply: 'Apply'
+

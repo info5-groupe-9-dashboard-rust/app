@@ -1,6 +1,7 @@
 use eframe::egui;
 use egui::{RichText, Sense, Ui};
-use egui_extras::{Column, TableBuilder};
+use egui_extras::{Column, TableBuilder}; 
+use crate::models::date_converter::format_timestamp;
 
 use crate::models::job::Job;
 
@@ -98,10 +99,10 @@ impl JobTable {
                                 ui.label(job.state.to_string());
                             });
                             row.col(|ui| {
-                                ui.label(job.scheduled_start.to_string());
+                                ui.label(format_timestamp(job.start_time));
                             });
                             row.col(|ui| {
-                                ui.label(job.walltime.to_string());
+                                ui.label(format_timestamp(job.start_time + job.walltime));
                             });
                         });
                     }
