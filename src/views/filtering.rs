@@ -53,23 +53,29 @@ impl Filtering {
 
     fn render_owners_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.label(RichText::new(t!("Owners")).strong());
-        let mut owners_input = app
-            .filters
-            .owners
-            .as_ref()
-            .map_or(String::new(), |owners| owners.join(", "));
 
-        if ui
-            .add(TextEdit::singleline(&mut owners_input).desired_width(200.0))
-            .changed()
-        {
-            let owners: Vec<String> = owners_input
-                .split(',')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect();
-            app.filters.set_owners(owners);
-        }
+        let unique_owners = app.get_unique_owners();
+        let mut selected_owners = app.filters.owners.clone().unwrap_or_default();
+
+        Grid::new("owners_grid")
+            .num_columns(2)
+            .spacing([10.0, 5.0])
+            .show(ui, |ui| {
+                for (i, owner) in unique_owners.iter().enumerate() {
+                    let mut is_selected = selected_owners.contains(owner);
+                    if ui.checkbox(&mut is_selected, owner).changed() {
+                        if is_selected {
+                            selected_owners.push(owner.clone());
+                        } else {
+                            selected_owners.retain(|o| o != owner);
+                        }
+                        app.filters.set_owners(selected_owners.clone());
+                    }
+                    if i % 2 == 1 {
+                        ui.end_row();
+                    }
+                }
+            });
     }
 
     fn render_states_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
