@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use strum_macros::EnumIter;
 
+#[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq)]
 
 #[cfg(target_arch = "wasm32")]
 use chrono::{DateTime, Utc};
-
-#[derive(Clone, Deserialize, Serialize, PartialEq)]
 
 pub enum State {
     Unknown,
@@ -60,7 +60,6 @@ pub struct Job {
     pub stop_time: i64,
     pub exit_code: Option<i32>,
 }
-
 
 impl Job {
     pub fn _display(&self) {
