@@ -1,7 +1,6 @@
 app:
-  title: 'HPC Dashboard'
+  title: "HPC Dashboard"
   menu:
-    filters: 'Filter'
     file: "File"
     options: "Options"
     quit: "Quit"
@@ -14,60 +13,52 @@ app:
       refresh_60: "1 minute"
       refresh_300: "5 minutes"
   options:
-    title: 'Options'
+    title: "Options"
     save:
-      title: 'Save'
-      success: 'Options saved successfully.'
-      error: 'An error occurred while saving options.'
+      title: "Save"
+      success: "Options saved successfully."
+      error: "An error occurred while saving options."
     language:
-      title: 'Language:'
-      choose: 'Choose a language'
-      en: 'English'
-      fr: 'Français'
+      title: "Language:"
+      choose: "Choose a language"
+      en: "English"
+      fr: "Français"
     theme:
-      title: 'Theme:'
-      choose: 'Choose a theme'
-      light: 'Light'
-      dark: 'Dark'
+      title: "Theme:"
+      choose: "Choose a theme"
+      light: "Light"
+      dark: "Dark"
     font_size:
-      title: 'Font size:'
-      choose: 'Choose a font size'
+      title: "Font size:"
+      choose: "Choose a font size"
   dashboard:
-    title: 'Dashboard'
+    title: "Dashboard"
     metrics:
-      total_jobs: 'Total Jobs'
-      running: 'Running'
-      waiting: 'Waiting'
+      total_jobs: "Total Jobs"
+      running: "Running"
+      waiting: "Waiting"
   gantt:
-    title: 'Gantt Chart - OAR Jobs'
-    zoom_in: 'Zoom +'
-    zoom_out: 'Zoom -'
-  loading: 'Loading data...'
+    title: "Gantt Chart - OAR Jobs"
+    zoom_in: "Zoom +"
+    zoom_out: "Zoom -"
+  loading: "Loading data..."
   time_selector:
-    button: 'Time Selection'
+    button: "Time Selection"
     modal:
-      title: 'Select a period'
-      today: 'Today'
-      week: 'This week'
-      month: 'This month'
-      start_date: 'Start date'
-      start_time: 'Start time'
-      end_date: 'End date'
-      end_time: 'End time'
-      validate: 'Validate'
-      cancel: 'Cancel'
+      title: "Select a period"
+      today: "Today"
+      week: "This week"
+      month: "This month"
+      start_date: "Start date"
+      start_time: "Start time"
+      end_date: "End date"
+      end_time: "End time"
+      validate: "Validate"
+      cancel: "Cancel"
     errors:
-      invalid_format: 'Please check the format of dates (YYYY-MM-DD) and times (HH:MM).'
-      end_before_start: 'Start date and time must be before or equal to end date and time'
+      invalid_format: "Please check the format of dates (YYYY-MM-DD) and times (HH:MM)."
+      end_before_start: "Start date and time must be before or equal to end date and time"
   job_table:
-    title: 'Job List'
-    next: 'Next'
-    previous: 'Previous'
-  filters:
-    title: 'Filter'
-    from: 'From'
-    to: 'to'
-    states: 'States'
-    reset: 'Reset'
-    apply: 'Apply'
-
+    title: "Job List"
+    next: "Next"
+    previous: "Previous"

@@ -1,9 +1,6 @@
-use super::{
-    components::time_selector::TimeSelector,
-    view::{View, ViewType},
-};
-use crate::models::application_context::ApplicationContext;
 use eframe::egui;
+use crate::models::application_context::ApplicationContext;
+use super::{components::time_selector::TimeSelector, view::{View, ViewType}};
 
 pub struct Menu {
     time_selector: TimeSelector,
@@ -44,10 +41,6 @@ impl View for Menu {
                 app.view_type = ViewType::Options;
             }
 
-            // Menu Filters
-            if ui.button(t!("app.menu.filters")).clicked() {
-                app.view_type = ViewType::Filtering;
-            }
             // Menu Refresh Rate
             ui.menu_button(t!("app.menu.refresh_rate.button"), |ui| {
                 if ui.button(t!("app.menu.refresh_rate.refresh_30")).clicked() {
