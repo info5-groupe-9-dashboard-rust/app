@@ -107,6 +107,14 @@ impl ApplicationContext {
         self.filter_jobs();
     }
 
+    //gather all unique owners (for completion in filters)
+    pub fn get_unique_owners(&self) -> Vec<String> {
+        let mut owners: Vec<String> = self.all_jobs.iter().map(|job| job.owner.clone()).collect();
+        owners.sort();
+        owners.dedup();
+        owners
+    }
+
     // Convert all_jobs to filtred_jobs applying some filters
     pub fn filter_jobs(&mut self) {
         self.filtered_jobs = self
