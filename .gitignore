@@ -1,6 +1,5 @@
 # Rust build directory
 /target/
-/dist/
 
 # Data files
 /data/
@@ -30,6 +29,3 @@ Thumbs.db
 *.dll
 *.so
 *.dylib
-
-# Options file
-options.json

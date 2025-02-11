@@ -1,9 +1,6 @@
-use super::{
-    components::time_selector::TimeSelector,
-    view::{View, ViewType},
-};
-use crate::models::application_context::ApplicationContext;
 use eframe::egui;
+use crate::models::application_context::ApplicationContext;
+use super::{components::time_selector::TimeSelector, view::{View, ViewType}};
 
 pub struct Menu {
     time_selector: TimeSelector,
@@ -39,28 +36,14 @@ impl View for Menu {
                 }
             });
 
-            // Menu Options
-            if ui.button(t!("app.menu.options")).clicked() {
-                app.view_type = ViewType::Options;
-            }
-
-            // Menu Filters
-            if ui.button(t!("app.menu.filters")).clicked() {
-                app.view_type = ViewType::Filtering;
-            }
-
-            // Menu Refresh Rate
-            ui.menu_button(t!("app.menu.refresh_rate.button"), |ui| {
-                if ui.button(t!("app.menu.refresh_rate.refresh_30")).clicked() {
-                    app.update_refresh_rate(30);
+            // Menu Language
+            ui.menu_button(t!("app.menu.language.title"), |ui| {
+                if ui.button(t!("app.menu.language.en")).clicked() {
+                    rust_i18n::set_locale("en");
                     ui.close_menu();
                 }
-                if ui.button(t!("app.menu.refresh_rate.refresh_60")).clicked() {
-                    app.update_refresh_rate(60);
-                    ui.close_menu();
-                }
-                if ui.button(t!("app.menu.refresh_rate.refresh_300")).clicked() {
-                    app.update_refresh_rate(300);
+                if ui.button(t!("app.menu.language.fr")).clicked() {
+                    rust_i18n::set_locale("fr");
                     ui.close_menu();
                 }
             });
