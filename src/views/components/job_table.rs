@@ -1,6 +1,6 @@
 use eframe::egui;
-use egui::{RichText, Sense, Ui};
 use egui_extras::{Column, TableBuilder}; 
+use egui::{Ui, Sense, RichText};
 use crate::models::date_converter::format_timestamp;
 
 use crate::models::job::Job;
@@ -15,7 +15,7 @@ pub struct JobTable {
 
 impl Default for JobTable {
     fn default() -> Self {
-        JobTable {
+        JobTable { 
             page: 0,
             jobs_per_page: 20,
             details_window: Vec::new(),
@@ -25,6 +25,7 @@ impl Default for JobTable {
 
 impl JobTable {
     pub fn ui(&mut self, ui: &mut Ui, jobs: &Vec<Job>) {
+
         egui::CentralPanel::default().show(ui.ctx(), |ui| {
             ui.add_space(10.0);
             ui.heading(RichText::new(t!("app.job_table.title")).strong().size(20.0));
@@ -35,21 +36,11 @@ impl JobTable {
             let total_pages = (jobs.len() as f32 / self.jobs_per_page as f32).ceil() as usize;
 
             ui.horizontal(|ui| {
-                if ui
-                    .button(RichText::new(t!("app.job_table.previous")).size(14.0))
-                    .clicked()
-                    && self.page > 0
-                {
+                if ui.button(RichText::new(t!("app.job_table.previous")).size(14.0)).clicked() && self.page > 0 {
                     self.page -= 1;
                 }
-                ui.label(
-                    RichText::new(format!("Page {} / {}", self.page + 1, total_pages)).size(14.0),
-                );
-                if ui
-                    .button(RichText::new(t!("app.job_table.next")).size(14.0))
-                    .clicked()
-                    && self.page < total_pages - 1
-                {
+                ui.label(RichText::new(format!("Page {} / {}", self.page + 1, total_pages)).size(14.0));
+                if ui.button(RichText::new(t!("app.job_table.next")).size(14.0)).clicked() && self.page < total_pages - 1 {
                     self.page += 1;
                 }
             });
@@ -107,7 +98,7 @@ impl JobTable {
                         });
                     }
                 });
-            ui.add_space(10.0);
+                ui.add_space(10.0);
         });
         self.details_window.retain(|w| w.is_open());
 
