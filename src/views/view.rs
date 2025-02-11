@@ -10,5 +10,4 @@ pub enum ViewType {
     Dashboard,
     Gantt,
     Options,
-    Filtering,
 }

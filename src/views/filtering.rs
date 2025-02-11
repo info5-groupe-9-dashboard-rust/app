@@ -4,15 +4,57 @@ use eframe::egui::{self, Grid, RichText};
 use egui::TextEdit;
 use strum::IntoEnumIterator;
 
-pub struct Filtering {}
+pub struct Filtering {
+    open: bool,
+}
 
 impl Default for Filtering {
     fn default() -> Self {
-        Filtering {}
+        Filtering { open: false }
     }
 }
 
 impl Filtering {
+    pub fn open(&mut self) {
+        self.open = true;
+    }
+
+    // Si la popup est ouverte, on la dessine
+
+    pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
+        let mut open = self.open; // Copier la valeur de self.open dans une variable locale
+        if self.open {
+            egui::Window::new("Filters")
+                .collapsible(true)
+                .movable(true)
+                .open(&mut open)
+                .default_size([400.0, 500.0])
+                .show(ui.ctx(), |ui| {
+                    ui.heading("Filter Options");
+
+                    ui.separator(); // Ligne de séparation
+
+                    // Appeler les fonctions de rendu des filtres ici
+                    self.render_job_id_range(ui, app);
+                    ui.add_space(10.0);
+
+                    self.render_owners_selector(ui, app);
+                    ui.add_space(10.0);
+
+                    self.render_states_selector(ui, app);
+
+                    ui.add_space(20.0);
+
+                    ui.horizontal(|ui| {
+                        if ui.button(t!("app.filters.reset")).clicked() {
+                            app.filters = JobFilters::default();
+                        }
+                    });
+                });
+        }
+        self.open = open;
+    }
+
     fn render_job_id_range(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.label(RichText::new(t!("Job Id")).strong());
         ui.horizontal(|ui| {
@@ -106,32 +148,5 @@ impl Filtering {
                     }
                 }
             });
-    }
-}
-
-impl View for Filtering {
-    fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        ui.heading(RichText::new(t!("app.filters.title")).strong());
-        ui.add_space(8.0);
-
-        // Render each filter section separately
-        self.render_job_id_range(ui, app);
-        ui.add_space(10.0);
-
-        self.render_owners_selector(ui, app);
-        ui.add_space(10.0);
-
-        self.render_states_selector(ui, app);
-        ui.add_space(10.0);
-
-        // Buttons
-        ui.horizontal(|ui| {
-            // if ui.button(t!("app.filters.apply")).clicked() {
-            // app.filter_jobs();
-            //}
-            if ui.button(t!("app.filters.reset")).clicked() {
-                app.filters = JobFilters::default();
-            }
-        });
     }
 }
