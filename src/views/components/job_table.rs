@@ -68,38 +68,18 @@ impl JobTable {
                 .header(20.0, |mut header| {
                     header.col(|ui| {
                         ui.label(RichText::new("Job ID").strong());
-                        if ui.button("Filter").clicked() {
-                            // Ouvrir un menu déroulant pour filtrer par Job ID
-                            // Implémenter la logique pour afficher et appliquer le filtre
-                        }
                     });
                     header.col(|ui| {
                         ui.label(RichText::new("Owner").strong());
-                        if ui.button("Filter").clicked() {
-                            // Ouvrir un menu déroulant pour filtrer par Owner
-                            // Implémenter la logique pour afficher et appliquer le filtre
-                        }
                     });
                     header.col(|ui| {
                         ui.label(RichText::new("State").strong());
-                        if ui.button("Filter").clicked() {
-                            // Ouvrir un menu déroulant pour filtrer par State
-                            // Implémenter la logique pour afficher et appliquer le filtre
-                        }
                     });
                     header.col(|ui| {
                         ui.label(RichText::new("Scheduled Start Time").strong());
-                        if ui.button("Filter").clicked() {
-                            // Ouvrir un menu déroulant pour filtrer par Scheduled Start Time
-                            // Implémenter la logique pour afficher et appliquer le filtre
-                        }
                     });
                     header.col(|ui| {
                         ui.label(RichText::new("Wall Time").strong());
-                        if ui.button("Filter").clicked() {
-                            // Ouvrir un menu déroulant pour filtrer par Wall Time
-                            // Implémenter la logique pour afficher et appliquer le filtre
-                        }
                     });
                 })
                 .body(|mut body| {
