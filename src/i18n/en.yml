@@ -58,7 +58,6 @@ app:
       validate: 'Validate'
       cancel: 'Cancel'
     errors:
-<<<<<<< 22-order-ressources-in-dashboard
       invalid_format: "Please check the format of dates (YYYY-MM-DD) and times (HH:MM)."
       end_before_start: "Start date and time must be before or equal to end date and time"
   job_state:
