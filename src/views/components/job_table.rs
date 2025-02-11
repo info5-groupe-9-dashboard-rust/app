@@ -1,8 +1,8 @@
-use eframe::egui;
-use egui_extras::{Column, TableBuilder}; 
-use egui::{Ui, Sense, RichText};
 use crate::models::date_converter::format_timestamp;
 use crate::models::job::Job;
+use eframe::egui;
+use egui::{RichText, Sense, Ui};
+use egui_extras::{Column, TableBuilder};
 
 use super::job_details::JobDetailsWindow;
 
@@ -14,12 +14,12 @@ pub struct JobTable {
     end_idx: usize,
     displayed_jobs: Vec<Job>,
     sort_key: SortKey,
-    sort_ascending: bool
+    sort_ascending: bool,
 }
 
 impl Default for JobTable {
     fn default() -> Self {
-        JobTable { 
+        JobTable {
             page: 0,
             jobs_per_page: 20,
             details_window: Vec::new(),
@@ -27,7 +27,7 @@ impl Default for JobTable {
             end_idx: 0,
             displayed_jobs: Vec::new(),
             sort_key: SortKey::Id,
-            sort_ascending: true
+            sort_ascending: true,
         }
     }
 }
@@ -55,12 +55,35 @@ impl JobTable {
             self.end_idx = (self.start_idx + self.jobs_per_page).min(jobs.len());
             let total_pages = (jobs.len() as f32 / self.jobs_per_page as f32).ceil() as usize;
 
+            println!(
+                "start_idx: {}, end_idx: {}, total_pages: {}, jobs len {}",
+                self.start_idx,
+                self.end_idx,
+                total_pages,
+                jobs.len()
+            );
+            if self.start_idx >= jobs.len() {
+                println!("Pagination error detected: start_idx is out of bounds");
+                self.reset_pagination();
+                return;
+            }
+
             ui.horizontal(|ui| {
-                if ui.button(RichText::new(t!("app.job_table.previous")).size(14.0)).clicked() && self.page > 0 {
+                if ui
+                    .button(RichText::new(t!("app.job_table.previous")).size(14.0))
+                    .clicked()
+                    && self.page > 0
+                {
                     self.page -= 1;
                 }
-                ui.label(RichText::new(format!("Page {} / {}", self.page + 1, total_pages)).size(14.0));
-                if ui.button(RichText::new(t!("app.job_table.next")).size(14.0)).clicked() && self.page < total_pages - 1 {
+                ui.label(
+                    RichText::new(format!("Page {} / {}", self.page + 1, total_pages)).size(14.0),
+                );
+                if ui
+                    .button(RichText::new(t!("app.job_table.next")).size(14.0))
+                    .clicked()
+                    && self.page < total_pages - 1
+                {
                     self.page += 1;
                 }
             });
@@ -79,42 +102,56 @@ impl JobTable {
                 .column(Column::remainder().at_least(5.0).resizable(true))
                 .column(Column::remainder().resizable(true))
                 .header(20.0, |mut header| {
-                    
                     header.col(|ui| {
                         ui.label(RichText::new(t!("app.job_table.table.row")).strong());
                     });
 
                     header.col(|ui| {
-                        if ui.button(RichText::new(t!("app.job_table.table.job_id")).strong()).clicked() {
+                        if ui
+                            .button(RichText::new(t!("app.job_table.table.job_id")).strong())
+                            .clicked()
+                        {
                             self.sort_key = SortKey::Id;
                             self.sort_ascending = !self.sort_ascending;
                             self.page = 0;
                         }
                     });
-                    
+
                     header.col(|ui| {
-                        if ui.button(RichText::new(t!("app.job_table.table.owner")).strong()).clicked() {
+                        if ui
+                            .button(RichText::new(t!("app.job_table.table.owner")).strong())
+                            .clicked()
+                        {
                             self.sort_key = SortKey::Owner;
                             self.sort_ascending = !self.sort_ascending;
                             self.page = 0;
                         }
                     });
                     header.col(|ui| {
-                        if ui.button(RichText::new(t!("app.job_table.table.state")).strong()).clicked() {
+                        if ui
+                            .button(RichText::new(t!("app.job_table.table.state")).strong())
+                            .clicked()
+                        {
                             self.sort_key = SortKey::State;
                             self.sort_ascending = !self.sort_ascending;
                             self.page = 0;
                         }
                     });
                     header.col(|ui| {
-                        if ui.button(RichText::new(t!("app.job_table.table.start_time")).strong()).clicked() {
+                        if ui
+                            .button(RichText::new(t!("app.job_table.table.start_time")).strong())
+                            .clicked()
+                        {
                             self.sort_key = SortKey::StartTime;
                             self.sort_ascending = !self.sort_ascending;
                             self.page = 0;
                         }
                     });
                     header.col(|ui| {
-                        if ui.button(RichText::new(t!("app.job_table.table.walltime")).strong()).clicked() {
+                        if ui
+                            .button(RichText::new(t!("app.job_table.table.walltime")).strong())
+                            .clicked()
+                        {
                             self.sort_key = SortKey::WallTime;
                             self.sort_ascending = !self.sort_ascending;
                             self.page = 0;
@@ -139,10 +176,12 @@ impl JobTable {
                             row.col(|ui| {
                                 let state_text = job.state.get_label();
                                 let (state_color, bg_color) = job.state.get_color();
-                                ui.label(egui::RichText::new(state_text)
-                                    .color(state_color)
-                                    .background_color(bg_color)
-                                    .strong());
+                                ui.label(
+                                    egui::RichText::new(state_text)
+                                        .color(state_color)
+                                        .background_color(bg_color)
+                                        .strong(),
+                                );
                             });
                             row.col(|ui| {
                                 ui.label(format_timestamp(job.start_time));
@@ -161,6 +200,13 @@ impl JobTable {
         for window in self.details_window.iter_mut() {
             window.ui(ui);
         }
+    }
+
+    pub fn reset_pagination(&mut self) {
+        println!("Resetting pagination");
+        self.page = 0;
+        self.start_idx = 0;
+        self.end_idx = 0;
     }
 
     fn sort_jobs(&mut self) {
@@ -188,16 +234,20 @@ impl JobTable {
             }
             SortKey::StartTime => {
                 if self.sort_ascending {
-                    self.displayed_jobs.sort_by(|a, b| a.scheduled_start.cmp(&b.scheduled_start));
+                    self.displayed_jobs
+                        .sort_by(|a, b| a.scheduled_start.cmp(&b.scheduled_start));
                 } else {
-                    self.displayed_jobs.sort_by(|a, b| b.scheduled_start.cmp(&a.scheduled_start));
+                    self.displayed_jobs
+                        .sort_by(|a, b| b.scheduled_start.cmp(&a.scheduled_start));
                 }
             }
             SortKey::WallTime => {
                 if self.sort_ascending {
-                    self.displayed_jobs.sort_by(|a, b| a.walltime.cmp(&b.walltime));
+                    self.displayed_jobs
+                        .sort_by(|a, b| a.walltime.cmp(&b.walltime));
                 } else {
-                    self.displayed_jobs.sort_by(|a, b| b.walltime.cmp(&a.walltime));
+                    self.displayed_jobs
+                        .sort_by(|a, b| b.walltime.cmp(&a.walltime));
                 }
             }
         }

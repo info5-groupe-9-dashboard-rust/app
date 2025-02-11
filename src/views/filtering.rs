@@ -1,4 +1,3 @@
-use super::view::View;
 use crate::models::{application_context::ApplicationContext, filters::JobFilters, job::State};
 use eframe::egui::{self, Grid, RichText};
 use egui::TextEdit;
@@ -6,11 +5,15 @@ use strum::IntoEnumIterator;
 
 pub struct Filtering {
     open: bool,
+    temp_filters: JobFilters,
 }
 
 impl Default for Filtering {
     fn default() -> Self {
-        Filtering { open: false }
+        Filtering {
+            open: false,
+            temp_filters: JobFilters::default(),
+        }
     }
 }
 
@@ -46,8 +49,16 @@ impl Filtering {
                     ui.add_space(20.0);
 
                     ui.horizontal(|ui| {
+                        if ui.button(t!("app.filters.apply")).clicked() {
+                            app.job_table.reset_pagination(); // Réinitialiser la pagination
+                            app.filters = JobFilters::copy(&self.temp_filters); // Appliquer les filtres
+                            println!("Applying filters: {:?}", app.filters);
+                            app.filter_jobs(); // Appliquer les filtres
+                            self.open = false; // Fermer la fenêtre popup
+                        }
                         if ui.button(t!("app.filters.reset")).clicked() {
                             app.filters = JobFilters::default();
+                            app.job_table.reset_pagination(); // Réinitialiser la pagination
                         }
                     });
                 });
@@ -58,14 +69,14 @@ impl Filtering {
     fn render_job_id_range(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.label(RichText::new(t!("Job Id")).strong());
         ui.horizontal(|ui| {
-            let mut start_id = app
-                .filters
+            let mut start_id = self
+                .temp_filters
                 .job_id_range
                 .map(|(s, _)| s)
                 .unwrap_or(0)
                 .to_string();
-            let mut end_id = app
-                .filters
+            let mut end_id = self
+                .temp_filters
                 .job_id_range
                 .map(|(_, e)| e)
                 .unwrap_or(0)
@@ -77,7 +88,7 @@ impl Filtering {
                 .changed()
             {
                 if let (Ok(start), Ok(end)) = (start_id.parse(), end_id.parse()) {
-                    app.filters.set_job_id_range(start, end);
+                    self.temp_filters.set_job_id_range(start, end);
                 }
             }
 
@@ -87,7 +98,7 @@ impl Filtering {
                 .changed()
             {
                 if let (Ok(start), Ok(end)) = (start_id.parse(), end_id.parse()) {
-                    app.filters.set_job_id_range(start, end);
+                    self.temp_filters.set_job_id_range(start, end);
                 }
             }
         });
@@ -97,7 +108,7 @@ impl Filtering {
         ui.label(RichText::new(t!("Owners")).strong());
 
         let unique_owners = app.get_unique_owners();
-        let mut selected_owners = app.filters.owners.clone().unwrap_or_default();
+        let mut selected_owners = self.temp_filters.owners.clone().unwrap_or_default();
 
         Grid::new("owners_grid")
             .num_columns(2)
@@ -111,7 +122,7 @@ impl Filtering {
                         } else {
                             selected_owners.retain(|o| o != owner);
                         }
-                        app.filters.set_owners(selected_owners.clone());
+                        self.temp_filters.set_owners(selected_owners.clone());
                     }
                     if i % 2 == 1 {
                         ui.end_row();
@@ -123,25 +134,24 @@ impl Filtering {
     fn render_states_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.label(RichText::new(t!("app.filters.states")).strong());
 
+        let mut selected_states = self.temp_filters.states.clone().unwrap_or_default();
+
         Grid::new("states_grid")
             .num_columns(2)
             .spacing([10.0, 5.0])
             .show(ui, |ui| {
                 for (i, state) in State::iter().enumerate() {
-                    let mut is_selected = app
-                        .filters
-                        .states
-                        .as_ref()
-                        .map_or(false, |states| states.contains(&state));
+                    let mut is_selected = selected_states.contains(&state);
                     if ui
                         .checkbox(&mut is_selected, format!("{:?}", state))
                         .changed()
                     {
                         if is_selected {
-                            app.filters.states.get_or_insert_with(Vec::new).push(state);
-                        } else if let Some(states) = app.filters.states.as_mut() {
-                            states.retain(|s| s != &state);
+                            selected_states.push(state);
+                        } else {
+                            selected_states.retain(|s| s != &state);
                         }
+                        self.temp_filters.set_states(selected_states.clone());
                     }
                     if i % 2 == 1 {
                         ui.end_row();
