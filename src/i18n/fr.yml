@@ -53,7 +53,28 @@ app:
     errors:
       invalid_format: "Veuillez vérifier le format des dates (YYYY-MM-DD) et des heures (HH:MM)."
       end_before_start: "La date et l'heure de début doivent être antérieures ou égales à celles de fin"
+  job_state:
+    unknown: "Inconnu"
+    waiting: "En attente de planification"
+    hold: "En pause"
+    to_launch: "Préparation au lancement"
+    to_error: "En cours d'erreur"
+    to_ack_reservation: "En attente de confirmation"
+    launching: "Lancement en cours"
+    running: "En cours d'exécution"
+    suspended: "Suspendu"
+    resuming: "Reprise en cours"
+    finishing: "Finalisation"
+    terminated: "Terminé"
+    error: "Erreur"
   job_table:
     title: "Liste des jobs"
     next: "Suivant"
     previous: "Précédent"
+    table:
+      row: "Ligne"
+      job_id: "ID du job"
+      owner: "Propriétaire"
+      state: "État"
+      start_time: "Heure de début"
+      walltime: "Durée"
