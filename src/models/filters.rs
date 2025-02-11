@@ -9,6 +9,7 @@ pub struct JobFilters {
     pub wall_time: Option<i64>,
 }
 
+#[allow(dead_code)]
 impl JobFilters {
     pub fn new() -> Self {
         Self::default()
