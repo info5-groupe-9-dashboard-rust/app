@@ -1,8 +1,9 @@
-use chrono::{DateTime, Utc};
-use crate::views::view::ViewType;
+use super::filters::JobFilters;
 use super::job::Job;
+use crate::views::view::ViewType;
+use chrono::{DateTime, Utc};
 // Ajouter dans application_context.rs
-use std::sync::mpsc::{channel, Sender, Receiver}; 
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -10,20 +11,21 @@ use std::time::Duration;
 use crate::models::job::mock_jobs;
 
 #[cfg(not(target_arch = "wasm32"))]
-use std::thread;
-#[cfg(not(target_arch = "wasm32"))]
 use crate::models::parser::get_current_jobs_for_period;
+#[cfg(not(target_arch = "wasm32"))]
+use std::thread;
 
 pub struct ApplicationContext {
-    pub all_jobs: Vec<Job>, 
-    pub filtred_jobs: Vec<Job>, 
+    pub all_jobs: Vec<Job>,
+    pub filtered_jobs: Vec<Job>,
     pub start_date: Arc<Mutex<DateTime<Utc>>>,
     pub end_date: Arc<Mutex<DateTime<Utc>>>,
     pub view_type: ViewType,
-    pub jobs_receiver: Receiver<Vec<Job>>, 
-    pub jobs_sender: Sender<Vec<Job>>,     
+    pub jobs_receiver: Receiver<Vec<Job>>,
+    pub jobs_sender: Sender<Vec<Job>>,
     pub is_loading: bool,
     pub refresh_rate: Arc<Mutex<u64>>,
+    pub filters: JobFilters,
 }
 
 impl ApplicationContext {
@@ -31,12 +33,12 @@ impl ApplicationContext {
         self.update_start_date(start_date);
         self.update_end_date(end_date);
         self.is_loading = true;
-        
+
         // Cloner les valeurs nécessaires
         let sender = self.jobs_sender.clone();
         let start = start_date;
         let end = end_date;
-        
+
         // Lancer dans un thread séparé
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -85,15 +87,13 @@ impl ApplicationContext {
             let end_date = Arc::clone(&self.end_date);
             let refresh_rate = Arc::clone(&self.refresh_rate);
             let sender = self.jobs_sender.clone();
-            thread::spawn(move || {
-                loop {
-                    let start = *start_date.lock().unwrap();
-                    let end = *end_date.lock().unwrap();
-                    let jobs = get_current_jobs_for_period(start, end);
-                    sender.send(jobs).unwrap();
-                    let rate = *refresh_rate.lock().unwrap();
-                    thread::sleep(Duration::from_secs(rate));
-                }
+            thread::spawn(move || loop {
+                let start = *start_date.lock().unwrap();
+                let end = *end_date.lock().unwrap();
+                let jobs = get_current_jobs_for_period(start, end);
+                sender.send(jobs).unwrap();
+                let rate = *refresh_rate.lock().unwrap();
+                thread::sleep(Duration::from_secs(rate));
             });
         }
     }
@@ -109,7 +109,35 @@ impl ApplicationContext {
 
     // Convert all_jobs to filtred_jobs applying some filters
     pub fn filter_jobs(&mut self) {
-        self.filtred_jobs = self.all_jobs.clone();
+        self.filtered_jobs = self
+            .all_jobs
+            .iter()
+            .filter(|job| {
+                // Vos conditions de filtrage ici
+                (self.filters.job_id_range.is_none() || {
+                    let (start_id, end_id) = self.filters.job_id_range.unwrap();
+                    job.id >= start_id && job.id <= end_id
+                }) && (self
+                    .filters
+                    .owners
+                    .as_ref()
+                    .map_or(true, |owners| owners.contains(&job.owner)))
+                    && (self
+                        .filters
+                        .states
+                        .as_ref()
+                        .map_or(true, |states| states.contains(&job.state)))
+                    && (self
+                        .filters
+                        .scheduled_start_time
+                        .map_or(true, |time| job.scheduled_start == time))
+                    && (self
+                        .filters
+                        .wall_time
+                        .map_or(true, |time| job.walltime == time))
+            })
+            .cloned() // On clone ici les jobs filtrés
+            .collect();
     }
 }
 
@@ -119,9 +147,10 @@ impl Default for ApplicationContext {
         let now: DateTime<Utc> = Utc::now();
         let mut context = Self {
             all_jobs: Vec::new(),
-            filtred_jobs: Vec::new(),
+            filtered_jobs: Vec::new(),
+            filters: JobFilters::default(),
             start_date: Arc::new(Mutex::new(now - chrono::Duration::hours(1))),
-            end_date: Arc::new(Mutex::new(now + chrono::Duration::hours(1))), 
+            end_date: Arc::new(Mutex::new(now + chrono::Duration::hours(1))),
             view_type: ViewType::Dashboard,
             jobs_receiver: receiver,
             jobs_sender: sender,

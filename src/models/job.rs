@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
-
+use strum_macros::EnumIter;
 
 #[cfg(target_arch = "wasm32")]
 use chrono::{DateTime, Utc};
 
-#[derive(Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq)]
 
 pub enum State {
     Unknown,
@@ -61,7 +61,6 @@ pub struct Job {
     pub exit_code: Option<i32>,
 }
 
-
 impl Job {
     pub fn _display(&self) {
         println!("Job ID: {}", self.id);
@@ -85,7 +84,7 @@ impl Job {
 pub fn mock_job(id: u32) -> Job {
     // Liste des propriétaires possibles
     let owners = vec!["alice", "bob", "charlie", "david", "eva"];
-    
+
     // Liste des commandes possibles avec leurs queues associées
     let commands = vec![
         ("python3 train_model.py", "gpu"),
@@ -94,7 +93,7 @@ pub fn mock_job(id: u32) -> Job {
         ("jupyter notebook", "interactive"),
         ("gcc -O3 project.c", "compile"),
     ];
-    
+
     // Fonction helper pour générer un nombre aléatoire
     let random_index = |max: usize| -> usize {
         let mut buf = [0u8; 8];
@@ -109,17 +108,21 @@ pub fn mock_job(id: u32) -> Job {
         let value = u64::from_le_bytes(buf);
         (value as f32) / (u64::MAX as f32)
     };
-    
+
     // Génération de timestamps cohérents
     let now = Utc::now().timestamp();
     let submission_time = now - (random_index(86400) as i64);
     let scheduled_start = submission_time + (random_index(3300) as i64 + 300);
-    let start_time = if random_float() < 0.7 { scheduled_start } else { 0 };
+    let start_time = if random_float() < 0.7 {
+        scheduled_start
+    } else {
+        0
+    };
     let walltime = random_index(5400) as i64 + 1800;
-    let stop_time = if start_time > 0 && random_float() < 0.3 { 
-        start_time + walltime 
-    } else { 
-        0 
+    let stop_time = if start_time > 0 && random_float() < 0.3 {
+        start_time + walltime
+    } else {
+        0
     };
 
     // Sélection aléatoire de l'état en fonction du contexte temporel
@@ -138,7 +141,7 @@ pub fn mock_job(id: u32) -> Job {
 
     // Sélection de la commande et de la queue
     let (command, queue) = commands[random_index(commands.len())];
-    
+
     // Génération des ressources assignées
     let num_resources = random_index(7) + 1;
     let assigned_resources = if start_time > 0 {
@@ -175,7 +178,11 @@ pub fn mock_job(id: u32) -> Job {
         submission_time,
         start_time,
         stop_time,
-        exit_code: if stop_time > 0 { Some((random_index(3) as i32) - 1) } else { None },
+        exit_code: if stop_time > 0 {
+            Some((random_index(3) as i32) - 1)
+        } else {
+            None
+        },
     }
 }
 
