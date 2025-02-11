@@ -29,7 +29,7 @@ impl Filtering {
                 .unwrap_or(0)
                 .to_string();
 
-            ui.label("app.filters.from");
+            ui.label(RichText::new(t!("app.filters.from")).strong());
             if ui
                 .add(TextEdit::singleline(&mut start_id).desired_width(50.0))
                 .changed()
@@ -39,7 +39,7 @@ impl Filtering {
                 }
             }
 
-            ui.label("app.filters.to");
+            ui.label(RichText::new(t!("app.filters.to")).strong());
             if ui
                 .add(TextEdit::singleline(&mut end_id).desired_width(50.0))
                 .changed()
