@@ -34,10 +34,10 @@ impl TimeSelector {
             if ui.button(t!("app.time_selector.button")).clicked() {
                 // Ouvrir la fenêtre modale en pré-remplissant les champs avec les valeurs actuelles
                 self.date_selector_open = true;
-                self.temp_start_date = app.start_date.date_naive().to_string();
-                self.temp_start_time = app.start_date.format("%H:%M").to_string();
-                self.temp_end_date = app.end_date.date_naive().to_string();
-                self.temp_end_time = app.end_date.format("%H:%M").to_string();
+                self.temp_start_date = app.get_start_date().date_naive().to_string();
+                self.temp_start_time = app.get_start_date().format("%H:%M").to_string();
+                self.temp_end_date = app.get_end_date().date_naive().to_string();
+                self.temp_end_time = app.get_end_date().format("%H:%M").to_string();
                 self.error = None;
             }
         });
@@ -73,12 +73,12 @@ impl TimeSelector {
                         }
                         if ui.button(t!("app.time_selector.modal.month")).clicked() {
                             let today = Utc::now().date_naive();
-                            let start_of_month = NaiveDate::from_ymd(today.year(), today.month(), 1);
+                            let start_of_month = NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap();
                             // Calcul du dernier jour du mois : on ajoute un mois puis on soustrait un jour
                             let end_of_month = if today.month() == 12 {
-                                NaiveDate::from_ymd(today.year() + 1, 1, 1) - Duration::days(1)
+                                NaiveDate::from_ymd_opt(today.year() + 1, 1, 1).unwrap() - Duration::days(1)
                             } else {
-                                NaiveDate::from_ymd(today.year(), today.month() + 1, 1) - Duration::days(1)
+                                NaiveDate::from_ymd_opt(today.year(), today.month() + 1, 1).unwrap() - Duration::days(1)
                             };
                             self.temp_start_date = start_of_month.to_string();
                             self.temp_end_date = end_of_month.to_string();
@@ -134,7 +134,7 @@ impl TimeSelector {
                                     // app.start_date = Utc.from_utc_datetime(&start_datetime);
                                     // app.end_date = Utc.from_utc_datetime(&end_datetime);
                                     app.update_period(Utc.from_utc_datetime(&start_datetime), Utc.from_utc_datetime(&end_datetime));
-                                    println!("Période mise à jour: {} - {}", app.start_date, app.end_date);
+                                    println!("Période mise à jour: {} - {}", app.get_start_date(), app.get_end_date());
                                     self.date_selector_open = false;
                                 } else {
                                     self.error = Some(t!("app.time_selector.errors.end_before_start").to_string());
