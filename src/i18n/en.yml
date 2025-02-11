@@ -58,12 +58,33 @@ app:
       validate: 'Validate'
       cancel: 'Cancel'
     errors:
-      invalid_format: 'Please check the format of dates (YYYY-MM-DD) and times (HH:MM).'
-      end_before_start: 'Start date and time must be before or equal to end date and time'
+      invalid_format: "Please check the format of dates (YYYY-MM-DD) and times (HH:MM)."
+      end_before_start: "Start date and time must be before or equal to end date and time"
+  job_state:
+    unknown: "Unknown"
+    waiting: "Waiting"
+    hold: "Hold"
+    to_launch: "ToLaunch"
+    to_error: "ToError"
+    to_ack_reservation: "ToAckReservation"
+    launching: "Launching"
+    running: "Running"
+    suspended: "Suspended"
+    resuming: "Resuming"
+    finishing: "Finishing"
+    terminated: "Terminated"
+    error: "Error"
   job_table:
-    title: 'Job List'
-    next: 'Next'
-    previous: 'Previous'
+    title: "Job List"
+    next: "Next"
+    previous: "Previous"
+    table:
+      row: "Row"
+      job_id: "Job ID"
+      owner: "Owner"
+      state: "State"
+      start_time: "Start time"
+      walltime: "Walltime"
   filters:
     title: 'Filter'
     from: 'From'
