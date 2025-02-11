@@ -1,4 +1,5 @@
 use eframe::egui;
+use chrono::DateTime;
 use crate::models::job::{Job, State};
 use crate::models::date_converter::format_timestamp;
 
@@ -52,13 +53,8 @@ impl JobDetailsWindow {
                 ui.heading("Status");
                 ui.horizontal(|ui| {
                     ui.label("State: ");
-                    let state_text = self.job.state.to_string();
-                    let (state_color, bg_color) = match self.job.state {
-                        State::Running => (egui::Color32::GREEN, egui::Color32::DARK_GREEN),
-                        State::Error => (egui::Color32::RED, egui::Color32::DARK_RED),
-                        State::Terminated => (egui::Color32::GRAY, egui::Color32::DARK_GRAY),
-                        _ => (egui::Color32::WHITE, egui::Color32::DARK_BLUE),
-                    };
+                    let state_text = self.job.state.get_label();
+                    let (state_color, bg_color) = self.job.state.get_color();
                     ui.label(egui::RichText::new(state_text)
                         .color(state_color)
                         .background_color(bg_color)
