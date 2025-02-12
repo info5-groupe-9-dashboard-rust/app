@@ -5,16 +5,18 @@ use eframe::egui;
 use egui::{lerp, pos2, remap_clamp, Align2, Color32, DragValue, FontId, Frame, LayerId, PointerButton, Pos2, Rect, Response, Rgba, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget};
 use crate::models::{application_context::ApplicationContext, job::Job};
 
-use super::view::View;
+use super::{components::job_details::JobDetailsWindow, view::View};
 
 pub struct GanttChart {
     options: Options,
+    details_window: Vec<JobDetailsWindow>,
 }
 
 impl Default for GanttChart {
     fn default() -> Self {
         GanttChart {
             options: Default::default(),
+            details_window: Vec::new(),
         }
     }
 }
@@ -103,7 +105,7 @@ impl View for GanttChart {
     
                 let where_to_put_timeline = info.painter.add(Shape::Noop);
     
-                let max_y = ui_canvas(&mut self.options,app, &info, (min_s, max_s));
+                let max_y = ui_canvas(&mut self.options,app, &info, (min_s, max_s), &mut self.details_window);
     
                 let mut used_rect = canvas;
                 used_rect.max.y = max_y;
@@ -118,6 +120,14 @@ impl View for GanttChart {
                 ui.allocate_rect(used_rect, Sense::hover());
             });
         });
+
+        // Part to display the details of a job when clicked
+        self.details_window.retain(|w| w.is_open());
+
+        // Display detail windows
+        for window in self.details_window.iter_mut() {
+            window.ui(ui);
+        }
     
     }
 }
@@ -407,6 +417,7 @@ fn ui_canvas(
     app : &ApplicationContext,
     info: &Info,
     (min_ns, max_ns): (i64, i64),
+    details_window:&mut Vec<JobDetailsWindow>,
 ) -> f32 {
 
     if options.canvas_width_s <= 0.0 {
@@ -449,7 +460,7 @@ fn ui_canvas(
         cursor_y += info.text_height;
 
         // Paint the job itself with the given depth level
-        paint_job(info, options, &job_info, cursor_y);
+        paint_job(info, options, &job_info, cursor_y, details_window);
         
         let max_depth = 1; // Since we're only painting one level for each job
         cursor_y += max_depth as f32 * (options.rect_height + options.spacing);
@@ -465,6 +476,7 @@ fn paint_job(
     options: &mut Options,
     job: &Job,
     top_y: f32,
+    details_window: &mut Vec<JobDetailsWindow>,
 ) -> PaintResult {
     let start_x = info.point_from_s(options, job.scheduled_start);
     let stop_time = if (job.scheduled_start + job.walltime) > info.stop_s {
@@ -490,6 +502,12 @@ fn paint_job(
     } else {
         false
     };
+
+    // Ajouter la détection du clic
+    if is_hovered && info.response.double_clicked() {
+        let window = JobDetailsWindow::new(job.clone());
+        details_window.push(window);
+    }
 
     let fill_color = if is_hovered {
         Color32::from_rgb(45, 114, 210)
