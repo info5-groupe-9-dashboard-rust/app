@@ -1,6 +1,6 @@
 use chrono::DateTime;
 use eframe::egui;
-use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, LayerId, PointerButton, Pos2, Rect, Response, Rgba, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget};
+use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, LayerId, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget};
 use crate::models::{application_context::ApplicationContext, job::Job};
 
 use super::{components::job_details::JobDetailsWindow, view::View};
@@ -22,7 +22,7 @@ impl Default for GanttChart {
 // Implement the View trait for GanttChart
 impl View for GanttChart {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        ui.heading(t!("app.gantt.title"));
+        ui.heading(RichText::new(t!("app.gantt.title")).strong());
 
         let min_start = app.all_jobs.iter().map(|job| job.scheduled_start).min().unwrap_or(0);
         let max_end = app.all_jobs.iter().map(|job| job.scheduled_start + job.walltime).max().unwrap_or(0);
@@ -34,7 +34,7 @@ impl View for GanttChart {
     
                 {
                     let _changed = ui
-                        .checkbox(&mut self.options.merge_scopes, "Merge children with same ID")
+                        .checkbox(&mut self.options.aggregate_owners, "Aggregate by job owners")
                         .changed();
                     // If we have multiple frames selected this will toggle
                     // if we view all the frames, or an average of them,
@@ -313,7 +313,7 @@ pub struct Options {
     pub rounding: f32,
 
     /// Aggregate child scopes with the same id?
-    pub merge_scopes: bool,
+    pub aggregate_owners: bool,
 
     pub sorting: Sorting,
 
@@ -340,7 +340,7 @@ impl Default for Options {
             spacing: 4.0,
             rounding: 4.0,
 
-            merge_scopes: false, // off, because it really only works well for single-jobed profiling
+            aggregate_owners: false, // off, because it really only works well for single-jobed profiling
 
             grid_spacing_minutes: 30, // 30 minutes by default
 
@@ -413,41 +413,79 @@ impl Default for Options {
 
 fn ui_canvas(
     options: &mut Options,
-    app : &ApplicationContext,
+    app: &ApplicationContext,
     info: &Info,
     (min_ns, max_ns): (i64, i64),
-    details_window:&mut Vec<JobDetailsWindow>,
+    details_window: &mut Vec<JobDetailsWindow>,
 ) -> f32 {
-
     if options.canvas_width_s <= 0.0 {
         options.canvas_width_s = (max_ns - min_ns) as f32;
         options.zoom_to_relative_s_range = None;
     }
 
-    // We paint the jobs top-down
     let mut cursor_y = info.canvas.top();
     cursor_y += info.text_height; // Leave room for time labels
 
-    let jobs = app.all_jobs.clone();
-    let jobs = options.sorting.sort(jobs);
+    let jobs = options.sorting.sort(app.all_jobs.clone());
 
-    for job_info in jobs {
+    if options.aggregate_owners {
+        cursor_y = paint_aggregated_jobs(info, options, jobs, cursor_y, details_window);
+    } else {
+        cursor_y = paint_individual_jobs(info, options, jobs, cursor_y, details_window);
+    }
 
-        // Visual separator between jobs:
-        cursor_y += 2.0;
-        let line_y = cursor_y;
-        cursor_y += 2.0;
+    cursor_y
+}
 
-        let text_pos = pos2(info.canvas.min.x, cursor_y);
+fn paint_aggregated_jobs(
+    info: &Info,
+    options: &mut Options,
+    jobs: Vec<Job>,
+    mut cursor_y: f32,
+    details_window: &mut Vec<JobDetailsWindow>,
+) -> f32 {
+    let mut jobs_by_owner = std::collections::BTreeMap::new();
+    for job in jobs {
+        let owner = job.owner.clone();
+        jobs_by_owner.entry(owner).or_insert_with(Vec::new).push(job);
+    }
 
-        paint_job_info(
-            info,
-            &job_info,
-            text_pos,
-            &mut false,
-        );
+    for (owner, jobs) in jobs_by_owner {
+        cursor_y = paint_job_group(info, options, jobs, cursor_y, details_window);
+    }
 
-        // draw on top of job info background:
+    cursor_y
+}
+
+fn paint_individual_jobs(
+    info: &Info,
+    options: &mut Options,
+    jobs: Vec<Job>,
+    mut cursor_y: f32,
+    details_window: &mut Vec<JobDetailsWindow>,
+) -> f32 {
+    for job in jobs {
+        cursor_y = paint_single_job(info, options, job, cursor_y, details_window);
+    }
+
+    cursor_y
+}
+
+fn paint_job_group(
+    info: &Info,
+    options: &mut Options,
+    jobs: Vec<Job>,
+    mut cursor_y: f32,
+    details_window: &mut Vec<JobDetailsWindow>,
+) -> f32 {
+    cursor_y += 2.0;
+    let line_y = cursor_y;
+    cursor_y += 2.0;
+    let text_pos = pos2(info.canvas.min.x, cursor_y);
+
+    for job in jobs {
+        paint_job_info(info, &job, text_pos, &mut false);
+
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, line_y),
@@ -457,15 +495,43 @@ fn ui_canvas(
         );
 
         cursor_y += info.text_height;
-
-        // Paint the job itself with the given depth level
-        paint_job(info, options, &job_info, cursor_y, details_window);
-        
-        let max_depth = 1; // Since we're only painting one level for each job
-        cursor_y += max_depth as f32 * (options.rect_height + options.spacing);
-        
-        cursor_y += info.text_height; // Extra spacing between jobs
+        paint_job(info, options, &job, cursor_y, details_window);
     }
+    let max_depth = 1; // Since we're only painting one level for each job
+    cursor_y += max_depth as f32 * (options.rect_height + options.spacing);
+    cursor_y += info.text_height; // Extra spacing between jobs
+
+    cursor_y
+}
+
+fn paint_single_job(
+    info: &Info,
+    options: &mut Options,
+    job: Job,
+    mut cursor_y: f32,
+    details_window: &mut Vec<JobDetailsWindow>,
+) -> f32 {
+    cursor_y += 2.0;
+    let line_y = cursor_y;
+    cursor_y += 2.0;
+    let text_pos = pos2(info.canvas.min.x, cursor_y);
+
+    paint_job_info(info, &job, text_pos, &mut false);
+
+    info.painter.line_segment(
+        [
+            pos2(info.canvas.min.x, line_y),
+            pos2(info.canvas.max.x, line_y),
+        ],
+        Stroke::new(1.0, Rgba::from_white_alpha(0.5)),
+    );
+
+    cursor_y += info.text_height;
+    paint_job(info, options, &job, cursor_y, details_window);
+
+    let max_depth = 1; // Since we're only painting one level for each job
+    cursor_y += max_depth as f32 * (options.rect_height + options.spacing);
+    cursor_y += info.text_height; // Extra spacing between jobs
 
     cursor_y
 }
