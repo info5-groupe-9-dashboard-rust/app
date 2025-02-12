@@ -1,5 +1,6 @@
 use super::filters::JobFilters;
 use super::job::Job;
+use crate::views::components::job_table::JobTable;
 use crate::views::view::ViewType;
 use chrono::{DateTime, Utc};
 // Ajouter dans application_context.rs
@@ -8,7 +9,6 @@ use std::sync::{Arc, Mutex};
 
 #[cfg(target_arch = "wasm32")]
 use crate::models::job::mock_jobs;
-
 
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>,
@@ -21,6 +21,7 @@ pub struct ApplicationContext {
     pub is_loading: bool,
     pub refresh_rate: Arc<Mutex<u64>>,
     pub filters: JobFilters,
+    pub job_table: JobTable,
 }
 
 impl ApplicationContext {
@@ -90,6 +91,7 @@ impl Default for ApplicationContext {
             jobs_sender: sender,
             is_loading: false,
             refresh_rate: Arc::new(Mutex::new(30)),
+            job_table: JobTable::default(), // Initialiser job_table
         };
         context.update_periodically();
         context
