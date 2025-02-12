@@ -1,5 +1,5 @@
-use crate::models::utils::date_converter::format_timestamp;
 use crate::models::data_structure::job::Job;
+use crate::models::utils::date_converter::format_timestamp;
 use eframe::egui;
 use egui::{RichText, Sense, Ui};
 use egui_extras::{Column, TableBuilder};
@@ -62,9 +62,8 @@ impl JobTable {
             //     total_pages,
             //     jobs.len()
             // );
-            
+
             if self.start_idx >= jobs.len() {
-                println!("Pagination error detected: start_idx is out of bounds");
                 self.reset_pagination();
                 return;
             }
@@ -204,7 +203,6 @@ impl JobTable {
     }
 
     pub fn reset_pagination(&mut self) {
-        println!("Resetting pagination");
         self.page = 0;
         self.start_idx = 0;
         self.end_idx = 0;

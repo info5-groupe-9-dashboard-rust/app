@@ -30,12 +30,12 @@ impl JobFilters {
         self.job_id_range = Some((start_id, end_id));
     }
 
-    pub fn set_owners(&mut self, owners: Vec<String>) {
-        self.owners = Some(owners);
+    pub fn set_owners(&mut self, owners: Option<Vec<String>>) {
+        self.owners = owners;
     }
 
-    pub fn set_states(&mut self, states: Vec<State>) {
-        self.states = Some(states);
+    pub fn set_states(&mut self, states: Option<Vec<State>>) {
+        self.states = states;
     }
 
     pub fn set_scheduled_start_time(&mut self, scheduled_start_time: i64) {
