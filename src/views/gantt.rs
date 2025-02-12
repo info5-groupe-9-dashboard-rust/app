@@ -1,9 +1,12 @@
 use std::collections::BTreeMap;
 
+use crate::models::{application_context::ApplicationContext, job::Job};
 use chrono::DateTime;
 use eframe::egui;
-use egui::{lerp, pos2, remap_clamp, Align2, Color32, DragValue, FontId, Frame, LayerId, PointerButton, Pos2, Rect, Response, Rgba, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget};
-use crate::models::{application_context::ApplicationContext, job::Job};
+use egui::{
+    lerp, pos2, remap_clamp, Align2, Color32, DragValue, FontId, Frame, LayerId, PointerButton,
+    Pos2, Rect, Response, Rgba, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget,
+};
 
 use super::{components::job_details::JobDetailsWindow, view::View};
 
@@ -26,17 +29,30 @@ impl View for GanttChart {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.heading(t!("app.gantt.title"));
 
-        let min_start = app.all_jobs.iter().map(|job| job.scheduled_start).min().unwrap_or(0);
-        let max_end = app.all_jobs.iter().map(|job| job.scheduled_start + job.walltime).max().unwrap_or(0);
+        let min_start = app
+            .all_jobs
+            .iter()
+            .map(|job| job.scheduled_start)
+            .min()
+            .unwrap_or(0);
+        let max_end = app
+            .all_jobs
+            .iter()
+            .map(|job| job.scheduled_start + job.walltime)
+            .max()
+            .unwrap_or(0);
         let reset_view = false;
 
-        ui.horizontal(|ui| {    
+        ui.horizontal(|ui| {
             ui.menu_button("🔧 Settings", |ui| {
                 ui.set_max_height(500.0);
-    
+
                 {
                     let changed = ui
-                        .checkbox(&mut self.options.merge_scopes, "Merge children with same ID")
+                        .checkbox(
+                            &mut self.options.merge_scopes,
+                            "Merge children with same ID",
+                        )
                         .changed();
                     // If we have multiple frames selected this will toggle
                     // if we view all the frames, or an average of them,
@@ -45,7 +61,7 @@ impl View for GanttChart {
                     //     reset_view = true;
                     // }
                 }
-    
+
                 ui.horizontal(|ui| {
                     ui.label("Grid spacing:");
                     let grid_spacing_drag = DragValue::new(&mut self.options.grid_spacing_seconds)
@@ -53,12 +69,12 @@ impl View for GanttChart {
                         .range(90..=360)
                         .suffix(" s");
                     grid_spacing_drag.ui(ui);
-                });        
-    
+                });
+
                 // The number of jobs can change between frames, so always show this even if there currently is only one job:
                 self.options.sorting.ui(ui);
             });
-    
+
             ui.menu_button("❓", |ui| {
                 ui.label(
                     "Drag to pan.\n\
@@ -72,16 +88,16 @@ impl View for GanttChart {
 
         Frame::dark_canvas(ui.style()).show(ui, |ui| {
             ui.visuals_mut().clip_rect_margin = 0.0;
-    
+
             let available_height = ui.max_rect().bottom() - ui.min_rect().bottom();
             ScrollArea::vertical().show(ui, |ui| {
                 let mut canvas = ui.available_rect_before_wrap();
                 canvas.max.y = f32::INFINITY;
                 let response = ui.interact(canvas, ui.id().with("canvas"), Sense::click_and_drag());
-    
+
                 let min_s = min_start;
                 let max_s = max_end;
-    
+
                 let info = Info {
                     ctx: ui.ctx().clone(),
                     canvas,
@@ -93,30 +109,36 @@ impl View for GanttChart {
                     layer_id: ui.layer_id(),
                     font_id: TextStyle::Body.resolve(ui.style()),
                 };
-    
+
                 if reset_view {
                     self.options.zoom_to_relative_s_range = Some((
                         info.ctx.input(|i| i.time),
                         (0., (info.stop_s - info.start_s) as f64),
                     ));
                 }
-    
+
                 interact_with_canvas(&mut self.options, &info.response, &info);
-    
+
                 let where_to_put_timeline = info.painter.add(Shape::Noop);
-    
-                let max_y = ui_canvas(&mut self.options,app, &info, (min_s, max_s), &mut self.details_window);
-    
+
+                let max_y = ui_canvas(
+                    &mut self.options,
+                    app,
+                    &info,
+                    (min_s, max_s),
+                    &mut self.details_window,
+                );
+
                 let mut used_rect = canvas;
                 used_rect.max.y = max_y;
-    
+
                 // // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
-    
+
                 let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
                 info.painter
                     .set(where_to_put_timeline, Shape::Vec(timeline));
-    
+
                 ui.allocate_rect(used_rect, Sense::hover());
             });
         });
@@ -128,7 +150,6 @@ impl View for GanttChart {
         for window in self.details_window.iter_mut() {
             window.ui(ui);
         }
-    
     }
 }
 
@@ -196,8 +217,6 @@ fn interact_with_canvas(options: &mut Options, response: &Response, info: &Info)
     }
 }
 
-
-
 /// Context for painting a frame.
 struct Info {
     ctx: egui::Context,
@@ -231,7 +250,6 @@ pub enum SortBy {
     Time,
     Owner,
 }
-
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
@@ -352,8 +370,6 @@ impl Default for Options {
     }
 }
 
-
-
 // fn ui_canvas(
 //     options: &mut Options,
 //     app : &ApplicationContext,
@@ -414,12 +430,11 @@ impl Default for Options {
 
 fn ui_canvas(
     options: &mut Options,
-    app : &ApplicationContext,
+    app: &ApplicationContext,
     info: &Info,
     (min_ns, max_ns): (i64, i64),
-    details_window:&mut Vec<JobDetailsWindow>,
+    details_window: &mut Vec<JobDetailsWindow>,
 ) -> f32 {
-
     if options.canvas_width_s <= 0.0 {
         options.canvas_width_s = (max_ns - min_ns) as f32;
         options.zoom_to_relative_s_range = None;
@@ -433,7 +448,6 @@ fn ui_canvas(
     let jobs = options.sorting.sort(jobs);
 
     for job_info in jobs {
-
         // Visual separator between jobs:
         cursor_y += 2.0;
         let line_y = cursor_y;
@@ -441,12 +455,7 @@ fn ui_canvas(
 
         let text_pos = pos2(info.canvas.min.x, cursor_y);
 
-        paint_job_info(
-            info,
-            &job_info,
-            text_pos,
-            &mut false,
-        );
+        paint_job_info(info, &job_info, text_pos, &mut false);
 
         // draw on top of job info background:
         info.painter.line_segment(
@@ -461,10 +470,10 @@ fn ui_canvas(
 
         // Paint the job itself with the given depth level
         paint_job(info, options, &job_info, cursor_y, details_window);
-        
+
         let max_depth = 1; // Since we're only painting one level for each job
         cursor_y += max_depth as f32 * (options.rect_height + options.spacing);
-        
+
         cursor_y += info.text_height; // Extra spacing between jobs
     }
 
@@ -509,6 +518,21 @@ fn paint_job(
         details_window.push(window);
     }
 
+    // Ajouter la détection du clic principal pour ajuster le zoom
+    if is_hovered && info.response.clicked() {
+        // Calculer le niveau de zoom nécessaire
+        let job_duration_s = job.walltime as f64;
+        let job_start_s = job.scheduled_start as f64;
+        let job_end_s = job_start_s + job_duration_s;
+        options.zoom_to_relative_s_range = Some((
+            info.ctx.input(|i| i.time),
+            (
+                job_start_s - info.start_s as f64,
+                job_end_s - info.start_s as f64,
+            ),
+        ));
+    }
+
     let fill_color = if is_hovered {
         Color32::from_rgb(45, 114, 210)
     } else {
@@ -524,7 +548,11 @@ fn paint_job(
             Align2::CENTER_CENTER,
             text,
             info.font_id.clone(),
-            if is_hovered {Color32::WHITE} else {Color32::from_white_alpha(240)}
+            if is_hovered {
+                Color32::WHITE
+            } else {
+                Color32::from_white_alpha(240)
+            },
         );
     }
 
@@ -542,19 +570,14 @@ enum PaintResult {
     Hovered,
 }
 
-fn paint_timeline(
-    info: &Info,
-    canvas: Rect,
-    options: &Options,
-    start_s: i64,
-) -> Vec<egui::Shape> {
+fn paint_timeline(info: &Info, canvas: Rect, options: &Options, start_s: i64) -> Vec<egui::Shape> {
     let mut shapes = vec![];
 
     if options.canvas_width_s <= 0.0 {
         return shapes;
     }
 
-    let alpha_multiplier = 0.3; // make it subtle
+    let alpha_multiplier = 0.1; // make it subtle
 
     // We show all measurements relative to start_s
 

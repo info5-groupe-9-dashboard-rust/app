@@ -55,15 +55,7 @@ impl JobTable {
             self.end_idx = (self.start_idx + self.jobs_per_page).min(jobs.len());
             let total_pages = (jobs.len() as f32 / self.jobs_per_page as f32).ceil() as usize;
 
-            println!(
-                "start_idx: {}, end_idx: {}, total_pages: {}, jobs len {}",
-                self.start_idx,
-                self.end_idx,
-                total_pages,
-                jobs.len()
-            );
             if self.start_idx >= jobs.len() {
-                println!("Pagination error detected: start_idx is out of bounds");
                 self.reset_pagination();
                 return;
             }
@@ -203,7 +195,6 @@ impl JobTable {
     }
 
     pub fn reset_pagination(&mut self) {
-        println!("Resetting pagination");
         self.page = 0;
         self.start_idx = 0;
         self.end_idx = 0;
