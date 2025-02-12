@@ -533,10 +533,11 @@ fn paint_job(
         ));
     }
 
+    let (hovered_color, normal_color) = job.state.get_color();
     let fill_color = if is_hovered {
-        Color32::from_rgb(45, 114, 210)
+        hovered_color
     } else {
-        Color32::from_rgb(30, 87, 166)
+        normal_color
     };
 
     info.painter.rect_filled(rect, options.rounding, fill_color);
