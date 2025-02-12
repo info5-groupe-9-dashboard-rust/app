@@ -1,6 +1,7 @@
 use super::job::State;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
+
 pub struct JobFilters {
     pub job_id_range: Option<(u32, u32)>,
     pub owners: Option<Vec<String>>,
@@ -9,9 +10,20 @@ pub struct JobFilters {
     pub wall_time: Option<i64>,
 }
 
+#[allow(dead_code)]
 impl JobFilters {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn copy(filter: &JobFilters) -> Self {
+        JobFilters {
+            job_id_range: filter.job_id_range,
+            owners: filter.owners.clone(),
+            states: filter.states.clone(),
+            scheduled_start_time: filter.scheduled_start_time,
+            wall_time: filter.wall_time,
+        }
     }
 
     pub fn set_job_id_range(&mut self, start_id: u32, end_id: u32) {
