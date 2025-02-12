@@ -337,7 +337,7 @@ pub struct Options {
     pub sorting: Sorting,
 
     // Grid spacing in minutes
-    grid_spacing_minutes: i64,
+    grid_spacing_seconds: i64,
 
     /// Set when user clicks a scope.
     /// First part is `now()`, second is range.
@@ -361,7 +361,7 @@ impl Default for Options {
 
             merge_scopes: false, // off, because it really only works well for single-jobed profiling
 
-            grid_spacing_minutes: 30, // 30 minutes by default
+            grid_spacing_seconds: 30, // 30 minutes by default
 
             sorting: Default::default(),
 
@@ -583,7 +583,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, start_s: i64) ->
     // We show all measurements relative to start_s
 
     let max_lines = canvas.width() / 4.0;
-    let mut grid_spacing_seconds = (options.grid_spacing_minutes / 10) * 60; // convert grid spacing to seconds
+    let mut grid_spacing_seconds = (options.grid_spacing_seconds / 10) * 60; // convert grid spacing to seconds
     while options.canvas_width_s / (grid_spacing_seconds as f32) > max_lines {
         grid_spacing_seconds *= 10;
     }
