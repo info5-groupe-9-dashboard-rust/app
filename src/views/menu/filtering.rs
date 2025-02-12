@@ -1,4 +1,6 @@
-use crate::models::{application_context::ApplicationContext, filters::JobFilters, job::State};
+use crate::models::data_structure::{
+    application_context::ApplicationContext, filters::JobFilters, job::State,
+};
 use eframe::egui::{self, Grid, RichText};
 use egui::TextEdit;
 use strum::IntoEnumIterator;
@@ -38,13 +40,13 @@ impl Filtering {
                     ui.separator(); // Ligne de séparation
 
                     // Appeler les fonctions de rendu des filtres ici
-                    self.render_job_id_range(ui, app);
+                    self.render_job_id_range(ui);
                     ui.add_space(10.0);
 
                     self.render_owners_selector(ui, app);
                     ui.add_space(10.0);
 
-                    self.render_states_selector(ui, app);
+                    self.render_states_selector(ui);
 
                     ui.add_space(20.0);
 
@@ -52,12 +54,11 @@ impl Filtering {
                         if ui.button(t!("app.filters.apply")).clicked() {
                             app.job_table.reset_pagination(); // Réinitialiser la pagination
                             app.filters = JobFilters::copy(&self.temp_filters); // Appliquer les filtres
+                            println!("Applying filters: {:?}", app.filters);
                             app.filter_jobs(); // Appliquer les filtres
                             self.open = false; // Fermer la fenêtre popup
                         }
                         if ui.button(t!("app.filters.reset")).clicked() {
-                            self.reset_filters(); // Réinitialiser les filtres temporaires
-
                             app.filters = JobFilters::default();
                             app.job_table.reset_pagination(); // Réinitialiser la pagination
                         }
@@ -67,11 +68,7 @@ impl Filtering {
         self.open = open;
     }
 
-    pub fn reset_filters(&mut self) {
-        self.temp_filters = JobFilters::default();
-    }
-
-    fn render_job_id_range(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
+    fn render_job_id_range(&mut self, ui: &mut egui::Ui) {
         ui.label(RichText::new(t!("Job Id")).strong());
         ui.horizontal(|ui| {
             let mut start_id = self
@@ -127,11 +124,7 @@ impl Filtering {
                         } else {
                             selected_owners.retain(|o| o != owner);
                         }
-                        self.temp_filters.set_owners(if selected_owners.is_empty() {
-                            None
-                        } else {
-                            Some(selected_owners.clone())
-                        });
+                        self.temp_filters.set_owners(selected_owners.clone());
                     }
                     if i % 2 == 1 {
                         ui.end_row();
@@ -140,7 +133,7 @@ impl Filtering {
             });
     }
 
-    fn render_states_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
+    fn render_states_selector(&mut self, ui: &mut egui::Ui) {
         ui.label(RichText::new(t!("app.filters.states")).strong());
 
         let mut selected_states = self.temp_filters.states.clone().unwrap_or_default();
@@ -160,11 +153,7 @@ impl Filtering {
                         } else {
                             selected_states.retain(|s| s != &state);
                         }
-                        self.temp_filters.set_states(if selected_states.is_empty() {
-                            None
-                        } else {
-                            Some(selected_states.clone())
-                        });
+                        self.temp_filters.set_states(selected_states.clone());
                     }
                     if i % 2 == 1 {
                         ui.end_row();

@@ -1,7 +1,7 @@
-use crate::models::application_context::ApplicationContext;
+use crate::models::data_structure::application_context::ApplicationContext;
 use eframe::egui;
 
-use super::view::View;
+use crate::views::view::View;
 
 pub struct GanttChart {
     pub zoom: f32,
