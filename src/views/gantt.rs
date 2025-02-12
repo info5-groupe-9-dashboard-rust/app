@@ -1,8 +1,6 @@
-use std::collections::BTreeMap;
-
 use chrono::DateTime;
 use eframe::egui;
-use egui::{lerp, pos2, remap_clamp, Align2, Color32, DragValue, FontId, Frame, LayerId, PointerButton, Pos2, Rect, Response, Rgba, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget};
+use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, LayerId, PointerButton, Pos2, Rect, Response, Rgba, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget};
 use crate::models::{application_context::ApplicationContext, job::Job};
 
 use super::{components::job_details::JobDetailsWindow, view::View};
@@ -35,7 +33,7 @@ impl View for GanttChart {
                 ui.set_max_height(500.0);
     
                 {
-                    let changed = ui
+                    let _changed = ui
                         .checkbox(&mut self.options.merge_scopes, "Merge children with same ID")
                         .changed();
                     // If we have multiple frames selected this will toggle
@@ -46,13 +44,14 @@ impl View for GanttChart {
                     // }
                 }
     
+                // Grid spacing radio buttons:
                 ui.horizontal(|ui| {
                     ui.label("Grid spacing:");
-                    let grid_spacing_drag = DragValue::new(&mut self.options.grid_spacing_seconds)
-                        .speed(0.1)
-                        .range(90..=360)
-                        .suffix(" s");
-                    grid_spacing_drag.ui(ui);
+                    ui.horizontal(|ui| {
+                        ui.radio_value(&mut self.options.grid_spacing_minutes,10, "10 min");
+                        ui.radio_value(&mut self.options.grid_spacing_minutes, 30, "30 min");
+                        ui.radio_value(&mut self.options.grid_spacing_minutes, 60, "60 min");
+                    });
                 });        
     
                 // The number of jobs can change between frames, so always show this even if there currently is only one job:
@@ -113,7 +112,7 @@ impl View for GanttChart {
                 // // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
     
-                let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
+                let timeline = paint_timeline(&info, used_rect, &self.options);
                 info.painter
                     .set(where_to_put_timeline, Shape::Vec(timeline));
     
@@ -318,8 +317,8 @@ pub struct Options {
 
     pub sorting: Sorting,
 
-    /// Interval of vertical timeline indicators.
-    grid_spacing_seconds: i64,
+    // Grid spacing in minutes
+    grid_spacing_minutes: i64,
 
     /// Set when user clicks a scope.
     /// First part is `now()`, second is range.
@@ -343,7 +342,7 @@ impl Default for Options {
 
             merge_scopes: false, // off, because it really only works well for single-jobed profiling
 
-            grid_spacing_seconds: 180,
+            grid_spacing_minutes: 30, // 30 minutes by default
 
             sorting: Default::default(),
 
@@ -542,11 +541,11 @@ enum PaintResult {
     Hovered,
 }
 
+// Paint the timeline at the top of the canvas
 fn paint_timeline(
     info: &Info,
     canvas: Rect,
-    options: &Options,
-    start_s: i64,
+    options: &Options
 ) -> Vec<egui::Shape> {
     let mut shapes = vec![];
 
@@ -556,16 +555,14 @@ fn paint_timeline(
 
     let alpha_multiplier = 0.3; // make it subtle
 
-    // We show all measurements relative to start_s
-
     let max_lines = canvas.width() / 4.0;
-    let mut grid_spacing_s = options.grid_spacing_seconds; // 3 minutes
-    while options.canvas_width_s / (grid_spacing_s as f32) > max_lines {
-        grid_spacing_s *= 10;
+    let mut grid_spacing_seconds = (options.grid_spacing_minutes/10)*60; // convert grid spacing to seconds
+    while options.canvas_width_s / (grid_spacing_seconds as f32) > max_lines {
+        grid_spacing_seconds *= 10;
     }
 
     // We fade in lines as we zoom in:
-    let num_tiny_lines = options.canvas_width_s / (grid_spacing_s as f32);
+    let num_tiny_lines = options.canvas_width_s / (grid_spacing_seconds as f32);
     let zoom_factor = remap_clamp(num_tiny_lines, (0.1 * max_lines)..=max_lines, 1.0..=0.0);
     let zoom_factor = zoom_factor * zoom_factor;
     let big_alpha = remap_clamp(zoom_factor, 0.0..=1.0, 0.5..=1.0);
@@ -581,8 +578,8 @@ fn paint_timeline(
         }
 
         if canvas.min.x <= line_x {
-            let big_line = grid_s % (grid_spacing_s * 20) == 0;
-            let medium_line = grid_s % (grid_spacing_s * 10) == 0;
+            let big_line = grid_s % (grid_spacing_seconds * 20) == 0; // big line every 20 grid_spacing_seconds
+            let medium_line = grid_s % (grid_spacing_seconds * 10) == 0; // medium line every 10 grid_spacing_seconds
 
             let line_alpha = if big_line {
                 big_alpha
@@ -636,12 +633,13 @@ fn paint_timeline(
             }
         }
 
-        grid_s += grid_spacing_s;
+        grid_s += grid_spacing_seconds;
     }
 
     shapes
 }
 
+// Convert a timestamp to a string
 fn grid_text(ts: i64) -> String {
     if ts == 0 {
         "N/A".to_string()
