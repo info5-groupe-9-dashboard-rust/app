@@ -344,15 +344,73 @@ impl Default for Options {
 
 
 
+// fn ui_canvas(
+//     options: &mut Options,
+//     app : &ApplicationContext,
+//     info: &Info,
+//     (min_s, max_s): (i64, i64),
+// ) -> f32 {
+
+//     if options.canvas_width_s <= 0.0 {
+//         options.canvas_width_s = (max_s - min_s) as f32;
+//         options.zoom_to_relative_s_range = None;
+//     }
+
+//     // We paint the jobs top-down
+//     let mut cursor_y = info.canvas.top();
+//     cursor_y += info.text_height; // Leave room for time labels
+
+//     let jobs = options.sorting.sort(app.all_jobs.clone());
+
+//     for job_info in jobs {
+//         // TODO Check this part
+//         // let job_visualization = options
+//         //     .flamegraph_jobs
+//         //     .entry(job_info.name.clone())
+//         //     .or_default();
+
+//         // if !job_visualization.flamegraph_show {
+//         //     continue;
+//         // }
+
+//         // Visual separator between jobs:
+//         cursor_y += 2.0;
+//         let line_y = cursor_y;
+//         cursor_y += 2.0;
+
+//         let text_pos = pos2(info.canvas.min.x, cursor_y);
+
+//         paint_job_info(
+//             info,
+//             &job_info,
+//             text_pos,
+//             &mut false,
+//         );
+
+//         // draw on top of job info background:
+//         info.painter.line_segment(
+//             [
+//                 pos2(info.canvas.min.x, line_y),
+//                 pos2(info.canvas.max.x, line_y),
+//             ],
+//             Stroke::new(1.0, Rgba::from_white_alpha(0.5)),
+//         );
+
+//         cursor_y += info.text_height; // Extra spacing between jobs
+//     }
+
+//     cursor_y
+// }
+
 fn ui_canvas(
     options: &mut Options,
     app : &ApplicationContext,
     info: &Info,
-    (min_s, max_s): (i64, i64),
+    (min_ns, max_ns): (i64, i64),
 ) -> f32 {
 
     if options.canvas_width_s <= 0.0 {
-        options.canvas_width_s = (max_s - min_s) as f32;
+        options.canvas_width_s = (max_ns - min_ns) as f32;
         options.zoom_to_relative_s_range = None;
     }
 
@@ -360,18 +418,10 @@ fn ui_canvas(
     let mut cursor_y = info.canvas.top();
     cursor_y += info.text_height; // Leave room for time labels
 
-    let jobs = options.sorting.sort(app.all_jobs.clone());
+    let jobs = app.all_jobs.clone();
+    let jobs = options.sorting.sort(jobs);
 
     for job_info in jobs {
-        // TODO Check this part
-        // let job_visualization = options
-        //     .flamegraph_jobs
-        //     .entry(job_info.name.clone())
-        //     .or_default();
-
-        // if !job_visualization.flamegraph_show {
-        //     continue;
-        // }
 
         // Visual separator between jobs:
         cursor_y += 2.0;
@@ -396,12 +446,83 @@ fn ui_canvas(
             Stroke::new(1.0, Rgba::from_white_alpha(0.5)),
         );
 
+        cursor_y += info.text_height;
+
+        // Paint the job itself with the given depth level
+        paint_job(info, options, &job_info, cursor_y);
+        
+        let max_depth = 1; // Since we're only painting one level for each job
+        cursor_y += max_depth as f32 * (options.rect_height + options.spacing);
+        
         cursor_y += info.text_height; // Extra spacing between jobs
     }
 
     cursor_y
 }
 
+fn paint_job(
+    info: &Info,
+    options: &mut Options,
+    job: &Job,
+    top_y: f32,
+) -> PaintResult {
+    let start_x = info.point_from_s(options, job.scheduled_start);
+    let stop_time = if (job.scheduled_start + job.walltime) > info.stop_s {
+        info.stop_s
+    } else {
+        job.scheduled_start + job.walltime
+    };
+    let end_x = info.point_from_s(options, stop_time);
+    let width = end_x - start_x;
+
+    if width < options.cull_width {
+        return PaintResult::Culled;
+    }
+
+    let height = options.rect_height;
+    let rect = Rect::from_min_size(
+        pos2(start_x, top_y),
+        egui::vec2(width.max(options.min_width), height),
+    );
+
+    let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
+        rect.contains(mouse_pos)
+    } else {
+        false
+    };
+
+    let fill_color = if is_hovered {
+        Color32::from_rgb(45, 114, 210)
+    } else {
+        Color32::from_rgb(30, 87, 166)
+    };
+
+    info.painter.rect_filled(rect, options.rounding, fill_color);
+
+    if width > 20.0 {
+        let text = format!("{} ({})", job.owner, job.walltime);
+        info.painter.text(
+            rect.center(),
+            Align2::CENTER_CENTER,
+            text,
+            info.font_id.clone(),
+            if is_hovered {Color32::WHITE} else {Color32::from_white_alpha(240)}
+        );
+    }
+
+    if is_hovered {
+        PaintResult::Hovered
+    } else {
+        PaintResult::Painted
+    }
+}
+
+#[derive(PartialEq)]
+enum PaintResult {
+    Culled,
+    Painted,
+    Hovered,
+}
 
 fn paint_timeline(
     info: &Info,
@@ -436,7 +557,7 @@ fn paint_timeline(
     let mut grid_s = 0;
 
     loop {
-        let line_x = info.point_from_s(options, start_s + grid_s);
+        let line_x = info.point_from_s(options, grid_s);
         if line_x > canvas.max.x {
             break;
         }
