@@ -444,7 +444,7 @@ fn ui_canvas(
     let mut cursor_y = info.canvas.top();
     cursor_y += info.text_height; // Leave room for time labels
 
-    let jobs = app.all_jobs.clone();
+    let jobs = app.filtered_jobs.clone();
     let jobs = options.sorting.sort(jobs);
 
     for job_info in jobs {
