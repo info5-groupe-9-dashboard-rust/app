@@ -1,4 +1,4 @@
-use crate::models::{application_context::ApplicationContext, filters::JobFilters, job::State};
+use crate::models::data_structure::{application_context::ApplicationContext, filters::JobFilters, job::State};
 use eframe::egui::{self, Grid, RichText};
 use egui::TextEdit;
 use strum::IntoEnumIterator;
@@ -38,13 +38,13 @@ impl Filtering {
                     ui.separator(); // Ligne de séparation
 
                     // Appeler les fonctions de rendu des filtres ici
-                    self.render_job_id_range(ui, app);
+                    self.render_job_id_range(ui);
                     ui.add_space(10.0);
 
                     self.render_owners_selector(ui, app);
                     ui.add_space(10.0);
 
-                    self.render_states_selector(ui, app);
+                    self.render_states_selector(ui);
 
                     ui.add_space(20.0);
 
@@ -66,7 +66,7 @@ impl Filtering {
         self.open = open;
     }
 
-    fn render_job_id_range(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
+    fn render_job_id_range(&mut self, ui: &mut egui::Ui) {
         ui.label(RichText::new(t!("Job Id")).strong());
         ui.horizontal(|ui| {
             let mut start_id = self
@@ -131,7 +131,7 @@ impl Filtering {
             });
     }
 
-    fn render_states_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
+    fn render_states_selector(&mut self, ui: &mut egui::Ui) {
         ui.label(RichText::new(t!("app.filters.states")).strong());
 
         let mut selected_states = self.temp_filters.states.clone().unwrap_or_default();

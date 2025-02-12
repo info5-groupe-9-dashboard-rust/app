@@ -4,11 +4,11 @@ app:
     file: 'File'
     options: 'Options'
     quit: 'Quit'
+    logout: 'Logout'
     view: 'View'
     dashboard: 'Dashboard'
     gantt: 'Gantt Chart'
     filters: 'Filter'
-
     refresh_rate:
       button: 'Refresh Rate'
       refresh_30: '30 seconds'

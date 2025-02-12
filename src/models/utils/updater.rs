@@ -1,15 +1,15 @@
-use super::application_context::ApplicationContext;
 use chrono::Utc;
 use std::sync::Arc;
 use chrono::DateTime;
 
 use std::time::Duration;
 
+use crate::models::data_structure::application_context::ApplicationContext;
 #[cfg(target_arch = "wasm32")]
 use crate::models::job::mock_jobs;
 
 #[cfg(not(target_arch = "wasm32"))]
-use crate::models::parser::get_current_jobs_for_period;
+use crate::models::utils::parser::get_current_jobs_for_period;
 #[cfg(not(target_arch = "wasm32"))]
 use std::thread;
 
