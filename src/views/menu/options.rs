@@ -1,23 +1,26 @@
-use eframe::egui::{self, RichText};
+use eframe::egui::{self};
 use std::time::{Duration, Instant};
-use crate::models::{
-    application_context::ApplicationContext,
-    application_options::{ApplicationOptions, LanguageOption, ThemeOption},
-};
-use super::view::View;
+use crate::models::data_structure::application_options::{ApplicationOptions, LanguageOption, ThemeOption};
+
 use eframe::egui::Grid;
 
 pub struct Options {
+    open: bool,
     application_options: ApplicationOptions,
     save_status: Option<(String, Instant)>,
 }
 
 impl Options {
 
+    pub fn open(&mut self) {
+        self.open = true;
+    }
+
     pub fn new(application_options: ApplicationOptions) -> Self {
         Options {
             application_options,
             save_status: None,
+            open: false,
         }
     }
 
@@ -42,6 +45,7 @@ impl Options {
     
         Options {
             application_options,
+            open: false,
             save_status: None, // No status message on initial load
         }
     }
@@ -91,39 +95,45 @@ impl Options {
     }
 }
 
-impl View for Options {
-    fn render(&mut self, ui: &mut egui::Ui, _app: &mut ApplicationContext) {
-        ui.heading(RichText::new(t!("app.options.title")).strong());
-        ui.add_space(8.0);
-
-        Grid::new("options_grid")
-            .num_columns(2)
-            .spacing([10.0, 8.0])
-            .striped(true)
-            .show(ui, |ui| {
-                self.render_theme_selector(ui);
-                self.render_language_selector(ui);
-                self.render_font_size_selector(ui);
-            });
-
-        ui.add_space(10.0);
-
-        if ui.button(t!("app.options.save.title")).clicked() {
-            self.save_to_file("options.json");
-        }
-
-        // Show the save status message for a few seconds
-        if let Some((message, timestamp)) = &self.save_status {
-            if timestamp.elapsed() < Duration::new(3, 0) {
-                ui.label(message);
-            } else {
-                self.save_status = None; // Clear the message after timeout
-            }
-        }
-    }
-}
-
 impl Options {
+    pub fn ui(&mut self, ui: &mut egui::Ui) {
+            let mut open = self.open; // Copier la valeur de self.open dans une variable locale
+            
+            egui::Window::new(t!("app.options.title"))
+            .collapsible(true)
+            .movable(true)
+            .open(&mut open)
+            .default_size([400.0, 500.0])
+            .show(ui.ctx(), |ui| {
+    
+                Grid::new("options_grid")
+                    .num_columns(2)
+                    .spacing([10.0, 8.0])
+                    .striped(true)
+                    .show(ui, |ui| {
+                        self.render_theme_selector(ui);
+                        self.render_language_selector(ui);
+                        self.render_font_size_selector(ui);
+                    });
+        
+                ui.add_space(10.0);
+        
+                if ui.button(t!("app.options.save.title")).clicked() {
+                    self.save_to_file("options.json");
+                }
+        
+                // Show the save status message for a few seconds
+                if let Some((message, timestamp)) = &self.save_status {
+                    if timestamp.elapsed() < Duration::new(3, 0) {
+                        ui.label(message);
+                    } else {
+                        self.save_status = None; // Clear the message after timeout
+                    }
+                }
+            });
+            self.open = open;
+    }
+
     fn render_theme_selector(&mut self, ui: &mut egui::Ui) {
         ui.label(t!("app.options.theme.title"));
         egui::ComboBox::from_label(t!("app.options.theme.choose"))
@@ -171,4 +181,5 @@ impl Options {
             });
         ui.end_row();
     }
+
 }

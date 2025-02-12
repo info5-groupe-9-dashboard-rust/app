@@ -1,37 +1,25 @@
-use crate::models::application_context::ApplicationContext;
-use crate::models::application_options::ApplicationOptions;
-use crate::views::dashboard::Dashboard;
-use crate::views::filtering::Filtering;
-use crate::views::gantt::GanttChart;
-use crate::views::menu::Menu;
-use crate::views::options::Options;
+use crate::{models::data_structure::application_context::ApplicationContext, views::main_page::anthentification::Authentification};
+use crate::views::main_page::dashboard::Dashboard;
+use crate::views::main_page::gantt::GanttChart;
+use crate::views::menu::menu::Menu;
 use crate::views::view::View;
 use eframe::egui::{self, CentralPanel, TopBottomPanel};
 
 pub struct App {
     pub dashboard_view: Dashboard,
-    pub options_view: Options,
     pub gantt_view: GanttChart,
+    pub authentification_view: Authentification,
     pub menu: Menu,
-    pub application_context: ApplicationContext,
-    pub filtering: Filtering,
+    pub application_context: ApplicationContext
 }
 
 impl App {
     pub fn new() -> Self {
-        let application_options = ApplicationOptions::default();
-        let options_view = if std::path::Path::new("options.json").exists() {
-            Options::load_from_file("options.json")
-        } else {
-            Options::new(application_options.clone())
-        };
 
         let app = App {
             dashboard_view: Dashboard::default(),
             gantt_view: GanttChart::default(),
-            options_view,
-            filtering: Filtering::default(),
-
+            authentification_view: Authentification::default(),
             menu: Menu::default(),
             application_context: ApplicationContext::default(),
         };
@@ -42,8 +30,6 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Apply application options
-        self.options_view.apply_options(ctx);
 
         TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             self.menu.render(ui, &mut self.application_context);
@@ -65,14 +51,13 @@ impl eframe::App for App {
 
             match self.application_context.view_type {
                 crate::views::view::ViewType::Dashboard => {
-                    self.dashboard_view
-                        .render(ui, &mut self.application_context);
+                    self.dashboard_view.render(ui, &mut self.application_context);
                 }
                 crate::views::view::ViewType::Gantt => {
                     self.gantt_view.render(ui, &mut self.application_context);
-                }
-                crate::views::view::ViewType::Options => {
-                    self.options_view.render(ui, &mut self.application_context);
+                } 
+                crate::views::view::ViewType::Authentification => {
+                    self.authentification_view.render(ui, &mut self.application_context);
                 }
             }
         });

@@ -1,6 +1,6 @@
 use eframe::egui;
 use chrono::{NaiveDate, NaiveTime, NaiveDateTime, Utc, TimeZone, Datelike, Duration};
-use crate::models::application_context::ApplicationContext;
+use crate::models::data_structure::application_context::ApplicationContext;
 
 pub struct TimeSelector {
     // État du sélecteur de période

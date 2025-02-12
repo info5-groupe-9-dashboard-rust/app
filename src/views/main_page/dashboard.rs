@@ -1,6 +1,5 @@
-use super::view::View;
-use crate::models::application_context::ApplicationContext;
-use crate::models::job::State;
+use crate::{models::data_structure::application_context::ApplicationContext, views::view::View};
+use crate::models::data_structure::job::State;
 use crate::views::components::job_table::JobTable;
 use crate::views::components::metric_box::MetricBox;
 use eframe::egui::{self, RichText};
