@@ -48,10 +48,10 @@ impl View for GanttChart {
     
                 ui.horizontal(|ui| {
                     ui.label("Grid spacing:");
-                    let grid_spacing_drag = DragValue::new(&mut self.options.grid_spacing_micros)
+                    let grid_spacing_drag = DragValue::new(&mut self.options.grid_spacing_seconds)
                         .speed(0.1)
-                        .range(1.0..=100.0)
-                        .suffix(" µs");
+                        .range(90..=360)
+                        .suffix(" s");
                     grid_spacing_drag.ui(ui);
                 });        
     
@@ -319,7 +319,7 @@ pub struct Options {
     pub sorting: Sorting,
 
     /// Interval of vertical timeline indicators.
-    grid_spacing_micros: f64,
+    grid_spacing_seconds: i64,
 
     /// Set when user clicks a scope.
     /// First part is `now()`, second is range.
@@ -343,7 +343,7 @@ impl Default for Options {
 
             merge_scopes: false, // off, because it really only works well for single-jobed profiling
 
-            grid_spacing_micros: 1.,
+            grid_spacing_seconds: 180,
 
             sorting: Default::default(),
 
@@ -504,7 +504,7 @@ fn paint_job(
     };
 
     // Ajouter la détection du clic
-    if is_hovered && info.response.double_clicked() {
+    if is_hovered && info.response.secondary_clicked() {
         let window = JobDetailsWindow::new(job.clone());
         details_window.push(window);
     }
@@ -559,7 +559,7 @@ fn paint_timeline(
     // We show all measurements relative to start_s
 
     let max_lines = canvas.width() / 4.0;
-    let mut grid_spacing_s = (options.grid_spacing_micros * 1_000.) as i64;
+    let mut grid_spacing_s = options.grid_spacing_seconds; // 3 minutes
     while options.canvas_width_s / (grid_spacing_s as f32) > max_lines {
         grid_spacing_s *= 10;
     }
@@ -581,7 +581,7 @@ fn paint_timeline(
         }
 
         if canvas.min.x <= line_x {
-            let big_line = grid_s % (grid_spacing_s * 100) == 0;
+            let big_line = grid_s % (grid_spacing_s * 20) == 0;
             let medium_line = grid_s % (grid_spacing_s * 10) == 0;
 
             let line_alpha = if big_line {
