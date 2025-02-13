@@ -1,9 +1,4 @@
 // src/models/mod.rs
 
-pub mod application_context;
-pub mod application_options;
-pub mod date_converter;
-pub mod filters;
-pub mod job;
-pub mod parser;
-pub mod updater;
+pub mod data_structure;
+pub mod utils;

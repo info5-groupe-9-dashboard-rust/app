@@ -1,9 +1,9 @@
-use crate::models::{application_context::ApplicationContext, job::Job};
+use crate::{models::data_structure::{application_context::ApplicationContext, job::Job}, views::components::job_details::JobDetailsWindow};
 use chrono::DateTime;
 use eframe::egui;
 use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, LayerId, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget};
 
-use super::{components::job_details::JobDetailsWindow, view::View};
+use crate::views::view::View;
 
 pub struct GanttChart {
     options: Options,

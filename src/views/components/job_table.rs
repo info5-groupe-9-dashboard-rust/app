@@ -1,5 +1,5 @@
-use crate::models::date_converter::format_timestamp;
-use crate::models::job::Job;
+use crate::models::data_structure::job::Job;
+use crate::models::utils::date_converter::format_timestamp;
 use eframe::egui;
 use egui::{RichText, Sense, Ui};
 use egui_extras::{Column, TableBuilder};
@@ -54,6 +54,14 @@ impl JobTable {
             self.start_idx = self.page * self.jobs_per_page;
             self.end_idx = (self.start_idx + self.jobs_per_page).min(jobs.len());
             let total_pages = (jobs.len() as f32 / self.jobs_per_page as f32).ceil() as usize;
+
+            // println!(
+            //     "start_idx: {}, end_idx: {}, total_pages: {}, jobs len {}",
+            //     self.start_idx,
+            //     self.end_idx,
+            //     total_pages,
+            //     jobs.len()
+            // );
 
             if self.start_idx >= jobs.len() {
                 self.reset_pagination();

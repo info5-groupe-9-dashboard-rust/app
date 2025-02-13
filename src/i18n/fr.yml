@@ -4,6 +4,7 @@ app:
     file: 'Fichier'
     options: 'Options'
     quit: 'Quitter'
+    logout: 'Se déconnecter'
     view: 'Vue'
     dashboard: 'Tableau de bord'
     gantt: 'Diagramme de Gantt'
