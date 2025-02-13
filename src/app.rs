@@ -14,7 +14,7 @@ pub struct App {
     pub gantt_view: GanttChart,
     pub menu: Menu,
     pub application_context: ApplicationContext,
-    pub filtering_view: Filtering,
+    pub filtering: Filtering,
 }
 
 impl App {
@@ -30,7 +30,7 @@ impl App {
             dashboard_view: Dashboard::default(),
             gantt_view: GanttChart::default(),
             options_view,
-            filtering_view: Filtering::default(),
+            filtering: Filtering::default(),
 
             menu: Menu::default(),
             application_context: ApplicationContext::default(),
@@ -73,10 +73,6 @@ impl eframe::App for App {
                 }
                 crate::views::view::ViewType::Options => {
                     self.options_view.render(ui, &mut self.application_context);
-                }
-                crate::views::view::ViewType::Filtering => {
-                    self.filtering_view
-                        .render(ui, &mut self.application_context);
                 }
             }
         });

@@ -1,5 +1,6 @@
 use super::{
     components::time_selector::TimeSelector,
+    filtering::{self, Filtering},
     view::{View, ViewType},
 };
 use crate::models::application_context::ApplicationContext;
@@ -7,12 +8,14 @@ use eframe::egui;
 
 pub struct Menu {
     time_selector: TimeSelector,
+    filtering_pane: Filtering,
 }
 
 impl Default for Menu {
     fn default() -> Self {
         Menu {
             time_selector: TimeSelector::default(),
+            filtering_pane: Filtering::default(),
         }
     }
 }
@@ -46,8 +49,9 @@ impl View for Menu {
 
             // Menu Filters
             if ui.button(t!("app.menu.filters")).clicked() {
-                app.view_type = ViewType::Filtering;
+                self.filtering_pane.open();
             }
+            self.filtering_pane.ui(ui, app);
 
             // Menu Refresh Rate
             ui.menu_button(t!("app.menu.refresh_rate.button"), |ui| {

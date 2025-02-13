@@ -1,7 +1,7 @@
+use crate::models::{application_context::ApplicationContext, job::Job};
 use chrono::DateTime;
 use eframe::egui;
 use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, LayerId, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget};
-use crate::models::{application_context::ApplicationContext, job::Job};
 
 use super::{components::job_details::JobDetailsWindow, view::View};
 
@@ -24,40 +24,43 @@ impl View for GanttChart {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.heading(RichText::new(t!("app.gantt.title")).strong());
 
-        let min_start = app.all_jobs.iter().map(|job| job.scheduled_start).min().unwrap_or(0);
-        let max_end = app.all_jobs.iter().map(|job| job.scheduled_start + job.walltime).max().unwrap_or(0);
+        let min_start = app
+            .all_jobs
+            .iter()
+            .map(|job| job.scheduled_start)
+            .min()
+            .unwrap_or(0);
+        let max_end = app
+            .all_jobs
+            .iter()
+            .map(|job| job.scheduled_start + job.walltime)
+            .max()
+            .unwrap_or(0);
         let reset_view = false;
 
-        ui.horizontal(|ui| {    
+        ui.horizontal(|ui| {
             ui.menu_button("🔧 Settings", |ui| {
                 ui.set_max_height(500.0);
-    
+
                 {
                     let _changed = ui
                         .checkbox(&mut self.options.aggregate_owners, "Aggregate by job owners")
                         .changed();
-                    // If we have multiple frames selected this will toggle
-                    // if we view all the frames, or an average of them,
-                    // and that difference is pretty massive, so help the user:
-                    // if changed && num_frames > 1 {
-                    //     reset_view = true;
-                    // }
                 }
-    
-                // Grid spacing radio buttons:
+
                 ui.horizontal(|ui| {
                     ui.label("Grid spacing:");
-                    ui.horizontal(|ui| {
-                        ui.radio_value(&mut self.options.grid_spacing_minutes,10, "10 min");
+                    ui.horizontal(|ui|{
+                        ui.radio_value(&mut self.options.grid_spacing_minutes, 10, "10 min");
                         ui.radio_value(&mut self.options.grid_spacing_minutes, 30, "30 min");
                         ui.radio_value(&mut self.options.grid_spacing_minutes, 60, "60 min");
                     });
-                });        
-    
+                });
+
                 // The number of jobs can change between frames, so always show this even if there currently is only one job:
                 self.options.sorting.ui(ui);
             });
-    
+
             ui.menu_button("❓", |ui| {
                 ui.label(
                     "Drag to pan.\n\
@@ -71,16 +74,16 @@ impl View for GanttChart {
 
         Frame::dark_canvas(ui.style()).show(ui, |ui| {
             ui.visuals_mut().clip_rect_margin = 0.0;
-    
+
             let available_height = ui.max_rect().bottom() - ui.min_rect().bottom();
             ScrollArea::vertical().show(ui, |ui| {
                 let mut canvas = ui.available_rect_before_wrap();
                 canvas.max.y = f32::INFINITY;
                 let response = ui.interact(canvas, ui.id().with("canvas"), Sense::click_and_drag());
-    
+
                 let min_s = min_start;
                 let max_s = max_end;
-    
+
                 let info = Info {
                     ctx: ui.ctx().clone(),
                     canvas,
@@ -92,30 +95,36 @@ impl View for GanttChart {
                     layer_id: ui.layer_id(),
                     font_id: TextStyle::Body.resolve(ui.style()),
                 };
-    
+
                 if reset_view {
                     self.options.zoom_to_relative_s_range = Some((
                         info.ctx.input(|i| i.time),
                         (0., (info.stop_s - info.start_s) as f64),
                     ));
                 }
-    
+
                 interact_with_canvas(&mut self.options, &info.response, &info);
-    
+
                 let where_to_put_timeline = info.painter.add(Shape::Noop);
-    
-                let max_y = ui_canvas(&mut self.options,app, &info, (min_s, max_s), &mut self.details_window);
-    
+
+                let max_y = ui_canvas(
+                    &mut self.options,
+                    app,
+                    &info,
+                    (min_s, max_s),
+                    &mut self.details_window,
+                );
+
                 let mut used_rect = canvas;
                 used_rect.max.y = max_y;
-    
+
                 // // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
-    
-                let timeline = paint_timeline(&info, used_rect, &self.options);
+
+                let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
                 info.painter
                     .set(where_to_put_timeline, Shape::Vec(timeline));
-    
+
                 ui.allocate_rect(used_rect, Sense::hover());
             });
         });
@@ -127,7 +136,6 @@ impl View for GanttChart {
         for window in self.details_window.iter_mut() {
             window.ui(ui);
         }
-    
     }
 }
 
@@ -195,8 +203,6 @@ fn interact_with_canvas(options: &mut Options, response: &Response, info: &Info)
     }
 }
 
-
-
 /// Context for painting a frame.
 struct Info {
     ctx: egui::Context,
@@ -230,7 +236,6 @@ pub enum SortBy {
     Time,
     Owner,
 }
-
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
@@ -366,7 +371,7 @@ fn ui_canvas(
     let mut cursor_y = info.canvas.top();
     cursor_y += info.text_height;
 
-    let jobs = options.sorting.sort(app.all_jobs.clone());
+    let jobs = options.sorting.sort(app.filtered_jobs.clone());
 
     if options.aggregate_owners {
         cursor_y = paint_aggregated_jobs(info, options, jobs, cursor_y, details_window);
@@ -513,10 +518,26 @@ fn paint_job(
         details_window.push(window);
     }
 
+    // Ajouter la détection du clic principal pour ajuster le zoom
+    if is_hovered && info.response.clicked() {
+        // Calculer le niveau de zoom nécessaire
+        let job_duration_s = job.walltime as f64;
+        let job_start_s = job.scheduled_start as f64;
+        let job_end_s = job_start_s + job_duration_s;
+        options.zoom_to_relative_s_range = Some((
+            info.ctx.input(|i| i.time),
+            (
+                job_start_s - info.start_s as f64,
+                job_end_s - info.start_s as f64,
+            ),
+        ));
+    }
+
+    let (hovered_color, normal_color) = job.state.get_color();
     let fill_color = if is_hovered {
-        Color32::from_rgb(45, 114, 210)
+        hovered_color
     } else {
-        Color32::from_rgb(30, 87, 166)
+        normal_color
     };
 
     info.painter.rect_filled(rect, options.rounding, fill_color);
@@ -528,7 +549,11 @@ fn paint_job(
             Align2::CENTER_CENTER,
             text,
             info.font_id.clone(),
-            if is_hovered {Color32::WHITE} else {Color32::from_white_alpha(240)}
+            if is_hovered {
+                Color32::WHITE
+            } else {
+                Color32::from_white_alpha(240)
+            },
         );
     }
 
@@ -546,12 +571,7 @@ enum PaintResult {
     Hovered,
 }
 
-// Paint the timeline at the top of the canvas
-fn paint_timeline(
-    info: &Info,
-    canvas: Rect,
-    options: &Options
-) -> Vec<egui::Shape> {
+fn paint_timeline(info: &Info, canvas: Rect, options: &Options, start_s: i64) -> Vec<egui::Shape> {
     let mut shapes = vec![];
 
     if options.canvas_width_s <= 0.0 {
@@ -560,14 +580,16 @@ fn paint_timeline(
 
     let alpha_multiplier = 0.3; // make it subtle
 
+    // We show all measurements relative to start_s
+
     let max_lines = canvas.width() / 4.0;
-    let mut grid_spacing_seconds = (options.grid_spacing_minutes/10)*60; // convert grid spacing to seconds
-    while options.canvas_width_s / (grid_spacing_seconds as f32) > max_lines {
-        grid_spacing_seconds *= 10;
+    let mut grid_spacing_minutes = (options.grid_spacing_minutes / 10) * 60; // convert grid spacing to seconds
+    while options.canvas_width_s / (grid_spacing_minutes as f32) > max_lines {
+        grid_spacing_minutes *= 10;
     }
 
     // We fade in lines as we zoom in:
-    let num_tiny_lines = options.canvas_width_s / (grid_spacing_seconds as f32);
+    let num_tiny_lines = options.canvas_width_s / (grid_spacing_minutes as f32);
     let zoom_factor = remap_clamp(num_tiny_lines, (0.1 * max_lines)..=max_lines, 1.0..=0.0);
     let zoom_factor = zoom_factor * zoom_factor;
     let big_alpha = remap_clamp(zoom_factor, 0.0..=1.0, 0.5..=1.0);
@@ -583,8 +605,8 @@ fn paint_timeline(
         }
 
         if canvas.min.x <= line_x {
-            let big_line = grid_s % (grid_spacing_seconds * 20) == 0; // big line every 20 grid_spacing_seconds
-            let medium_line = grid_s % (grid_spacing_seconds * 10) == 0; // medium line every 10 grid_spacing_seconds
+            let big_line = grid_s % (grid_spacing_minutes * 20) == 0; // big line every 20 grid_spacing_minutes
+            let medium_line = grid_s % (grid_spacing_minutes * 10) == 0; // medium line every 10 grid_spacing_minutes
 
             let line_alpha = if big_line {
                 big_alpha
@@ -638,7 +660,7 @@ fn paint_timeline(
             }
         }
 
-        grid_s += grid_spacing_seconds;
+        grid_s += grid_spacing_minutes;
     }
 
     shapes
