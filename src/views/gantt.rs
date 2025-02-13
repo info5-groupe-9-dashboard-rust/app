@@ -86,7 +86,7 @@ impl View for GanttChart {
                     canvas,
                     response,
                     painter: ui.painter_at(canvas),
-                    text_height: 15.0, // TODO
+                    text_height: 15.0,
                     start_s: min_s,
                     stop_s: max_s,
                     layer_id: ui.layer_id(),
@@ -351,66 +351,6 @@ impl Default for Options {
     }
 }
 
-
-
-// fn ui_canvas(
-//     options: &mut Options,
-//     app : &ApplicationContext,
-//     info: &Info,
-//     (min_s, max_s): (i64, i64),
-// ) -> f32 {
-
-//     if options.canvas_width_s <= 0.0 {
-//         options.canvas_width_s = (max_s - min_s) as f32;
-//         options.zoom_to_relative_s_range = None;
-//     }
-
-//     // We paint the jobs top-down
-//     let mut cursor_y = info.canvas.top();
-//     cursor_y += info.text_height; // Leave room for time labels
-
-//     let jobs = options.sorting.sort(app.all_jobs.clone());
-
-//     for job_info in jobs {
-//         // TODO Check this part
-//         // let job_visualization = options
-//         //     .flamegraph_jobs
-//         //     .entry(job_info.name.clone())
-//         //     .or_default();
-
-//         // if !job_visualization.flamegraph_show {
-//         //     continue;
-//         // }
-
-//         // Visual separator between jobs:
-//         cursor_y += 2.0;
-//         let line_y = cursor_y;
-//         cursor_y += 2.0;
-
-//         let text_pos = pos2(info.canvas.min.x, cursor_y);
-
-//         paint_job_info(
-//             info,
-//             &job_info,
-//             text_pos,
-//             &mut false,
-//         );
-
-//         // draw on top of job info background:
-//         info.painter.line_segment(
-//             [
-//                 pos2(info.canvas.min.x, line_y),
-//                 pos2(info.canvas.max.x, line_y),
-//             ],
-//             Stroke::new(1.0, Rgba::from_white_alpha(0.5)),
-//         );
-
-//         cursor_y += info.text_height; // Extra spacing between jobs
-//     }
-
-//     cursor_y
-// }
-
 fn ui_canvas(
     options: &mut Options,
     app: &ApplicationContext,
@@ -424,7 +364,7 @@ fn ui_canvas(
     }
 
     let mut cursor_y = info.canvas.top();
-    cursor_y += info.text_height; // Leave room for time labels
+    cursor_y += info.text_height;
 
     let jobs = options.sorting.sort(app.all_jobs.clone());
 
@@ -496,10 +436,10 @@ fn paint_job_group(
 
         cursor_y += info.text_height;
         paint_job(info, options, &job, cursor_y, details_window);
+        cursor_y += 5.0;
     }
-    let max_depth = 1; // Since we're only painting one level for each job
-    cursor_y += max_depth as f32 * (options.rect_height + options.spacing);
-    cursor_y += info.text_height; // Extra spacing between jobs
+    cursor_y += options.rect_height + options.spacing;
+    cursor_y += info.text_height;
 
     cursor_y
 }
@@ -529,9 +469,8 @@ fn paint_single_job(
     cursor_y += info.text_height;
     paint_job(info, options, &job, cursor_y, details_window);
 
-    let max_depth = 1; // Since we're only painting one level for each job
-    cursor_y += max_depth as f32 * (options.rect_height + options.spacing);
-    cursor_y += info.text_height; // Extra spacing between jobs
+    cursor_y += options.rect_height + options.spacing;
+    cursor_y += info.text_height;
 
     cursor_y
 }
