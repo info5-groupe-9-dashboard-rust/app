@@ -120,6 +120,8 @@ impl State {
     }
 }
 
+
+
 #[derive(Clone)]
 
 pub struct Job {
@@ -136,6 +138,7 @@ pub struct Job {
     pub start_time: i64,
     pub stop_time: i64,
     pub exit_code: Option<i32>,
+    pub gantt_color: egui::Color32,
 }
 
 impl Job {
@@ -153,6 +156,28 @@ impl Job {
         println!("Start Time: {}", self.start_time);
         println!("Stop Time: {}", self.stop_time);
         println!("Exit Code: {:?}", self.exit_code);
+        println!("Gant Color: {:?}", self.gantt_color);
+    }
+
+    // Based on gantt color return a tuple of two colors (the second one is darker)
+    pub fn get_gantt_color(&self) -> (egui::Color32, egui::Color32) {
+        let r = self.gantt_color.r() as f32;
+        let g = self.gantt_color.g() as f32;
+        let b = self.gantt_color.b() as f32;
+
+        let darker = |c: f32| -> u8 {
+            let value = (c * 0.8) as u8;
+            if value > 0 {
+                value
+            } else {
+                1
+            }
+        };
+
+        (
+            egui::Color32::from_rgb(r as u8, g as u8, b as u8),
+            egui::Color32::from_rgb(darker(r), darker(g), darker(b)),
+        )
     }
 }
 
