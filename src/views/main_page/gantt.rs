@@ -57,6 +57,14 @@ impl View for GanttChart {
                     });
                 });
 
+                ui.horizontal(|ui| {
+                    ui.label("Job color:");
+                    ui.horizontal(|ui|{
+                        ui.radio_value(&mut self.options.job_color, JobColor::Random, "Random");
+                        ui.radio_value(&mut self.options.job_color, JobColor::State, "State");
+                    });
+                });
+
                 // The number of jobs can change between frames, so always show this even if there currently is only one job:
                 self.options.sorting.ui(ui);
             });
@@ -238,6 +246,12 @@ pub enum SortBy {
     Owner,
 }
 
+#[derive(PartialEq)]
+pub enum JobColor {
+    Random,
+    State,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct Sorting {
@@ -326,6 +340,9 @@ pub struct Options {
     // Grid spacing in minutes
     grid_spacing_minutes: i64,
 
+    // Job color
+    job_color: JobColor,
+
     /// Set when user clicks a scope.
     /// First part is `now()`, second is range.
     #[cfg_attr(feature = "serde", serde(skip))]
@@ -351,6 +368,8 @@ impl Default for Options {
             grid_spacing_minutes: 30, // 30 minutes by default
 
             sorting: Default::default(),
+
+            job_color: JobColor::Random,
 
             zoom_to_relative_s_range: None,
         }
@@ -534,7 +553,8 @@ fn paint_job(
         ));
     }
 
-    let (hovered_color, normal_color) = job.state.get_color();
+    
+    let (hovered_color, normal_color) = if options.job_color == JobColor::Random {job.get_gantt_color() } else { job.state.get_color()};
     let fill_color = if is_hovered {
         hovered_color
     } else {
