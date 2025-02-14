@@ -36,7 +36,7 @@ impl eframe::App for App {
         });
 
         // Check for updates
-        self.application_context.check_jobs_update();
+        self.application_context.check_data_update();
 
         CentralPanel::default().show(ctx, |ui| {
             // Display a loading indicator if necessary
