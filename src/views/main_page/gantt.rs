@@ -343,6 +343,8 @@ pub struct Options {
     // Job color
     job_color: JobColor,
 
+    current_hovered_job: Option<Job>,
+
     /// Set when user clicks a scope.
     /// First part is `now()`, second is range.
     #[cfg_attr(feature = "serde", serde(skip))]
@@ -372,6 +374,8 @@ impl Default for Options {
             job_color: JobColor::Random,
 
             zoom_to_relative_s_range: None,
+
+            current_hovered_job: None,
         }
     }
 }
@@ -399,7 +403,35 @@ fn ui_canvas(
         cursor_y = paint_individual_jobs(info, options, jobs, cursor_y, details_window);
     }
 
+    // Paint tooltip for hovered job if there is one
+    paint_tooltip(info, options);
+
     cursor_y
+}
+
+fn paint_tooltip(info: &Info, options: &mut Options) {
+    if let Some(job) = &options.current_hovered_job {
+        if let Some(_pointer_pos) = info.response.hover_pos() {
+            let text = format!(
+                "Job ID: {}\nOwner: {:?}\nState: {}\nStart: {}\nWalltime: {} seconds",
+                job.id,
+                job.owner,
+                job.state.get_label(),
+                grid_text(job.scheduled_start),
+                job.walltime
+            );
+            
+            egui::show_tooltip(
+                &info.ctx,
+                info.response.layer_id,
+                egui::Id::new("job_tooltip"),
+                |ui| {
+                    ui.label(text);
+                },
+            );
+        }
+        options.current_hovered_job = None; // Reset for next frame
+    }
 }
 
 fn paint_aggregated_jobs(
@@ -531,6 +563,11 @@ fn paint_job(
     } else {
         false
     };
+
+    // Draw tooltip
+    if is_hovered {
+        options.current_hovered_job = Some(job.clone());
+    }
 
     // Add click detection for the job
     if is_hovered && info.response.secondary_clicked() {
