@@ -1,7 +1,7 @@
 
 use chrono::{DateTime, Utc};
 use serde_json::Value;
-use std::{collections::HashMap, fs::File};
+use std::fs::File;
 use std::io::Read;
 use std::process::Command;
 use crate::models::data_structure::{job::{Job, State}, resource::Resource};
@@ -97,7 +97,7 @@ pub fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
 }
 
 
-pub fn get_resources_from_json(file_path: &str) -> HashMap<u32,Resource> {
+pub fn get_resources_from_json(file_path: &str) -> Vec<Resource> {
      // Ouvrir le fichier
      let file_res = File::open(file_path);
 
@@ -105,7 +105,7 @@ pub fn get_resources_from_json(file_path: &str) -> HashMap<u32,Resource> {
          Ok(file) => file,
          Err(error) => {
              println!("Impossible d'ouvrir le fichier: {}", error);
-             return HashMap::new();
+             return Vec::new();
          }
      };
  
@@ -113,7 +113,7 @@ pub fn get_resources_from_json(file_path: &str) -> HashMap<u32,Resource> {
      let mut data = String::new();
      if let Err(e) = file.read_to_string(&mut data) {
          println!("Impossible de lire le fichier: {}", e);
-         return HashMap::new();
+         return Vec::new();
      }
  
      // Parser le JSON
@@ -121,18 +121,18 @@ pub fn get_resources_from_json(file_path: &str) -> HashMap<u32,Resource> {
          Ok(v) => v,
          Err(e) => {
              println!("Impossible de parser le JSON: {}", e);
-             return HashMap::new();
+             return Vec::new();
          }
      };
  
-     let mut resources = HashMap::new();
+     let mut resources = Vec::new();
  
      // Extraire la section "resources"
      if let Some(resources_array) = json.get("resources").and_then(|v| v.as_array()) {
          for resource_value in resources_array {
              // Désérialiser directement chaque ressource
              if let Ok(resource) = serde_json::from_value::<Resource>(resource_value.clone()) {
-                 resources.insert(resource.resource_id.unwrap_or(0), resource);
+                 resources.push(resource);
              }
          }
      }

@@ -54,4 +54,6 @@ pub struct Resource {
     pub resource_id: Option<u32>,
     #[serde(default)]
     pub host: Option<String>,
+    #[serde(default)]
+    pub nodemodel: Option<String>,
 }
