@@ -14,7 +14,7 @@ use crate::models::job::mock_jobs;
 
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>,
-    pub all_resource: HashMap<i32, Resource>,
+    pub all_resource: HashMap<u32, Resource>,
     pub filtered_jobs: Vec<Job>,
     pub start_date: Arc<Mutex<DateTime<Utc>>>,
     pub end_date: Arc<Mutex<DateTime<Utc>>>,
@@ -27,8 +27,8 @@ pub struct ApplicationContext {
 
     pub jobs_receiver: Receiver<Vec<Job>>,
     pub jobs_sender: Sender<Vec<Job>>,
-    pub resources_receiver: Receiver<HashMap<i32, Resource>>,
-    pub resources_sender: Sender<HashMap<i32, Resource>>,
+    pub resources_receiver: Receiver<HashMap<u32, Resource>>,
+    pub resources_sender: Sender<HashMap<u32, Resource>>,
 }
 
 impl ApplicationContext {

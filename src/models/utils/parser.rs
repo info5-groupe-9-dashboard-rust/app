@@ -97,7 +97,7 @@ pub fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
 }
 
 
-pub fn get_resources_from_json(file_path: &str) -> HashMap<i32,Resource> {
+pub fn get_resources_from_json(file_path: &str) -> HashMap<u32,Resource> {
      // Ouvrir le fichier
      let file_res = File::open(file_path);
 

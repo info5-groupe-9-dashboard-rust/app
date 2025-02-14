@@ -9,7 +9,6 @@ pub struct JobDetailsWindow {
 
 impl JobDetailsWindow {
     pub fn new(job: Job) -> Self {
-        job._display();
         Self {
             open: true,
             job: job,
