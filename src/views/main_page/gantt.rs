@@ -1,7 +1,7 @@
 use crate::{models::data_structure::{application_context::ApplicationContext, job::Job}, views::components::job_details::JobDetailsWindow};
 use chrono::DateTime;
 use eframe::egui;
-use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, LayerId, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle, Widget};
+use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle};
 
 use crate::views::view::View;
 
@@ -92,7 +92,7 @@ impl View for GanttChart {
                     text_height: 15.0,
                     start_s: min_s,
                     stop_s: max_s,
-                    layer_id: ui.layer_id(),
+                    // layer_id: ui.layer_id(),
                     font_id: TextStyle::Body.resolve(ui.style()),
                 };
 
@@ -217,7 +217,8 @@ struct Info {
     /// Time of last event
     stop_s: i64,
     /// LayerId to use as parent for tooltips
-    layer_id: LayerId,
+    /// Commented out because it is not used
+    /// layer_id: LayerId,
 
     font_id: FontId,
 }
@@ -395,7 +396,7 @@ fn paint_aggregated_jobs(
         jobs_by_owner.entry(owner).or_insert_with(Vec::new).push(job);
     }
 
-    for (owner, jobs) in jobs_by_owner {
+    for (_owner, jobs) in jobs_by_owner {
         cursor_y = paint_job_group(info, options, jobs, cursor_y, details_window);
     }
 
@@ -571,7 +572,7 @@ enum PaintResult {
     Hovered,
 }
 
-fn paint_timeline(info: &Info, canvas: Rect, options: &Options, start_s: i64) -> Vec<egui::Shape> {
+fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -> Vec<egui::Shape> {
     let mut shapes = vec![];
 
     if options.canvas_width_s <= 0.0 {
