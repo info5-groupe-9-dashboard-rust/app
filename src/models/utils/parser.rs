@@ -1,10 +1,10 @@
 
 use chrono::{DateTime, Utc};
 use serde_json::Value;
-use std::fs::File;
+use std::{collections::HashMap, fs::File};
 use std::io::Read;
 use std::process::Command;
-use crate::models::data_structure::job::{Job, State};
+use crate::models::data_structure::{job::{Job, State}, resource::Resource};
 
 /**
  * Test SSH connection to the specified host
@@ -31,11 +31,11 @@ pub fn test_connection(host: &str) -> bool {
  * @return List of jobs
  */
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> Vec<Job> {
+pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> bool {
     // Test connection first
 
     if !test_connection("grenoble.g5k") {
-        return Vec::new();
+        return false;
     }
 
     // Check if Data folder exists
@@ -61,15 +61,14 @@ pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime
 
     if let Err(e) = ssh_status {
         println!("Failed to execute SSH command: {}", e);
-        return Vec::new();
+        return false;
     }
 
-    // Read the jobs from the downloaded JSON file
-    get_jobs_from_json("./data/data.json")
+    true
 }
 
 
-fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
+pub fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
     let file_res = File::open(file_path);
 
     let mut file = match file_res {
@@ -97,6 +96,50 @@ fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
     jobs
 }
 
+
+pub fn get_resources_from_json(file_path: &str) -> HashMap<i32,Resource> {
+     // Ouvrir le fichier
+     let file_res = File::open(file_path);
+
+     let mut file = match file_res {
+         Ok(file) => file,
+         Err(error) => {
+             println!("Impossible d'ouvrir le fichier: {}", error);
+             return HashMap::new();
+         }
+     };
+ 
+     // Lire le contenu du fichier
+     let mut data = String::new();
+     if let Err(e) = file.read_to_string(&mut data) {
+         println!("Impossible de lire le fichier: {}", e);
+         return HashMap::new();
+     }
+ 
+     // Parser le JSON
+     let json: Value = match serde_json::from_str(&data) {
+         Ok(v) => v,
+         Err(e) => {
+             println!("Impossible de parser le JSON: {}", e);
+             return HashMap::new();
+         }
+     };
+ 
+     let mut resources = HashMap::new();
+ 
+     // Extraire la section "resources"
+     if let Some(resources_array) = json.get("resources").and_then(|v| v.as_array()) {
+         for resource_value in resources_array {
+             // Désérialiser directement chaque ressource
+             if let Ok(resource) = serde_json::from_value::<Resource>(resource_value.clone()) {
+                 resources.insert(resource.resource_id.unwrap_or(0), resource);
+             }
+         }
+     }
+ 
+     resources
+}
+
 pub fn parse_state_from_json(json_str: &str) -> Result<State, serde_json::Error> {
     serde_json::from_str(json_str)
 }
@@ -111,11 +154,11 @@ fn from_json_value(json: &Value) -> Job {
         walltime: json["walltime"].as_i64().unwrap_or(0) as i64,
         message: json["message"].as_str().map(|s| s.to_string()),
         queue: json["queue"].as_str().unwrap_or("default").to_string(),
-        assigned_resources: json["assigned_resources"]
+        assigned_resources: json["resource_id"]
             .as_array()
             .unwrap_or(&Vec::new())
             .iter()
-            .filter_map(|v| v.as_i64().map(|n| n as u32))
+            .filter_map(|v| v.as_str().and_then(|s| s.parse::<u32>().ok()))
             .collect(),
         scheduled_start: json["start_time"].as_i64().unwrap_or(0),
         start_time: json["start_time"].as_i64().unwrap_or(0),
