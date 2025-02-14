@@ -1,4 +1,10 @@
 use crate::{models::data_structure::{application_context::ApplicationContext, job::Job}, views::components::job_details::JobDetailsWindow};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GroupBy {
+    Owner,
+    Resource,
+}
 use chrono::DateTime;
 use eframe::egui;
 use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle};
@@ -42,11 +48,13 @@ impl View for GanttChart {
             ui.menu_button("🔧 Settings", |ui| {
                 ui.set_max_height(500.0);
 
-                {
-                    let _changed = ui
-                        .checkbox(&mut self.options.aggregate_owners, "Aggregate by job owners")
-                        .changed();
-                }
+                ui.horizontal(|ui| {
+                    ui.label("Group by:");
+                    ui.horizontal(|ui| {
+                        ui.radio_value(&mut self.options.group_by, GroupBy::Resource, "Resource");
+                        ui.radio_value(&mut self.options.group_by, GroupBy::Owner, "Owner");
+                    });
+                });
 
                 ui.horizontal(|ui| {
                     ui.label("Grid spacing:");
@@ -57,7 +65,6 @@ impl View for GanttChart {
                     });
                 });
 
-                // The number of jobs can change between frames, so always show this even if there currently is only one job:
                 self.options.sorting.ui(ui);
             });
 
@@ -318,10 +325,10 @@ pub struct Options {
     pub spacing: f32,
     pub rounding: f32,
 
-    /// Aggregate child scopes with the same id?
-    pub aggregate_owners: bool,
-
     pub sorting: Sorting,
+
+    // Grouping option
+    pub group_by: GroupBy,
 
     // Grid spacing in minutes
     grid_spacing_minutes: i64,
@@ -345,8 +352,7 @@ impl Default for Options {
             rect_height: 16.0,
             spacing: 4.0,
             rounding: 4.0,
-
-            aggregate_owners: false, // off, because it really only works well for single-jobed profiling
+            group_by: GroupBy::Owner, // default grouping by owner
 
             grid_spacing_minutes: 30, // 30 minutes by default
 
@@ -374,16 +380,19 @@ fn ui_canvas(
 
     let jobs = options.sorting.sort(app.filtered_jobs.clone());
 
-    if options.aggregate_owners {
-        cursor_y = paint_aggregated_jobs(info, options, jobs, cursor_y, details_window);
-    } else {
-        cursor_y = paint_individual_jobs(info, options, jobs, cursor_y, details_window);
+    match options.group_by {
+        GroupBy::Owner => {
+            cursor_y = paint_aggregated_jobs_by_owner(info, options, jobs, cursor_y, details_window);
+        }
+        GroupBy::Resource => {
+            cursor_y = paint_aggregated_jobs_by_resource(info, options, jobs, cursor_y, details_window);
+        }
     }
 
     cursor_y
 }
 
-fn paint_aggregated_jobs(
+fn paint_aggregated_jobs_by_owner(
     info: &Info,
     options: &mut Options,
     jobs: Vec<Job>,
@@ -403,15 +412,23 @@ fn paint_aggregated_jobs(
     cursor_y
 }
 
-fn paint_individual_jobs(
+fn paint_aggregated_jobs_by_resource(
     info: &Info,
     options: &mut Options,
     jobs: Vec<Job>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
 ) -> f32 {
+    let mut jobs_by_ressource = std::collections::BTreeMap::new();
     for job in jobs {
-        cursor_y = paint_single_job(info, options, job, cursor_y, details_window);
+        let ressources = job.assigned_resources.clone();
+        for res in ressources {
+            jobs_by_ressource.entry(res).or_insert_with(Vec::new).push(job.clone());
+        };
+    }
+
+    for (_ressource, jobs) in jobs_by_ressource {
+        cursor_y = paint_job_group(info, options, jobs, cursor_y, details_window);
     }
 
     cursor_y
@@ -544,7 +561,7 @@ fn paint_job(
     info.painter.rect_filled(rect, options.rounding, fill_color);
 
     if width > 20.0 {
-        let text = format!("{} ({})", job.owner, job.walltime);
+        let text = format!("{} ({})", job.owner, job.id);
         info.painter.text(
             rect.center(),
             Align2::CENTER_CENTER,
