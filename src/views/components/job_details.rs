@@ -1,5 +1,5 @@
 use crate::models::utils::date_converter::format_timestamp;
-use crate::models::data_structure::job::{Job, State};
+use crate::models::data_structure::job::Job;
 use eframe::egui;
 
 pub struct JobDetailsWindow {
