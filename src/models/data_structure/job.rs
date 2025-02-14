@@ -120,6 +120,8 @@ impl State {
     }
 }
 
+
+
 #[derive(Clone)]
 
 pub struct Job {
@@ -136,6 +138,7 @@ pub struct Job {
     pub start_time: i64,
     pub stop_time: i64,
     pub exit_code: Option<i32>,
+    pub gantt_color: egui::Color32,
 }
 
 impl Job {
@@ -153,16 +156,38 @@ impl Job {
         println!("Start Time: {}", self.start_time);
         println!("Stop Time: {}", self.stop_time);
         println!("Exit Code: {:?}", self.exit_code);
+        println!("Gant Color: {:?}", self.gantt_color);
+    }
+
+    // Based on gantt color return a tuple of two colors (the second one is darker)
+    pub fn get_gantt_color(&self) -> (egui::Color32, egui::Color32) {
+        let r = self.gantt_color.r() as f32;
+        let g = self.gantt_color.g() as f32;
+        let b = self.gantt_color.b() as f32;
+
+        let darker = |c: f32| -> u8 {
+            let value = (c * 0.8) as u8;
+            if value > 0 {
+                value
+            } else {
+                1
+            }
+        };
+
+        (
+            egui::Color32::from_rgb(r as u8, g as u8, b as u8),
+            egui::Color32::from_rgb(darker(r), darker(g), darker(b)),
+        )
     }
 }
 
 // Mocking Job to Test ApplicationContext
 #[cfg(target_arch = "wasm32")]
 pub fn mock_job(id: u32) -> Job {
-    // Liste des propriétaires possibles
+    // Possible owner list
     let owners = vec!["alice", "bob", "charlie", "david", "eva"];
 
-    // Liste des commandes possibles avec leurs queues associées
+    // List of possible commands and their queues associated
     let commands = vec![
         ("python3 train_model.py", "gpu"),
         ("make test", "test"),
@@ -171,7 +196,7 @@ pub fn mock_job(id: u32) -> Job {
         ("gcc -O3 project.c", "compile"),
     ];
 
-    // Fonction helper pour générer un nombre aléatoire
+    // Function to generate a random number
     let random_index = |max: usize| -> usize {
         let mut buf = [0u8; 8];
         getrandom::getrandom(&mut buf).unwrap();
@@ -186,7 +211,7 @@ pub fn mock_job(id: u32) -> Job {
         (value as f32) / (u64::MAX as f32)
     };
 
-    // Génération de timestamps cohérents
+    // Coherent timestamp generation
     let now = Utc::now().timestamp();
     let submission_time = now - (random_index(86400) as i64);
     let scheduled_start = submission_time + (random_index(3300) as i64 + 300);
@@ -202,7 +227,7 @@ pub fn mock_job(id: u32) -> Job {
         0
     };
 
-    // Sélection aléatoire de l'état en fonction du contexte temporel
+    // Randomly select the state based on the context
     let state = if stop_time > 0 {
         State::Terminated
     } else if start_time > 0 {
@@ -216,10 +241,10 @@ pub fn mock_job(id: u32) -> Job {
         states[random_index(states.len())].clone()
     };
 
-    // Sélection de la commande et de la queue
+    // Commande and queue selection
     let (command, queue) = commands[random_index(commands.len())];
 
-    // Génération des ressources assignées
+    // Assigned ressources generation
     let num_resources = random_index(7) + 1;
     let assigned_resources = if start_time > 0 {
         let mut resources = Vec::new();
@@ -234,7 +259,7 @@ pub fn mock_job(id: u32) -> Job {
         vec![]
     };
 
-    // Génération du message en fonction de l'état
+    // Generate message based on the state
     let message = match state {
         State::Error => Some("Erreur d'exécution".to_string()),
         State::Hold => Some("En attente de ressources".to_string()),

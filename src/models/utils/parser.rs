@@ -4,7 +4,9 @@ use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
 use std::process::Command;
-use crate::models::data_structure::{job::{Job, State}, resource::Resource};
+use crate::models::data_structure::job::{Job, State};
+use crate::models::utils::utils::convert_id_to_color;
+use crate::models::data_structure::resource::Resource;
 
 /**
  * Test SSH connection to the specified host
@@ -165,5 +167,6 @@ fn from_json_value(json: &Value) -> Job {
         stop_time: json["stop_time"].as_i64().unwrap_or(0),
         submission_time: json["submission_time"].as_i64().unwrap_or(0),
         exit_code: json["exit_code"].as_i64().map(|n| n as i32),
+        gantt_color: convert_id_to_color(json["id"].as_str().unwrap_or("0").parse::<u32>().unwrap_or(0)),
     }
 }

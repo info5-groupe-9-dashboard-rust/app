@@ -57,6 +57,14 @@ impl View for GanttChart {
                     });
                 });
 
+                ui.horizontal(|ui| {
+                    ui.label("Job color:");
+                    ui.horizontal(|ui|{
+                        ui.radio_value(&mut self.options.job_color, JobColor::Random, "Random");
+                        ui.radio_value(&mut self.options.job_color, JobColor::State, "State");
+                    });
+                });
+
                 // The number of jobs can change between frames, so always show this even if there currently is only one job:
                 self.options.sorting.ui(ui);
             });
@@ -118,7 +126,7 @@ impl View for GanttChart {
                 let mut used_rect = canvas;
                 used_rect.max.y = max_y;
 
-                // // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
+                // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
 
                 let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
@@ -238,6 +246,12 @@ pub enum SortBy {
     Owner,
 }
 
+#[derive(PartialEq)]
+pub enum JobColor {
+    Random,
+    State,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct Sorting {
@@ -326,6 +340,9 @@ pub struct Options {
     // Grid spacing in minutes
     grid_spacing_minutes: i64,
 
+    // Job color
+    job_color: JobColor,
+
     /// Set when user clicks a scope.
     /// First part is `now()`, second is range.
     #[cfg_attr(feature = "serde", serde(skip))]
@@ -351,6 +368,8 @@ impl Default for Options {
             grid_spacing_minutes: 30, // 30 minutes by default
 
             sorting: Default::default(),
+
+            job_color: JobColor::Random,
 
             zoom_to_relative_s_range: None,
         }
@@ -513,15 +532,15 @@ fn paint_job(
         false
     };
 
-    // Ajouter la détection du clic
+    // Add click detection for the job
     if is_hovered && info.response.secondary_clicked() {
         let window = JobDetailsWindow::new(job.clone());
         details_window.push(window);
     }
 
-    // Ajouter la détection du clic principal pour ajuster le zoom
+    // Zoom to job if clicked
     if is_hovered && info.response.clicked() {
-        // Calculer le niveau de zoom nécessaire
+        // Zoom to job
         let job_duration_s = job.walltime as f64;
         let job_start_s = job.scheduled_start as f64;
         let job_end_s = job_start_s + job_duration_s;
@@ -534,7 +553,8 @@ fn paint_job(
         ));
     }
 
-    let (hovered_color, normal_color) = job.state.get_color();
+    
+    let (hovered_color, normal_color) = if options.job_color == JobColor::Random {job.get_gantt_color() } else { job.state.get_color()};
     let fill_color = if is_hovered {
         hovered_color
     } else {

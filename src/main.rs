@@ -8,10 +8,10 @@ i18n!("src/i18n");
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> Result<(), eframe::Error> {
-    // Configurez les options natives
+    // Configure the native options
     let options = eframe::NativeOptions::default();
 
-    // Lancez l'application avec eframe
+    // Start the native app 
     eframe::run_native(
         &t!("app.title"),
         options,

@@ -7,7 +7,6 @@ use crate::views::components::job_table::JobTable;
 use crate::views::view::ViewType;
 use crate::models::data_structure::cpu::Cpu;
 use chrono::{DateTime, Utc};
-// Ajouter dans application_context.rs
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
@@ -117,7 +116,6 @@ impl ApplicationContext {
             .all_jobs
             .iter()
             .filter(|job| {
-                // Vos conditions de filtrage ici
                 (self.filters.job_id_range.is_none() || {
                     let (start_id, end_id) = self.filters.job_id_range.unwrap();
                     job.id >= start_id && job.id <= end_id
@@ -140,7 +138,7 @@ impl ApplicationContext {
                         .wall_time
                         .map_or(true, |time| job.walltime == time))
             })
-            .cloned() // On clone ici les jobs filtrés
+            .cloned() // Clone filtred jobs here
             .collect();
     }
 }
@@ -153,8 +151,12 @@ impl Default for ApplicationContext {
         let now: DateTime<Utc> = Utc::now();
         let mut context = Self {
             all_jobs: Vec::new(),
-
             all_clusters: Vec::new(),
+
+            jobs_receiver: jobs_receiver,
+            jobs_sender: jobs_sender,
+            resources_receiver: resources_receiver,
+            resources_sender: resources_sender,
 
             filtered_jobs: Vec::new(),
             filters: JobFilters::default(),
@@ -163,12 +165,7 @@ impl Default for ApplicationContext {
             view_type: ViewType::Authentification,
             is_loading: false,
             refresh_rate: Arc::new(Mutex::new(30)),
-            job_table: JobTable::default(), // Initialiser job_table
-
-            jobs_receiver,
-            jobs_sender,
-            resources_receiver,
-            resources_sender,
+            job_table: JobTable::default(), // Initialize job_table
         };
         context.update_periodically();
         context
