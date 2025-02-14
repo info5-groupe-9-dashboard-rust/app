@@ -19,15 +19,15 @@ impl Default for Authentification {
 
 impl View for Authentification {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        // Centrer le formulaire
+        // Center the form
         ui.vertical_centered(|ui| {
             ui.add_space(50.0);
             
-            // Titre
+            // Title
             ui.heading(RichText::new("Authentification").size(24.0));
             ui.add_space(20.0);
 
-            // Container du formulaire
+            // Container of the form
             egui::Frame::none()
                 .fill(ui.visuals().window_fill())
                 .rounding(8.0)
@@ -35,28 +35,27 @@ impl View for Authentification {
                 .show(ui, |ui| {
                     ui.set_width(300.0);
                     
-                    // Champ utilisateur
+                    // username field
                     ui.label(RichText::new("Nom d'utilisateur"));
                     ui.add_space(4.0);
                     ui.text_edit_singleline(&mut self.username);
                     ui.add_space(12.0);
 
-                    // Champ mot de passe
+                    // password field
                     ui.label(RichText::new("Mot de passe"));
                     ui.add_space(4.0);
                     ui.add(egui::TextEdit::singleline(&mut self.password)
                         .password(true));
                     ui.add_space(20.0);
 
-                    // Message d'erreur
+                    // Error message
                     if let Some(error) = &self.error_message {
                         ui.colored_label(egui::Color32::RED, error);
                         ui.add_space(8.0);
                     }
 
-                    // Bouton de connexion
+                    // Connect button
                     if ui.button("Se connecter").clicked() {
-                        // Ici, ajoutez votre logique d'authentification
                         if self.username == "admin" && self.password == "admin" {
                             app.view_type = crate::views::view::ViewType::Dashboard;
                         } else {

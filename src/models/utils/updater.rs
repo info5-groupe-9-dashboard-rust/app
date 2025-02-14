@@ -60,12 +60,12 @@ impl ApplicationContext {
         self.update_end_date(end_date);
         self.is_loading = true;
 
-        // Cloner les valeurs nécessaires
+        // Clone necessary value
         let sender = self.jobs_sender.clone();
         let start = start_date;
         let end = end_date;
 
-        // Lancer dans un thread séparé
+        // Get the data in a different thread
         #[cfg(not(target_arch = "wasm32"))]
         {
             thread::spawn(move || {
