@@ -3,7 +3,6 @@ use super::job::Job;
 use crate::views::components::job_table::JobTable;
 use crate::views::view::ViewType;
 use chrono::{DateTime, Utc};
-// Ajouter dans application_context.rs
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
@@ -26,7 +25,7 @@ pub struct ApplicationContext {
 
 impl ApplicationContext {
     pub fn check_jobs_update(&mut self) {
-        // Vérifier si de nouvelles données sont disponibles
+        // Verify if new data is avaiable
         if let Ok(new_jobs) = self.jobs_receiver.try_recv() {
             self.all_jobs = new_jobs;
             self.is_loading = false;
@@ -48,7 +47,6 @@ impl ApplicationContext {
             .all_jobs
             .iter()
             .filter(|job| {
-                // Vos conditions de filtrage ici
                 (self.filters.job_id_range.is_none() || {
                     let (start_id, end_id) = self.filters.job_id_range.unwrap();
                     job.id >= start_id && job.id <= end_id
@@ -71,7 +69,7 @@ impl ApplicationContext {
                         .wall_time
                         .map_or(true, |time| job.walltime == time))
             })
-            .cloned() // On clone ici les jobs filtrés
+            .cloned() // Clone filtred jobs here
             .collect();
     }
 }
@@ -91,7 +89,7 @@ impl Default for ApplicationContext {
             jobs_sender: sender,
             is_loading: false,
             refresh_rate: Arc::new(Mutex::new(30)),
-            job_table: JobTable::default(), // Initialiser job_table
+            job_table: JobTable::default(), // Initialize job_table
         };
         context.update_periodically();
         context

@@ -118,7 +118,7 @@ impl View for GanttChart {
                 let mut used_rect = canvas;
                 used_rect.max.y = max_y;
 
-                // // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
+                // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
 
                 let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
@@ -513,15 +513,15 @@ fn paint_job(
         false
     };
 
-    // Ajouter la détection du clic
+    // Add click detection for the job
     if is_hovered && info.response.secondary_clicked() {
         let window = JobDetailsWindow::new(job.clone());
         details_window.push(window);
     }
 
-    // Ajouter la détection du clic principal pour ajuster le zoom
+    // Zoom to job if clicked
     if is_hovered && info.response.clicked() {
-        // Calculer le niveau de zoom nécessaire
+        // Zoom to job
         let job_duration_s = job.walltime as f64;
         let job_start_s = job.scheduled_start as f64;
         let job_end_s = job_start_s + job_duration_s;
