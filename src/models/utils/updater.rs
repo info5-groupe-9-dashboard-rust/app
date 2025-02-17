@@ -13,6 +13,8 @@ use crate::models::utils::parser::get_current_jobs_for_period;
 #[cfg(not(target_arch = "wasm32"))]
 use std::thread;
 
+use super::parser::{get_jobs_from_json, get_resources_from_json};
+
 impl ApplicationContext {
     pub fn update_refresh_rate(&mut self, new_rate: u64) {
         let mut rate = self.refresh_rate.lock().unwrap();
@@ -43,12 +45,28 @@ impl ApplicationContext {
             let start_date = Arc::clone(&self.start_date);
             let end_date = Arc::clone(&self.end_date);
             let refresh_rate = Arc::clone(&self.refresh_rate);
-            let sender = self.jobs_sender.clone();
+            let jobs_sender = self.jobs_sender.clone();
+            let resources_sender = self.resources_sender.clone();
+    
             thread::spawn(move || loop {
                 let start = *start_date.lock().unwrap();
                 let end = *end_date.lock().unwrap();
-                let jobs = get_current_jobs_for_period(start, end);
-                sender.send(jobs).unwrap();
+                let res = get_current_jobs_for_period(start, end);
+                if res {
+                    let jobs = get_jobs_from_json("./data/data.json");
+                    let resources = get_resources_from_json("./data/data.json");
+                    
+                    jobs_sender.send(jobs).unwrap_or_else(|e| {
+                        println!("Error while sending jobs: {}", e);
+                    });
+                    
+                    resources_sender.send(resources).unwrap_or_else(|e| {
+                        println!("Error while sending resources: {}", e);
+                    });
+                } else {
+                    println!("Error while fetching data");
+                }
+                
                 let rate = *refresh_rate.lock().unwrap();
                 thread::sleep(Duration::from_secs(rate));
             });
@@ -69,8 +87,14 @@ impl ApplicationContext {
         #[cfg(not(target_arch = "wasm32"))]
         {
             thread::spawn(move || {
-                let jobs = get_current_jobs_for_period(start, end);
-                sender.send(jobs).unwrap();
+                let res = get_current_jobs_for_period(start, end);
+                if res {
+                    let jobs = get_jobs_from_json("./data/data.json");
+                    sender.send(jobs).unwrap();
+                } else {
+                    // LOG ERROR
+                    print!("Error while fetching data");
+                }
             });
         }
 
