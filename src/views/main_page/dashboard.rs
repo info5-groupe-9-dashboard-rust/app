@@ -1,8 +1,8 @@
+use crate::models::data_structure::job::JobState;
 use crate::views::components::dashboard_components::job_table::JobTable;
 use crate::views::components::dashboard_components::metric_box::MetricBox;
 use crate::views::components::dashboard_components::metric_grid::MetricGrid;
 use crate::{models::data_structure::application_context::ApplicationContext, views::view::View};
-use crate::models::data_structure::job::State;
 use eframe::egui::{self, RichText};
 use strum::IntoEnumIterator;
 
@@ -39,7 +39,7 @@ impl View for Dashboard {
                     
                     
                    // N'ajouter que les métriques avec un compteur > 0
-                    for state in State::iter() {
+                    for state in JobState::iter() {
                         let count = app.filtered_jobs
                             .iter()
                             .filter(|j| j.state == state)

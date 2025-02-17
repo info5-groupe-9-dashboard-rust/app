@@ -1,5 +1,5 @@
 use crate::models::data_structure::{
-    application_context::ApplicationContext, filters::JobFilters, job::State,
+    application_context::ApplicationContext, filters::JobFilters, job::JobState,
 };
 use eframe::egui::{self, Grid, RichText};
 use egui::TextEdit;
@@ -149,7 +149,7 @@ impl Filtering {
             .num_columns(2)
             .spacing([10.0, 5.0])
             .show(ui, |ui| {
-                for (i, state) in State::iter().enumerate() {
+                for (i, state) in JobState::iter().enumerate() {
                     let mut is_selected = selected_states.contains(&state);
                     if ui
                         .checkbox(&mut is_selected, format!("{:?}", state))
