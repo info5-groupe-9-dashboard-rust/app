@@ -52,7 +52,6 @@ impl Filtering {
 
                     ui.horizontal(|ui| {
                         if ui.button(t!("app.filters.apply")).clicked() {
-                            app.job_table.reset_pagination(); // Réinitialiser la pagination
                             app.filters = JobFilters::copy(&self.temp_filters); // Appliquer les filtres
                             println!("Applying filters: {:?}", app.filters);
                             app.filter_jobs(); // Appliquer les filtres
@@ -61,7 +60,6 @@ impl Filtering {
                         if ui.button(t!("app.filters.reset")).clicked() {
                             self.reset_filters(); // Réinitialiser les filtres temporaires
                             app.filters = JobFilters::default();
-                            app.job_table.reset_pagination(); // Réinitialiser la pagination
                         }
                     });
                 });

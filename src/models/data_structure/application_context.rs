@@ -3,7 +3,6 @@ use super::job::Job;
 use super::resource::Resource;
 use super::cluster::Cluster;
 use crate::models::data_structure::host::Host;
-use crate::views::components::job_table::JobTable;
 use crate::views::view::ViewType;
 use crate::models::data_structure::cpu::Cpu;
 use chrono::{DateTime, Utc};
@@ -25,8 +24,6 @@ pub struct ApplicationContext {
     pub is_loading: bool,
     pub refresh_rate: Arc<Mutex<u64>>,
     pub filters: JobFilters,
-    pub job_table: JobTable,
-
 
     pub jobs_receiver: Receiver<Vec<Job>>,
     pub jobs_sender: Sender<Vec<Job>>,
@@ -165,7 +162,6 @@ impl Default for ApplicationContext {
             view_type: ViewType::Authentification,
             is_loading: false,
             refresh_rate: Arc::new(Mutex::new(30)),
-            job_table: JobTable::default(), // Initialize job_table
         };
         context.update_periodically();
         context

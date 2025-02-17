@@ -36,10 +36,7 @@ app:
       choose: 'Choisir une taille de police'
   dashboard:
     title: 'Tableau de bord'
-    metrics:
-      total_jobs: 'Total des Jobs'
-      running: 'En cours'
-      waiting: 'En attente'
+    total_jobs: 'Total des Jobs'
   gantt:
     title: 'Diagramme de Gantt - Jobs OAR'
     zoom_in: 'Zoom +'
