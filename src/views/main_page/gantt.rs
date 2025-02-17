@@ -1,9 +1,9 @@
-use crate::{models::data_structure::{application_context::ApplicationContext, job::Job}, views::components::job_details::JobDetailsWindow};
+use crate::{models::data_structure::{application_context::ApplicationContext, cluster::{self, Cluster}, host::{self, Host}, job::Job, resource}, views::components::job_details::JobDetailsWindow};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GroupBy {
     Owner,
-    Resource,
+    Cluster,
 }
 use chrono::DateTime;
 use eframe::egui;
@@ -51,7 +51,7 @@ impl View for GanttChart {
                 ui.horizontal(|ui| {
                     ui.label("Group by:");
                     ui.horizontal(|ui| {
-                        ui.radio_value(&mut self.options.group_by, GroupBy::Resource, "Resource");
+                        ui.radio_value(&mut self.options.group_by, GroupBy::Cluster, "Cluster");
                         ui.radio_value(&mut self.options.group_by, GroupBy::Owner, "Owner");
                     });
                 });
@@ -424,8 +424,9 @@ fn ui_canvas(
         GroupBy::Owner => {
             cursor_y = paint_aggregated_jobs_by_owner(info, options, jobs, cursor_y, details_window);
         }
-        GroupBy::Resource => {
-            cursor_y = paint_aggregated_jobs_by_resource(info, options, jobs, cursor_y, details_window);
+        GroupBy::Cluster => {
+            let clusters = app.all_clusters.clone();
+            cursor_y = paint_aggregated_jobs_by_cluster(info, options, clusters, jobs, cursor_y, details_window);
         }
     }
 
@@ -474,35 +475,43 @@ fn paint_aggregated_jobs_by_owner(
     }
 
     for (_owner, jobs) in jobs_by_owner {
-        cursor_y = paint_job_group(info, options, jobs, cursor_y, details_window);
+        cursor_y = paint_jobs_group_by_owner(info, options, jobs, cursor_y, details_window);
     }
 
     cursor_y
 }
 
-fn paint_aggregated_jobs_by_resource(
+fn paint_aggregated_jobs_by_cluster(
     info: &Info,
     options: &mut Options,
+    clusters: Vec<Cluster>,
     jobs: Vec<Job>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
 ) -> f32 {
-    let mut jobs_by_ressource = std::collections::BTreeMap::new();
-    for job in jobs {
-        let ressources = job.assigned_resources.clone();
-        for res in ressources {
-            jobs_by_ressource.entry(res).or_insert_with(Vec::new).push(job.clone());
-        };
+    let mut jobs_by_cluster = std::collections::BTreeMap::new();
+    for cluster in clusters {
+        let jobs_in_cluster: Vec<Job> = jobs
+                    .iter()
+                    .filter(|job| {
+                        cluster
+                            .resource_ids
+                            .iter()
+                            .any(|id| job.assigned_resources.contains(&(*id as u32)))
+                    })
+                    .cloned()
+                    .collect();
+        jobs_by_cluster.insert(cluster.name, jobs_in_cluster);
     }
 
-    for (_ressource, jobs) in jobs_by_ressource {
-        cursor_y = paint_job_group(info, options, jobs, cursor_y, details_window);
+    for (cluster_name, jobs) in jobs_by_cluster {
+        cursor_y = paint_jobs_group_by_cluster(info, options, cluster_name, jobs, cursor_y, details_window);
     }
 
     cursor_y
 }
 
-fn paint_job_group(
+fn paint_jobs_group_by_owner(
     info: &Info,
     options: &mut Options,
     jobs: Vec<Job>,
@@ -515,7 +524,7 @@ fn paint_job_group(
     let text_pos = pos2(info.canvas.min.x, cursor_y);
 
     for job in jobs {
-        paint_job_info(info, &job, text_pos, &mut false);
+        paint_job_group_by_owner_info(info, &job, text_pos, &mut false);
 
         info.painter.line_segment(
             [
@@ -535,10 +544,11 @@ fn paint_job_group(
     cursor_y
 }
 
-fn paint_single_job(
+fn paint_jobs_group_by_cluster(
     info: &Info,
     options: &mut Options,
-    job: Job,
+    cluster_name: String,
+    jobs: Vec<Job>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
 ) -> f32 {
@@ -547,19 +557,21 @@ fn paint_single_job(
     cursor_y += 2.0;
     let text_pos = pos2(info.canvas.min.x, cursor_y);
 
-    paint_job_info(info, &job, text_pos, &mut false);
+    for job in jobs {
+        paint_job_group_by_cluster_info(info, cluster_name.clone(), text_pos, &mut false);
 
-    info.painter.line_segment(
-        [
-            pos2(info.canvas.min.x, line_y),
-            pos2(info.canvas.max.x, line_y),
-        ],
-        Stroke::new(1.0, Rgba::from_white_alpha(0.5)),
-    );
+        info.painter.line_segment(
+            [
+                pos2(info.canvas.min.x, line_y),
+                pos2(info.canvas.max.x, line_y),
+            ],
+            Stroke::new(1.0, Rgba::from_white_alpha(0.5)),
+        );
 
-    cursor_y += info.text_height;
-    paint_job(info, options, &job, cursor_y, details_window);
-
+        cursor_y += info.text_height;
+        paint_job(info, options, &job, cursor_y, details_window);
+        cursor_y += 5.0;
+    }
     cursor_y += options.rect_height + options.spacing;
     cursor_y += info.text_height;
 
@@ -771,7 +783,7 @@ fn grid_text(ts: i64) -> String {
     }
 }
 
-fn paint_job_info(info: &Info, job: &Job, pos: Pos2, collapsed: &mut bool) {
+fn paint_job_group_by_owner_info(info: &Info, job: &Job, pos: Pos2, collapsed: &mut bool) {
     let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
 
     let galley = info.ctx.fonts(|f| {
@@ -808,3 +820,42 @@ fn paint_job_info(info: &Info, job: &Job, pos: Pos2, collapsed: &mut bool) {
         *collapsed = !(*collapsed);
     }
 }
+
+fn paint_job_group_by_cluster_info(info: &Info, cluster_name: String, pos: Pos2, collapsed: &mut bool) {
+    let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
+
+    let galley = info.ctx.fonts(|f| {
+        f.layout_no_wrap(
+            format!("{} {}", collapsed_symbol, cluster_name),
+            info.font_id.clone(),
+            egui::Color32::PLACEHOLDER,
+        )
+    });
+
+    let rect = Rect::from_min_size(pos, galley.size());
+
+    let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
+        rect.contains(mouse_pos)
+    } else {
+        false
+    };
+
+    let text_color = if is_hovered {
+        Color32::WHITE
+    } else {
+        Color32::from_white_alpha(229)
+    };
+    let back_color = if is_hovered {
+        Color32::from_black_alpha(100)
+    } else {
+        Color32::BLACK
+    };
+
+    info.painter.rect_filled(rect.expand(2.0), 0.0, back_color);
+    info.painter.galley(rect.min, galley, text_color);
+
+    if is_hovered && info.response.clicked() {
+        *collapsed = !(*collapsed);
+    }
+}
+

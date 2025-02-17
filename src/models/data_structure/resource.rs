@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum ResourceState {
     Dead,
     Alive,
@@ -5,6 +6,7 @@ pub enum ResourceState {
     Unknown,
 }
 
+#[derive(Clone)]
 pub struct Resource {
     pub id: i32,
     pub state: ResourceState,
