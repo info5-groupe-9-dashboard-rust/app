@@ -9,7 +9,6 @@ pub struct JobDetailsWindow {
 
 impl JobDetailsWindow {
     pub fn new(job: Job) -> Self {
-        job._display();
         Self {
             open: true,
             job: job,
@@ -29,7 +28,7 @@ impl JobDetailsWindow {
             .open(&mut self.open)
             .auto_sized()
             .show(ui.ctx(), |ui| {
-                // Informations de base
+                // Base information
                 ui.group(|ui| {
                     ui.heading("Basic Information");
                     ui.horizontal(|ui| {
@@ -48,7 +47,7 @@ impl JobDetailsWindow {
 
                 ui.add_space(8.0);
 
-                // État et statut
+                // Status
                 ui.group(|ui| {
                     ui.heading("Status");
                     ui.horizontal(|ui| {
@@ -78,7 +77,7 @@ impl JobDetailsWindow {
 
                 ui.add_space(8.0);
 
-                // Temps et durée
+                // Timing information
                 ui.group(|ui| {
                     ui.heading("Timing Information");
 

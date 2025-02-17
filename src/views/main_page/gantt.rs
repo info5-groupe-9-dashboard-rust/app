@@ -65,6 +65,15 @@ impl View for GanttChart {
                     });
                 });
 
+                ui.horizontal(|ui| {
+                    ui.label("Job color:");
+                    ui.horizontal(|ui|{
+                        ui.radio_value(&mut self.options.job_color, JobColor::Random, "Random");
+                        ui.radio_value(&mut self.options.job_color, JobColor::State, "State");
+                    });
+                });
+
+                // The number of jobs can change between frames, so always show this even if there currently is only one job:
                 self.options.sorting.ui(ui);
             });
 
@@ -125,12 +134,16 @@ impl View for GanttChart {
                 let mut used_rect = canvas;
                 used_rect.max.y = max_y;
 
-                // // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
+                // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
 
                 let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
                 info.painter
                     .set(where_to_put_timeline, Shape::Vec(timeline));
+
+                // Adding a line to show the current time AFTER all other elements
+                let current_time_line = paint_current_time_line(&info, &self.options, used_rect);
+                info.painter.add(current_time_line);
 
                 ui.allocate_rect(used_rect, Sense::hover());
             });
@@ -144,6 +157,18 @@ impl View for GanttChart {
             window.ui(ui);
         }
     }
+}
+
+fn paint_current_time_line(info: &Info, options: &Options, canvas: Rect) -> egui::Shape {
+    let current_time = chrono::Utc::now().timestamp();
+    let line_x = info.point_from_s(options, current_time);
+    egui::Shape::line_segment(
+        [
+            pos2(line_x, canvas.min.y),
+            pos2(line_x, canvas.max.y),
+        ],
+        Stroke::new(2.0, Color32::RED),
+    )
 }
 
 fn interact_with_canvas(options: &mut Options, response: &Response, info: &Info) {
@@ -245,6 +270,12 @@ pub enum SortBy {
     Owner,
 }
 
+#[derive(PartialEq)]
+pub enum JobColor {
+    Random,
+    State,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct Sorting {
@@ -333,6 +364,11 @@ pub struct Options {
     // Grid spacing in minutes
     grid_spacing_minutes: i64,
 
+    // Job color
+    job_color: JobColor,
+
+    current_hovered_job: Option<Job>,
+
     /// Set when user clicks a scope.
     /// First part is `now()`, second is range.
     #[cfg_attr(feature = "serde", serde(skip))]
@@ -358,7 +394,11 @@ impl Default for Options {
 
             sorting: Default::default(),
 
+            job_color: JobColor::Random,
+
             zoom_to_relative_s_range: None,
+
+            current_hovered_job: None,
         }
     }
 }
@@ -389,7 +429,35 @@ fn ui_canvas(
         }
     }
 
+    // Paint tooltip for hovered job if there is one
+    paint_tooltip(info, options);
+
     cursor_y
+}
+
+fn paint_tooltip(info: &Info, options: &mut Options) {
+    if let Some(job) = &options.current_hovered_job {
+        if let Some(_pointer_pos) = info.response.hover_pos() {
+            let text = format!(
+                "Job ID: {}\nOwner: {:?}\nState: {}\nStart: {}\nWalltime: {} seconds",
+                job.id,
+                job.owner,
+                job.state.get_label(),
+                grid_text(job.scheduled_start),
+                job.walltime
+            );
+            
+            egui::show_tooltip(
+                &info.ctx,
+                info.response.layer_id,
+                egui::Id::new("job_tooltip"),
+                |ui| {
+                    ui.label(text);
+                },
+            );
+        }
+        options.current_hovered_job = None; // Reset for next frame
+    }
 }
 
 fn paint_aggregated_jobs_by_owner(
@@ -530,15 +598,20 @@ fn paint_job(
         false
     };
 
-    // Ajouter la détection du clic
+    // Draw tooltip
+    if is_hovered {
+        options.current_hovered_job = Some(job.clone());
+    }
+
+    // Add click detection for the job
     if is_hovered && info.response.secondary_clicked() {
         let window = JobDetailsWindow::new(job.clone());
         details_window.push(window);
     }
 
-    // Ajouter la détection du clic principal pour ajuster le zoom
+    // Zoom to job if clicked
     if is_hovered && info.response.clicked() {
-        // Calculer le niveau de zoom nécessaire
+        // Zoom to job
         let job_duration_s = job.walltime as f64;
         let job_start_s = job.scheduled_start as f64;
         let job_end_s = job_start_s + job_duration_s;
@@ -551,7 +624,8 @@ fn paint_job(
         ));
     }
 
-    let (hovered_color, normal_color) = job.state.get_color();
+    
+    let (hovered_color, normal_color) = if options.job_color == JobColor::Random {job.get_gantt_color() } else { job.state.get_color()};
     let fill_color = if is_hovered {
         hovered_color
     } else {

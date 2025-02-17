@@ -51,7 +51,9 @@ pub struct Resource {
     #[serde(default)]
     pub network_address: Option<String>,
     #[serde(default)]
-    pub resource_id: Option<i32>,
+    pub resource_id: Option<u32>,
     #[serde(default)]
     pub host: Option<String>,
+    #[serde(default)]
+    pub nodemodel: Option<String>,
 }
