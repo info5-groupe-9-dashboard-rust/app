@@ -15,7 +15,9 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         &t!("app.title"),
         options,
-        Box::new(|_cc| Ok(Box::new(app::App::new()))),
+        Box::new(|cc| {
+            Ok(Box::new(app::App::new()))
+        }),
     )
 }
 
