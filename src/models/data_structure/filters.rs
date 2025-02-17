@@ -1,11 +1,11 @@
-use super::job::State;
+use super::job::JobState;
 
 #[derive(Default, Debug)]
 
 pub struct JobFilters {
     pub job_id_range: Option<(u32, u32)>,
     pub owners: Option<Vec<String>>,
-    pub states: Option<Vec<State>>,
+    pub states: Option<Vec<JobState>>,
     pub scheduled_start_time: Option<i64>,
     pub wall_time: Option<i64>,
 }
@@ -34,7 +34,7 @@ impl JobFilters {
         self.owners = owners;
     }
 
-    pub fn set_states(&mut self, states: Option<Vec<State>>) {
+    pub fn set_states(&mut self, states: Option<Vec<JobState>>) {
         self.states = states;
     }
 
