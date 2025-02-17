@@ -25,43 +25,68 @@ impl View for Tools {
         ui.horizontal(|ui| {
             ui.set_height(25.0); // Set the height to 50.0
 
+            
+            ui.label(t!("app.mode"));
+
             // Dashboard Button
-            let dashboard_btn = egui::Button::new("📊 Dashboard").frame(true);
+            let is_dashboard_selected = matches!(app.view_type, ViewType::Dashboard);
+
+            let dashboard_btn = egui::Button::new("📊 Dashboard").frame(is_dashboard_selected);
             if ui.add(dashboard_btn).clicked() {
                 app.view_type = ViewType::Dashboard;
                 ui.close_menu();
             }
 
             // Gantt Button
-            let gantt_btn = egui::Button::new("📅 Gantt").frame(true);
+            let gantt_btn = egui::Button::new("📅 Gantt").frame(!is_dashboard_selected);
             if ui.add(gantt_btn).clicked() {
                 app.view_type = ViewType::Gantt;
                 ui.close_menu();
             }
 
-            // Menu Filters
-            if ui.button(t!("app.menu.filters")).clicked() {
-                self.filtering_pane.open();
-            }
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
 
-            // Menu Refresh Rate
-            ui.menu_button(t!("app.menu.refresh_rate.button"), |ui| {
-                if ui.button(t!("app.menu.refresh_rate.refresh_30")).clicked() {
-                    app.update_refresh_rate(30);
-                    ui.close_menu();
+                // Refresh Button
+                let refresh_btn = egui::Button::new("⟳").frame(true);
+                if ui.add(refresh_btn).clicked() {
+                    app.update_now();
                 }
-                if ui.button(t!("app.menu.refresh_rate.refresh_60")).clicked() {
-                    app.update_refresh_rate(60);
-                    ui.close_menu();
+
+                // Menu Refresh Rate
+                ui.menu_button("🕓 ".to_string() + &t!("app.menu.refresh_rate.button"), |ui| {
+                    ui.set_min_width(70.0); // Set the minimum width to 150.0
+
+                    let refresh_rates = vec![
+                        (30, t!("app.menu.refresh_rate.refresh_30")),
+                        (60, t!("app.menu.refresh_rate.refresh_60")),
+                        (300, t!("app.menu.refresh_rate.refresh_300")),
+                    ];
+
+                    for (rate, label) in refresh_rates {
+                        let mut selected = *app.refresh_rate.lock().unwrap() == rate;
+                        let display_label = if selected {
+                            format!("{} ✔", label)
+                        } else {
+                            label.to_string()
+                        };
+                        if ui.selectable_label(selected, display_label).clicked() {
+                            app.update_refresh_rate(rate);
+                            ui.close_menu();
+                        }
+                    }
+                });
+
+                // Filters
+                let filters_btn = egui::Button::new("🔎 ".to_string() + &t!("app.menu.filters")).frame(true);
+                if ui.add(filters_btn).clicked() {
+                    self.filtering_pane.open();
                 }
-                if ui.button(t!("app.menu.refresh_rate.refresh_300")).clicked() {
-                    app.update_refresh_rate(300);
-                    ui.close_menu();
-                }
+
+
             });
 
             // Show External Window
-            self.time_selector.ui(ui, app);
+            //self.time_selector.ui(ui, app);
             self.filtering_pane.ui(ui, app);
 
         });
