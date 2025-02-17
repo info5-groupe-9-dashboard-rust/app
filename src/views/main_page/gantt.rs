@@ -133,6 +133,10 @@ impl View for GanttChart {
                 info.painter
                     .set(where_to_put_timeline, Shape::Vec(timeline));
 
+                // Adding a line to show the current time AFTER all other elements
+                let current_time_line = paint_current_time_line(&info, &self.options, used_rect);
+                info.painter.add(current_time_line);
+
                 ui.allocate_rect(used_rect, Sense::hover());
             });
         });
@@ -145,6 +149,18 @@ impl View for GanttChart {
             window.ui(ui);
         }
     }
+}
+
+fn paint_current_time_line(info: &Info, options: &Options, canvas: Rect) -> egui::Shape {
+    let current_time = chrono::Utc::now().timestamp();
+    let line_x = info.point_from_s(options, current_time);
+    egui::Shape::line_segment(
+        [
+            pos2(line_x, canvas.min.y),
+            pos2(line_x, canvas.max.y),
+        ],
+        Stroke::new(2.0, Color32::RED),
+    )
 }
 
 fn interact_with_canvas(options: &mut Options, response: &Response, info: &Info) {
