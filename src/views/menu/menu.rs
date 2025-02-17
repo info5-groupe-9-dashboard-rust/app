@@ -1,4 +1,12 @@
-use crate::{models::data_structure::{application_context::ApplicationContext, application_options::ApplicationOptions}, views::{components::time_selector::TimeSelector, view::{View, ViewType}}};
+use crate::{
+    models::data_structure::{
+        application_context::ApplicationContext, application_options::ApplicationOptions,
+    },
+    views::{
+        components::time_selector::TimeSelector,
+        view::{View, ViewType},
+    },
+};
 use eframe::egui;
 
 use super::{filtering::Filtering, options::Options};
@@ -26,17 +34,15 @@ impl Default for Menu {
 
 impl View for Menu {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-
         self.options_pane.apply_options(ui.ctx());
 
         ui.horizontal(|ui| {
-
             // Menu Fichier
             ui.menu_button(t!("app.menu.file"), |ui| {
                 if ui.button("Quitter").clicked() {
                     std::process::exit(0);
                 }
-                if ui.button(t!("app.menu.logout")).clicked(){
+                if ui.button(t!("app.menu.logout")).clicked() {
                     // app.logout();
                 }
             });
@@ -48,7 +54,6 @@ impl View for Menu {
 
             // Show External Window
             self.options_pane.ui(ui);
-
         });
     }
 }

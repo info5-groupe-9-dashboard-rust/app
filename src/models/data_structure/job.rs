@@ -6,7 +6,7 @@ use strum_macros::EnumIter;
 use chrono::{DateTime, Utc};
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq, PartialOrd, Ord)]
-pub enum State {
+pub enum JobState {
     Unknown,
     Waiting,
     Hold,
@@ -22,97 +22,97 @@ pub enum State {
     Error,
 }
 
-impl fmt::Display for State {
+impl fmt::Display for JobState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            State::Unknown => write!(f, "Unknown"),
-            State::Waiting => write!(f, "Waiting"),
-            State::Hold => write!(f, "Hold"),
-            State::ToLaunch => write!(f, "ToLaunch"),
-            State::ToError => write!(f, "ToError"),
-            State::ToAckReservation => write!(f, "ToAckReservation"),
-            State::Launching => write!(f, "Launching"),
-            State::Running => write!(f, "Running"),
-            State::Suspended => write!(f, "Suspended"),
-            State::Resuming => write!(f, "Resuming"),
-            State::Finishing => write!(f, "Finishing"),
-            State::Terminated => write!(f, "Terminated"),
-            State::Error => write!(f, "Error"),
+            JobState::Unknown => write!(f, "Unknown"),
+            JobState::Waiting => write!(f, "Waiting"),
+            JobState::Hold => write!(f, "Hold"),
+            JobState::ToLaunch => write!(f, "ToLaunch"),
+            JobState::ToError => write!(f, "ToError"),
+            JobState::ToAckReservation => write!(f, "ToAckReservation"),
+            JobState::Launching => write!(f, "Launching"),
+            JobState::Running => write!(f, "Running"),
+            JobState::Suspended => write!(f, "Suspended"),
+            JobState::Resuming => write!(f, "Resuming"),
+            JobState::Finishing => write!(f, "Finishing"),
+            JobState::Terminated => write!(f, "Terminated"),
+            JobState::Error => write!(f, "Error"),
         }
     }
 }
 
-impl State {
+impl JobState {
 
     pub fn get_label(&self) -> String {
         match self {
-            State::Unknown => t!("app.job_state.unknown").to_string(),
-            State::Waiting => t!("app.job_state.waiting").to_string(),
-            State::Hold => t!("app.job_state.hold").to_string(),
-            State::ToLaunch => t!("app.job_state.to_launch").to_string(),
-            State::ToError => t!("app.job_state.to_error").to_string(),
-            State::ToAckReservation => t!("app.job_state.to_ack_reservation").to_string(),
-            State::Launching => t!("app.job_state.launching").to_string(),
-            State::Running => t!("app.job_state.running").to_string(),
-            State::Suspended => t!("app.job_state.suspended").to_string(),
-            State::Resuming => t!("app.job_state.resuming").to_string(),
-            State::Finishing => t!("app.job_state.finishing").to_string(),
-            State::Terminated => t!("app.job_state.terminated").to_string(),
-            State::Error => t!("app.job_state.error").to_string(),
+            JobState::Unknown => t!("app.job_state.unknown").to_string(),
+            JobState::Waiting => t!("app.job_state.waiting").to_string(),
+            JobState::Hold => t!("app.job_state.hold").to_string(),
+            JobState::ToLaunch => t!("app.job_state.to_launch").to_string(),
+            JobState::ToError => t!("app.job_state.to_error").to_string(),
+            JobState::ToAckReservation => t!("app.job_state.to_ack_reservation").to_string(),
+            JobState::Launching => t!("app.job_state.launching").to_string(),
+            JobState::Running => t!("app.job_state.running").to_string(),
+            JobState::Suspended => t!("app.job_state.suspended").to_string(),
+            JobState::Resuming => t!("app.job_state.resuming").to_string(),
+            JobState::Finishing => t!("app.job_state.finishing").to_string(),
+            JobState::Terminated => t!("app.job_state.terminated").to_string(),
+            JobState::Error => t!("app.job_state.error").to_string(),
         }
     }
 
     pub fn get_color(&self) -> (egui::Color32, egui::Color32) {
         match self {
-            State::Unknown => (
+            JobState::Unknown => (
                 egui::Color32::from_rgb(200, 200, 200), // Neutral Gray
                 egui::Color32::from_rgb(120, 120, 120), // Darker Gray
             ),
-            State::Waiting => (
+            JobState::Waiting => (
                 egui::Color32::from_rgb(135, 206, 250), // SkyBlue
                 egui::Color32::from_rgb(30, 144, 255), // DodgerBlue
             ),
-            State::Hold => (
+            JobState::Hold => (
                 egui::Color32::from_rgb(255, 236, 179), // Light Amber
                 egui::Color32::from_rgb(255, 193, 7), // Amber
             ),
-            State::ToLaunch => (
+            JobState::ToLaunch => (
                 egui::Color32::from_rgb(178, 235, 242), // LightCyanBlue
                 egui::Color32::from_rgb(38, 198, 218), // CyanBlue
             ),
-            State::ToError => (
+            JobState::ToError => (
                 egui::Color32::from_rgb(255, 204, 203), // LightPink
                 egui::Color32::from_rgb(244, 67, 54), // Red
             ),
-            State::ToAckReservation => (
+            JobState::ToAckReservation => (
                 egui::Color32::from_rgb(224, 191, 255), // Soft Purple
                 egui::Color32::from_rgb(156, 39, 176), // Purple
             ),
-            State::Launching => (
+            JobState::Launching => (
                 egui::Color32::from_rgb(197, 255, 198), // MintGreen
                 egui::Color32::from_rgb(56, 142, 60), // DarkGreen
             ),
-            State::Running => (
+            JobState::Running => (
                 egui::Color32::from_rgb(165, 214, 167), // Soft Green
                 egui::Color32::from_rgb(67, 160, 71), // Medium Green
             ),
-            State::Suspended => (
+            JobState::Suspended => (
                 egui::Color32::from_rgb(255, 221, 147), // Soft Orange
                 egui::Color32::from_rgb(255, 87, 34), // Deep Orange
             ),
-            State::Resuming => (
+            JobState::Resuming => (
                 egui::Color32::from_rgb(129, 199, 132), // Soft Teal Green
                 egui::Color32::from_rgb(0, 150, 136), // Teal Green
             ),
-            State::Finishing => (
+            JobState::Finishing => (
                 egui::Color32::from_rgb(144, 202, 249), // Soft Blue
                 egui::Color32::from_rgb(33, 150, 243), // Bright Blue
             ),
-            State::Terminated => (
+            JobState::Terminated => (
                 egui::Color32::from_rgb(200, 230, 255), // Soft End Blue
                 egui::Color32::from_rgb(13, 71, 161), // Deep Blue
             ),
-            State::Error => (
+            JobState::Error => (
                 egui::Color32::from_rgb(255, 138, 128), // Soft Red
                 egui::Color32::from_rgb(183, 28, 28), // Dark Red
             ),
@@ -127,7 +127,7 @@ impl State {
 pub struct Job {
     pub id: u32,
     pub owner: String,
-    pub state: State,
+    pub state: JobState,
     pub command: String,
     pub walltime: i64,
     pub message: Option<String>,

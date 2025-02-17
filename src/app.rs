@@ -17,7 +17,6 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-
         let app = App {
             dashboard_view: Dashboard::default(),
             gantt_view: GanttChart::default(),
@@ -33,7 +32,6 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-
         TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             self.menu.render(ui, &mut self.application_context);
         });
@@ -71,5 +69,18 @@ impl eframe::App for App {
                 }
             });
         });
+
+        TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                // Afficher un indicateur de mise à jour dans la barre supérieure
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if *self.application_context.is_refreshing.lock().unwrap() {
+                        ui.add(egui::Spinner::new());
+                        ui.label("Refreshing data...");
+                    }
+                });
+            });
+        });
+        ctx.request_repaint();
     }
 }
