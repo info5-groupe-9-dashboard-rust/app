@@ -40,26 +40,6 @@ impl ApplicationContext {
         *self.end_date.lock().unwrap()
     }
 
-    pub fn update_now(&mut self) {
-
-        let res = get_current_jobs_for_period(Utc::now(), Utc::now());
-
-        if res {
-            let jobs = get_jobs_from_json("./data/data.json");
-            let resources = get_resources_from_json("./data/data.json");
-
-            self.jobs_sender.send(jobs).unwrap_or_else(|e| {
-                println!("Error while sending jobs: {}", e);
-            });
-
-            self.resources_sender.send(resources).unwrap_or_else(|e| {
-                println!("Error while sending resources: {}", e);
-            });
-        } else {
-            println!("Error while fetching data");
-        }
-    }
-
     pub fn update_periodically(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         {

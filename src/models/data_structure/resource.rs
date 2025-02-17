@@ -5,6 +5,7 @@ pub enum ResourceState {
     Unknown,
 }
 
+#[allow(dead_code)]
 pub struct Resource {
     pub id: i32,
     pub state: ResourceState,

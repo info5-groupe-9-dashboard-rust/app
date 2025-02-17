@@ -2,14 +2,11 @@ use crate::{
     models::data_structure::{
         application_context::ApplicationContext, application_options::ApplicationOptions,
     },
-    views::{
-        components::time_selector::TimeSelector,
-        view::{View, ViewType},
-    },
+    views::view::View,
 };
 use eframe::egui;
 
-use super::{filtering::Filtering, options::Options};
+use super::options::Options;
 
 pub struct Menu {
     options_pane: Options
@@ -33,7 +30,7 @@ impl Default for Menu {
 }
 
 impl View for Menu {
-    fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
+    fn render(&mut self, ui: &mut egui::Ui, _app: &mut ApplicationContext) {
         self.options_pane.apply_options(ui.ctx());
 
         ui.horizontal(|ui| {
