@@ -41,9 +41,6 @@ impl ApplicationContext {
         if let Ok(new_jobs) = self.jobs_receiver.try_recv() {
             self.all_jobs = new_jobs;
             self.is_loading = false;
-            // passer is_refresjhign a false
-
-            // pourquoi pas dans check ressource update ?
         }
         self.filter_jobs();
     }
