@@ -1,5 +1,5 @@
 use crate::{models::data_structure::application_context::ApplicationContext, views::view::View};
-use crate::models::data_structure::job::State;
+use crate::models::data_structure::job::JobState;
 use crate::views::components::job_table::JobTable;
 use crate::views::components::metric_box::MetricBox;
 use eframe::egui::{self, RichText};
@@ -36,7 +36,7 @@ impl View for Dashboard {
                     t!("app.dashboard.metrics.running").to_string(),
                     app.filtered_jobs
                         .iter()
-                        .filter(|j| j.state == State::Running)
+                        .filter(|j| j.state == JobState::Running)
                         .count(),
                     egui::Color32::from_rgb(235, 140, 50),
                 );
@@ -47,7 +47,7 @@ impl View for Dashboard {
                     t!("app.dashboard.metrics.waiting").to_string(),
                     app.filtered_jobs
                         .iter()
-                        .filter(|j| j.state == State::Waiting)
+                        .filter(|j| j.state == JobState::Waiting)
                         .count(),
                     egui::Color32::from_rgb(200, 200, 50),
                 );

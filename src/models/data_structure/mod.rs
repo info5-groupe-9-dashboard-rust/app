@@ -8,3 +8,4 @@ pub mod resource;
 pub mod cluster;
 pub mod host;
 pub mod cpu;
+pub mod strata;

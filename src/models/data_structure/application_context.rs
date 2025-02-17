@@ -2,6 +2,7 @@ use super::cluster::Cluster;
 use super::filters::JobFilters;
 use super::job::Job;
 use super::resource::Resource;
+use super::strata::Strata;
 use crate::models::data_structure::cpu::Cpu;
 use crate::models::data_structure::host::Host;
 use crate::views::components::job_table::JobTable;
@@ -30,8 +31,8 @@ pub struct ApplicationContext {
 
     pub jobs_receiver: Receiver<Vec<Job>>,
     pub jobs_sender: Sender<Vec<Job>>,
-    pub resources_receiver: Receiver<Vec<Resource>>,
-    pub resources_sender: Sender<Vec<Resource>>,
+    pub resources_receiver: Receiver<Vec<Strata>>,
+    pub resources_sender: Sender<Vec<Strata>>,
 }
 
 impl ApplicationContext {
@@ -71,9 +72,43 @@ impl ApplicationContext {
                                     .as_ref()
                                     .unwrap_or(&"".to_string())
                                     .clone(),
-                                resources: vec![resource.clone()],
+                                resources: vec![Resource {
+                                    id: resource.resource_id.unwrap_or(0) as i32,
+                                    state: match resource
+                                        .state
+                                        .as_ref()
+                                        .unwrap_or(&"".to_string())
+                                        .as_str()
+                                    {
+                                        "Dead" => super::resource::ResourceState::Dead,
+                                        "Alive" => super::resource::ResourceState::Alive,
+                                        "Absent" => super::resource::ResourceState::Absent,
+                                        _ => super::resource::ResourceState::Unknown,
+                                    },
+                                    thread_count: resource.thread_count.unwrap_or(0) as i32,
+                                }],
+                                core_count: resource.core_count.unwrap_or(0) as i32,
+                                cpufreq: resource
+                                    .cpufreq
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .parse::<f32>()
+                                    .unwrap_or(0.0),
+                                chassis: resource
+                                    .chassis
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .clone(),
+                                resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
                             }],
+                            network_address: resource
+                                .network_address
+                                .as_ref()
+                                .unwrap_or(&"".to_string())
+                                .clone(),
+                            resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
                         }],
+                        resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
                     };
 
                     // Add the cluster to all_clusters
@@ -96,9 +131,46 @@ impl ApplicationContext {
                                     .as_ref()
                                     .unwrap_or(&"".to_string())
                                     .clone(),
-                                resources: vec![resource.clone()],
+                                resources: vec![Resource {
+                                    id: resource.resource_id.unwrap_or(0) as i32,
+                                    state: match resource
+                                        .state
+                                        .as_ref()
+                                        .unwrap_or(&"".to_string())
+                                        .as_str()
+                                    {
+                                        "Dead" => super::resource::ResourceState::Dead,
+                                        "Alive" => super::resource::ResourceState::Alive,
+                                        "Absent" => super::resource::ResourceState::Absent,
+                                        _ => super::resource::ResourceState::Unknown,
+                                    },
+                                    thread_count: resource.thread_count.unwrap_or(0) as i32,
+                                }],
+                                core_count: resource.core_count.unwrap_or(0) as i32,
+                                cpufreq: resource
+                                    .cpufreq
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .parse::<f32>()
+                                    .unwrap_or(0.0),
+                                chassis: resource
+                                    .chassis
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .clone(),
+                                resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
                             }],
+                            network_address: resource
+                                .network_address
+                                .as_ref()
+                                .unwrap_or(&"".to_string())
+                                .clone(),
+                            resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
                         });
+                        // add the resource id to the cluster
+                        cluster
+                            .resource_ids
+                            .push(resource.resource_id.unwrap_or(0) as i32);
                     } else {
                         // if the host already exists, check if the cpu exists and add the cpu if it doesn't
                         let host = cluster
@@ -123,8 +195,42 @@ impl ApplicationContext {
                                     .as_ref()
                                     .unwrap_or(&"".to_string())
                                     .clone(),
-                                resources: vec![resource.clone()],
+                                resources: vec![Resource {
+                                    id: resource.resource_id.unwrap_or(0) as i32,
+                                    state: match resource
+                                        .state
+                                        .as_ref()
+                                        .unwrap_or(&"".to_string())
+                                        .as_str()
+                                    {
+                                        "Dead" => super::resource::ResourceState::Dead,
+                                        "Alive" => super::resource::ResourceState::Alive,
+                                        "Absent" => super::resource::ResourceState::Absent,
+                                        _ => super::resource::ResourceState::Unknown,
+                                    },
+                                    thread_count: resource.thread_count.unwrap_or(0) as i32,
+                                }],
+                                core_count: resource.core_count.unwrap_or(0) as i32,
+                                cpufreq: resource
+                                    .cpufreq
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .parse::<f32>()
+                                    .unwrap_or(0.0),
+                                chassis: resource
+                                    .chassis
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .clone(),
+                                resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
                             });
+
+                            // add the resource id to the host and the cluster
+                            host.resource_ids
+                                .push(resource.resource_id.unwrap_or(0) as i32);
+                            cluster
+                                .resource_ids
+                                .push(resource.resource_id.unwrap_or(0) as i32);
                         } else {
                             // if the cpu already exists, add the resource to the cpu
                             let cpu = host
@@ -139,7 +245,30 @@ impl ApplicationContext {
                                             .clone()
                                 })
                                 .unwrap();
-                            cpu.resources.push(resource.clone());
+                            cpu.resources.push(Resource {
+                                id: resource.resource_id.unwrap_or(0) as i32,
+                                state: match resource
+                                    .state
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .as_str()
+                                {
+                                    "Dead" => super::resource::ResourceState::Dead,
+                                    "Alive" => super::resource::ResourceState::Alive,
+                                    "Absent" => super::resource::ResourceState::Absent,
+                                    _ => super::resource::ResourceState::Unknown,
+                                },
+                                thread_count: resource.thread_count.unwrap_or(0) as i32,
+                            });
+
+                            // add the resource id to the cpu, the host and the cluster
+                            cpu.resource_ids
+                                .push(resource.resource_id.unwrap_or(0) as i32);
+                            host.resource_ids
+                                .push(resource.resource_id.unwrap_or(0) as i32);
+                            cluster
+                                .resource_ids
+                                .push(resource.resource_id.unwrap_or(0) as i32);
                         }
                     }
                 }

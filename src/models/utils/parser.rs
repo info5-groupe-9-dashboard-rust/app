@@ -4,9 +4,9 @@ use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
 use std::process::Command;
-use crate::models::data_structure::job::{Job, State};
+use crate::models::data_structure::job::{Job, JobState};
 use crate::models::utils::utils::convert_id_to_color;
-use crate::models::data_structure::resource::Resource;
+use crate::models::data_structure::strata::Strata;
 
 /**
  * Test SSH connection to the specified host
@@ -99,7 +99,7 @@ pub fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
 }
 
 
-pub fn get_resources_from_json(file_path: &str) -> Vec<Resource> {
+pub fn get_resources_from_json(file_path: &str) -> Vec<Strata> {
      // Ouvrir le fichier
      let file_res = File::open(file_path);
 
@@ -133,7 +133,7 @@ pub fn get_resources_from_json(file_path: &str) -> Vec<Resource> {
      if let Some(resources_array) = json.get("resources").and_then(|v| v.as_array()) {
          for resource_value in resources_array {
              // Désérialiser directement chaque ressource
-             if let Ok(resource) = serde_json::from_value::<Resource>(resource_value.clone()) {
+             if let Ok(resource) = serde_json::from_value::<Strata>(resource_value.clone()) {
                  resources.push(resource);
              }
          }
@@ -142,7 +142,7 @@ pub fn get_resources_from_json(file_path: &str) -> Vec<Resource> {
      resources
 }
 
-pub fn parse_state_from_json(json_str: &str) -> Result<State, serde_json::Error> {
+pub fn parse_state_from_json(json_str: &str) -> Result<JobState, serde_json::Error> {
     serde_json::from_str(json_str)
 }
 
@@ -151,7 +151,7 @@ fn from_json_value(json: &Value) -> Job {
         id: json["id"].as_str().unwrap_or("0").parse::<u32>().unwrap_or(0),
         owner: json["owner"].as_str().unwrap_or("unknown").to_string(),
         state: parse_state_from_json(&format!("\"{}\"", json["state"].as_str().unwrap_or("unknown")))
-            .unwrap_or(State::Unknown),
+            .unwrap_or(JobState::Unknown),
         command: json["command"].as_str().unwrap_or("").to_string(),
         walltime: json["walltime"].as_i64().unwrap_or(0) as i64,
         message: json["message"].as_str().map(|s| s.to_string()),
