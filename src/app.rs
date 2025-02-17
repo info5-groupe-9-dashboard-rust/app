@@ -1,8 +1,11 @@
-use crate::{models::data_structure::application_context::ApplicationContext, views::main_page::anthentification::Authentification};
 use crate::views::main_page::dashboard::Dashboard;
 use crate::views::main_page::gantt::GanttChart;
 use crate::views::menu::menu::Menu;
 use crate::views::view::View;
+use crate::{
+    models::data_structure::application_context::ApplicationContext,
+    views::main_page::anthentification::Authentification,
+};
 use eframe::egui::{self, CentralPanel, TopBottomPanel};
 
 pub struct App {
@@ -10,12 +13,11 @@ pub struct App {
     pub gantt_view: GanttChart,
     pub authentification_view: Authentification,
     pub menu: Menu,
-    pub application_context: ApplicationContext
+    pub application_context: ApplicationContext,
 }
 
 impl App {
     pub fn new() -> Self {
-
         let app = App {
             dashboard_view: Dashboard::default(),
             gantt_view: GanttChart::default(),
@@ -30,7 +32,6 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-
         TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             self.menu.render(ui, &mut self.application_context);
         });
@@ -51,15 +52,30 @@ impl eframe::App for App {
 
             match self.application_context.view_type {
                 crate::views::view::ViewType::Dashboard => {
-                    self.dashboard_view.render(ui, &mut self.application_context);
+                    self.dashboard_view
+                        .render(ui, &mut self.application_context);
                 }
                 crate::views::view::ViewType::Gantt => {
                     self.gantt_view.render(ui, &mut self.application_context);
-                } 
+                }
                 crate::views::view::ViewType::Authentification => {
-                    self.authentification_view.render(ui, &mut self.application_context);
+                    self.authentification_view
+                        .render(ui, &mut self.application_context);
                 }
             }
         });
+
+        TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                // Afficher un indicateur de mise à jour dans la barre supérieure
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if *self.application_context.is_refreshing.lock().unwrap() {
+                        ui.add(egui::Spinner::new());
+                        ui.label("Refreshing data...");
+                    }
+                });
+            });
+        });
+        ctx.request_repaint();
     }
 }

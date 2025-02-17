@@ -1,11 +1,11 @@
+use super::cluster::Cluster;
 use super::filters::JobFilters;
 use super::job::Job;
 use super::resource::Resource;
-use super::cluster::Cluster;
+use crate::models::data_structure::cpu::Cpu;
 use crate::models::data_structure::host::Host;
 use crate::views::components::job_table::JobTable;
 use crate::views::view::ViewType;
-use crate::models::data_structure::cpu::Cpu;
 use chrono::{DateTime, Utc};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
@@ -23,10 +23,10 @@ pub struct ApplicationContext {
     pub end_date: Arc<Mutex<DateTime<Utc>>>,
     pub view_type: ViewType,
     pub is_loading: bool,
+    pub is_refreshing: Arc<Mutex<bool>>,
     pub refresh_rate: Arc<Mutex<u64>>,
     pub filters: JobFilters,
     pub job_table: JobTable,
-
 
     pub jobs_receiver: Receiver<Vec<Job>>,
     pub jobs_sender: Sender<Vec<Job>>,
@@ -35,12 +35,14 @@ pub struct ApplicationContext {
 }
 
 impl ApplicationContext {
-
     pub fn check_job_update(&mut self) {
         // Check if new data is available
         if let Ok(new_jobs) = self.jobs_receiver.try_recv() {
             self.all_jobs = new_jobs;
             self.is_loading = false;
+            // passer is_refresjhign a false
+
+            // pourquoi pas dans check ressource update ?
         }
         self.filter_jobs();
     }
@@ -50,16 +52,25 @@ impl ApplicationContext {
             // for every resources get the cluster name with resource.cluster and if there is no cluster with this name in all_clusters add it to all_clusters
             for resource in new_resources.iter() {
                 let cluster_name = resource.cluster.as_ref().unwrap_or(&"".to_string()).clone();
-                if cluster_name == "" {continue;}
-                if !self.all_clusters.iter().any(|cluster| cluster.name == cluster_name) {
-
+                if cluster_name == "" {
+                    continue;
+                }
+                if !self
+                    .all_clusters
+                    .iter()
+                    .any(|cluster| cluster.name == cluster_name)
+                {
                     // Add the cluster to all_clusters with one host being resource.host
                     let new_cluster = Cluster {
                         name: cluster_name.clone(),
                         hosts: vec![Host {
                             name: resource.host.as_ref().unwrap_or(&"".to_string()).clone(),
                             cpus: vec![Cpu {
-                                name: resource.nodemodel.as_ref().unwrap_or(&"".to_string()).clone(),
+                                name: resource
+                                    .nodemodel
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .clone(),
                                 resources: vec![resource.clone()],
                             }],
                         }],
@@ -69,26 +80,65 @@ impl ApplicationContext {
                     self.all_clusters.push(new_cluster);
                 } else {
                     // if the cluster already exists, check if the host exists and add the host if it doesn't
-                    let cluster = self.all_clusters.iter_mut().find(|cluster| cluster.name == cluster_name).unwrap();
-                    if !cluster.hosts.iter().any(|host| host.name == resource.host.as_ref().unwrap_or(&"".to_string()).clone()) {
+                    let cluster = self
+                        .all_clusters
+                        .iter_mut()
+                        .find(|cluster| cluster.name == cluster_name)
+                        .unwrap();
+                    if !cluster.hosts.iter().any(|host| {
+                        host.name == resource.host.as_ref().unwrap_or(&"".to_string()).clone()
+                    }) {
                         cluster.hosts.push(Host {
                             name: resource.host.as_ref().unwrap_or(&"".to_string()).clone(),
                             cpus: vec![Cpu {
-                                name: resource.nodemodel.as_ref().unwrap_or(&"".to_string()).clone(),
+                                name: resource
+                                    .nodemodel
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .clone(),
                                 resources: vec![resource.clone()],
                             }],
                         });
                     } else {
                         // if the host already exists, check if the cpu exists and add the cpu if it doesn't
-                        let host = cluster.hosts.iter_mut().find(|host| host.name == resource.host.as_ref().unwrap_or(&"".to_string()).clone()).unwrap();
-                        if !host.cpus.iter().any(|cpu| cpu.name == resource.nodemodel.as_ref().unwrap_or(&"".to_string()).clone()) {
+                        let host = cluster
+                            .hosts
+                            .iter_mut()
+                            .find(|host| {
+                                host.name
+                                    == resource.host.as_ref().unwrap_or(&"".to_string()).clone()
+                            })
+                            .unwrap();
+                        if !host.cpus.iter().any(|cpu| {
+                            cpu.name
+                                == resource
+                                    .nodemodel
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .clone()
+                        }) {
                             host.cpus.push(Cpu {
-                                name: resource.nodemodel.as_ref().unwrap_or(&"".to_string()).clone(),
+                                name: resource
+                                    .nodemodel
+                                    .as_ref()
+                                    .unwrap_or(&"".to_string())
+                                    .clone(),
                                 resources: vec![resource.clone()],
                             });
                         } else {
                             // if the cpu already exists, add the resource to the cpu
-                            let cpu = host.cpus.iter_mut().find(|cpu| cpu.name == resource.nodemodel.as_ref().unwrap_or(&"".to_string()).clone()).unwrap();
+                            let cpu = host
+                                .cpus
+                                .iter_mut()
+                                .find(|cpu| {
+                                    cpu.name
+                                        == resource
+                                            .nodemodel
+                                            .as_ref()
+                                            .unwrap_or(&"".to_string())
+                                            .clone()
+                                })
+                                .unwrap();
                             cpu.resources.push(resource.clone());
                         }
                     }
@@ -99,7 +149,7 @@ impl ApplicationContext {
 
     pub fn check_data_update(&mut self) {
         self.check_job_update();
-        self.check_ressource_update();        
+        self.check_ressource_update();
     }
 
     //gather all unique owners (for completion in filters)
@@ -147,7 +197,7 @@ impl Default for ApplicationContext {
     fn default() -> Self {
         let (jobs_sender, jobs_receiver) = channel();
         let (resources_sender, resources_receiver) = channel();
-       
+
         let now: DateTime<Utc> = Utc::now();
         let mut context = Self {
             all_jobs: Vec::new(),
@@ -164,6 +214,7 @@ impl Default for ApplicationContext {
             end_date: Arc::new(Mutex::new(now + chrono::Duration::hours(1))),
             view_type: ViewType::Authentification,
             is_loading: false,
+            is_refreshing: Arc::new(Mutex::new(false)),
             refresh_rate: Arc::new(Mutex::new(30)),
             job_table: JobTable::default(), // Initialize job_table
         };
