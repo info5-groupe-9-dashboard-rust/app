@@ -12,9 +12,9 @@ app:
 
     refresh_rate:
       button: 'Fréquence de rafraîchissement'
-      refresh_30: '30 secondes'
-      refresh_60: '1 minute'
-      refresh_300: '5 minutes'
+      refresh_30: '30 s'
+      refresh_60: '1 min'
+      refresh_300: '5 min'
   options:
     title: 'Options'
     save:

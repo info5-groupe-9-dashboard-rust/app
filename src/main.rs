@@ -2,6 +2,8 @@ mod app;
 mod models;
 mod views;
 
+use egui_extras::install_image_loaders;
+
 #[macro_use]
 extern crate rust_i18n;
 i18n!("src/i18n");
@@ -15,7 +17,10 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         &t!("app.title"),
         options,
-        Box::new(|_cc| Ok(Box::new(app::App::new()))),
+        Box::new(|cc| {
+            install_image_loaders(&cc.egui_ctx);
+            Ok(Box::new(app::App::new()))
+        }),
     )
 }
 

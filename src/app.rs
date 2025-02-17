@@ -1,3 +1,4 @@
+use crate::views::menu::tools::Tools;
 use crate::{models::data_structure::application_context::ApplicationContext, views::main_page::anthentification::Authentification};
 use crate::views::main_page::dashboard::Dashboard;
 use crate::views::main_page::gantt::GanttChart;
@@ -10,6 +11,7 @@ pub struct App {
     pub gantt_view: GanttChart,
     pub authentification_view: Authentification,
     pub menu: Menu,
+    pub tools: Tools,
     pub application_context: ApplicationContext
 }
 
@@ -21,6 +23,7 @@ impl App {
             gantt_view: GanttChart::default(),
             authentification_view: Authentification::default(),
             menu: Menu::default(),
+            tools: Tools::default(),
             application_context: ApplicationContext::default(),
         };
 
@@ -39,27 +42,34 @@ impl eframe::App for App {
         self.application_context.check_data_update();
 
         CentralPanel::default().show(ctx, |ui| {
-            // Display a loading indicator if necessary
-            if self.application_context.is_loading {
-                ui.add_space(ui.available_height() * 0.4);
-                ui.vertical_centered(|ui| {
-                    ui.heading(t!("app.loading"));
-                    ui.spinner();
-                });
-                return;
-            }
+            
+            TopBottomPanel::top("tool_bar").show(ctx, |ui| {
+                self.tools.render(ui, &mut self.application_context);
+            });
 
-            match self.application_context.view_type {
-                crate::views::view::ViewType::Dashboard => {
-                    self.dashboard_view.render(ui, &mut self.application_context);
+            CentralPanel::default().show(ctx, |ui| {
+                // Display a loading indicator if necessary
+                if self.application_context.is_loading {
+                    ui.add_space(ui.available_height() * 0.4);
+                    ui.vertical_centered(|ui| {
+                        ui.heading(t!("app.loading"));
+                        ui.spinner();
+                    });
+                    return;
                 }
-                crate::views::view::ViewType::Gantt => {
-                    self.gantt_view.render(ui, &mut self.application_context);
-                } 
-                crate::views::view::ViewType::Authentification => {
-                    self.authentification_view.render(ui, &mut self.application_context);
+
+                match self.application_context.view_type {
+                    crate::views::view::ViewType::Dashboard => {
+                        self.dashboard_view.render(ui, &mut self.application_context);
+                    }
+                    crate::views::view::ViewType::Gantt => {
+                        self.gantt_view.render(ui, &mut self.application_context);
+                    } 
+                    crate::views::view::ViewType::Authentification => {
+                        self.authentification_view.render(ui, &mut self.application_context);
+                    }
                 }
-            }
+            });
         });
     }
 }

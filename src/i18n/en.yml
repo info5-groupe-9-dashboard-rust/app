@@ -11,9 +11,9 @@ app:
     filters: 'Filter'
     refresh_rate:
       button: 'Refresh Rate'
-      refresh_30: '30 seconds'
-      refresh_60: '1 minute'
-      refresh_300: '5 minutes'
+      refresh_30: '30 s'
+      refresh_60: '1 min'
+      refresh_300: '5 min'
   options:
     title: 'Options'
     save:
