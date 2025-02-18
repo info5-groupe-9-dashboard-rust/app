@@ -2,6 +2,7 @@ use eframe::egui;
 use chrono::{NaiveDate, NaiveTime, NaiveDateTime, Utc, TimeZone, Datelike, Duration};
 use crate::models::data_structure::application_context::ApplicationContext;
 
+#[allow(dead_code)]
 pub struct TimeSelector {
     // Status of the date selector modal
     date_selector_open: bool,
@@ -28,6 +29,7 @@ impl Default for TimeSelector {
 }
 
 impl TimeSelector {
+    #[allow(dead_code)]
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         // Button to open the date selector modal
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
