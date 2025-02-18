@@ -1,5 +1,6 @@
 use crate::models::data_structure::resource::Resource;
 
+#[allow(dead_code)]
 pub struct Cpu {
     pub name: String,
     pub resources: Vec<Resource>,

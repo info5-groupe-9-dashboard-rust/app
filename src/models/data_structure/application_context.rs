@@ -13,6 +13,7 @@ use std::sync::{Arc, Mutex};
 #[cfg(target_arch = "wasm32")]
 use crate::models::job::mock_jobs;
 
+#[allow(dead_code)]
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>,
     pub filtered_jobs: Vec<Job>,
