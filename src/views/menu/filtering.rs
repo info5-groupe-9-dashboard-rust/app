@@ -1,8 +1,11 @@
+use std::cmp::Ordering;
+
 use crate::models::data_structure::{
-    application_context::ApplicationContext, filters::JobFilters, job::JobState,
+    application_context::ApplicationContext, cluster::Cluster, cpu::Cpu, filters::JobFilters,
+    host::Host, job::JobState,
 };
 use eframe::egui::{self, Grid, RichText};
-use egui::TextEdit;
+use egui::{ScrollArea, TextEdit};
 use strum::IntoEnumIterator;
 
 pub struct Filtering {
@@ -24,29 +27,46 @@ impl Filtering {
         self.open = true;
     }
 
-    // Si la popup est ouverte, on la dessine
-
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        let mut open = self.open; // Copier la valeur de self.open dans une variable locale
+        let mut open = self.open;
         if self.open {
             egui::Window::new("Filters")
                 .collapsible(true)
                 .movable(true)
                 .open(&mut open)
-                .default_size([400.0, 500.0])
+                .default_size([600.0, 500.0])
                 .show(ui.ctx(), |ui| {
                     ui.heading("Filter Options");
 
-                    ui.separator(); // Ligne de séparation
+                    ui.separator();
 
-                    // Appeler les fonctions de rendu des filtres ici
-                    self.render_job_id_range(ui);
+                    // call filter functions
+                    egui::CollapsingHeader::new("Job ID Range")
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            self.render_job_id_range(ui);
+                        });
                     ui.add_space(10.0);
 
-                    self.render_owners_selector(ui, app);
+                    egui::CollapsingHeader::new("Owners")
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            self.render_owners_selector(ui, app);
+                        });
                     ui.add_space(10.0);
 
-                    self.render_states_selector(ui);
+                    egui::CollapsingHeader::new("Job States")
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            self.render_states_selector(ui);
+                        });
+                    ui.add_space(10.0);
+
+                    egui::CollapsingHeader::new("Clusters")
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            self.render_cluster_menu(ui, app);
+                        });
 
                     ui.add_space(20.0);
 
@@ -74,7 +94,6 @@ impl Filtering {
     }
 
     fn render_job_id_range(&mut self, ui: &mut egui::Ui) {
-        ui.label(RichText::new(t!("Job Id")).strong());
         ui.horizontal(|ui| {
             let mut start_id = self
                 .temp_filters
@@ -112,8 +131,6 @@ impl Filtering {
     }
 
     fn render_owners_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        ui.label(RichText::new(t!("Owners")).strong());
-
         let unique_owners = app.get_unique_owners();
         let mut selected_owners = self.temp_filters.owners.clone().unwrap_or_default();
 
@@ -143,8 +160,6 @@ impl Filtering {
     }
 
     fn render_states_selector(&mut self, ui: &mut egui::Ui) {
-        ui.label(RichText::new(t!("app.filters.states")).strong());
-
         let mut selected_states = self.temp_filters.states.clone().unwrap_or_default();
 
         Grid::new("states_grid")
@@ -173,5 +188,113 @@ impl Filtering {
                     }
                 }
             });
+    }
+
+    fn render_cluster_menu(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
+        ui.set_max_width(200.0); // To make sure we wrap long text
+
+        for cluster in &app.all_clusters {
+            ui.horizontal(|ui| {
+                ui.set_width(150.0); // Largeur fixe pour chaque ligne
+
+                // Partie gauche : checkbox et nom du cluster
+                let mut is_selected = self
+                    .temp_filters
+                    .clusters
+                    .as_ref()
+                    .map_or(false, |clusters| {
+                        clusters.iter().any(|c| c.name == cluster.name)
+                    });
+                if ui.checkbox(&mut is_selected, &cluster.name).changed() {
+                    if is_selected {
+                        if let Some(clusters) = &mut self.temp_filters.clusters {
+                            clusters.push(cluster.clone());
+                        } else {
+                            self.temp_filters.clusters = Some(vec![cluster.clone()]);
+                        }
+                    } else {
+                        if let Some(clusters) = &mut self.temp_filters.clusters {
+                            clusters.retain(|c| c.name != cluster.name);
+                        }
+                    }
+                }
+
+                // Espace flexible pour pousser le bouton à droite
+                ui.add_space(ui.available_width() - 20.0); // 20.0 est une estimation de la largeur du bouton
+
+                // Bouton ">" à droite
+                ui.menu_button(">", |ui| {
+                    if is_selected {
+                        self.render_host_menu(ui, cluster);
+                    }
+                });
+            });
+        }
+    }
+
+    fn render_host_menu(&mut self, ui: &mut egui::Ui, cluster: &Cluster) {
+        ui.set_max_width(300.0); // To make sure we wrap long text
+
+        let mut hosts = cluster.hosts.clone();
+        hosts.sort_by(|a, b| compare_host_names(&a.name, &b.name));
+
+        ScrollArea::vertical().max_height(400.0).show(ui, |ui| {
+            for host in hosts {
+                let mut is_selected =
+                    self.temp_filters
+                        .clusters
+                        .as_ref()
+                        .map_or(false, |clusters| {
+                            clusters.iter().any(|c| {
+                                c.name == cluster.name
+                                    && c.hosts.iter().any(|h| h.name == host.name)
+                            })
+                        });
+                if ui.checkbox(&mut is_selected, &host.name).changed() {
+                    if is_selected {
+                        if let Some(clusters) = &mut self.temp_filters.clusters {
+                            if let Some(cluster) =
+                                clusters.iter_mut().find(|c| c.name == cluster.name)
+                            {
+                                cluster.hosts.push(host.clone());
+                            }
+                        }
+                    } else {
+                        if let Some(clusters) = &mut self.temp_filters.clusters {
+                            if let Some(cluster) =
+                                clusters.iter_mut().find(|c| c.name == cluster.name)
+                            {
+                                cluster.hosts.retain(|h| h.name != host.name);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    fn render_cpu_menu(&mut self, ui: &mut egui::Ui, host: &mut Host) {
+        for cpu in &mut host.cpus {
+            let mut is_selected = !cpu.resource_ids.is_empty();
+            if ui.checkbox(&mut is_selected, &cpu.name).changed() {
+                if is_selected {
+                    // Ici, vous devriez obtenir les resource_ids du CPU original
+                    // Cela dépend de la façon dont vous stockez ces informations
+                } else {
+                    cpu.resource_ids.clear();
+                }
+            }
+        }
+    }
+}
+
+fn extract_number(s: &str) -> Option<u32> {
+    s.split('-').nth(1)?.split('.').next()?.parse().ok()
+}
+
+fn compare_host_names(a: &str, b: &str) -> Ordering {
+    match (extract_number(a), extract_number(b)) {
+        (Some(num_a), Some(num_b)) => num_a.cmp(&num_b),
+        _ => a.cmp(b), // Fallback à la comparaison de chaînes si l'extraction échoue
     }
 }

@@ -1,3 +1,5 @@
+#[derive(Clone, Debug, PartialEq)]
+
 pub enum ResourceState {
     Dead,
     Alive,
@@ -5,8 +7,10 @@ pub enum ResourceState {
     Unknown,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+
 pub struct Resource {
-    pub id: i32,
+    pub id: u32,
     pub state: ResourceState,
     pub thread_count: i32,
 }
