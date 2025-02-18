@@ -5,7 +5,6 @@ use super::resource::Resource;
 use super::strata::Strata;
 use crate::models::data_structure::cpu::Cpu;
 use crate::models::data_structure::host::Host;
-use crate::views::components::job_table::JobTable;
 use crate::views::view::ViewType;
 use chrono::{DateTime, Utc};
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -28,7 +27,6 @@ pub struct ApplicationContext {
     pub is_refreshing: Arc<Mutex<bool>>,
     pub refresh_rate: Arc<Mutex<u64>>,
     pub filters: JobFilters,
-    pub job_table: JobTable,
 
     pub jobs_receiver: Receiver<Vec<Job>>,
     pub jobs_sender: Sender<Vec<Job>>,
@@ -343,7 +341,6 @@ impl Default for ApplicationContext {
             is_loading: false,
             is_refreshing: Arc::new(Mutex::new(false)),
             refresh_rate: Arc::new(Mutex::new(30)),
-            job_table: JobTable::default(), // Initialize job_table
         };
         context.update_periodically();
         context
