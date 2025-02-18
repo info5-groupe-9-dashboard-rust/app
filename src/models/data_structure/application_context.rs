@@ -24,6 +24,7 @@ pub struct ApplicationContext {
     pub end_date: Arc<Mutex<DateTime<Utc>>>,
     pub view_type: ViewType,
     pub is_loading: bool,
+    pub is_connected: bool,
     pub is_refreshing: Arc<Mutex<bool>>,
     pub refresh_rate: Arc<Mutex<u64>>,
     pub filters: JobFilters,
@@ -277,6 +278,16 @@ impl ApplicationContext {
         self.check_ressource_update();
     }
 
+    pub fn logout(&mut self) {
+        self.is_connected = false;
+        self.view_type = ViewType::Authentification;
+    }
+
+    pub fn login(&mut self) {
+        self.is_connected = true;
+        self.view_type = ViewType::Gantt;
+    }
+
     //gather all unique owners (for completion in filters)
     pub fn get_unique_owners(&self) -> Vec<String> {
         let mut owners: Vec<String> = self.all_jobs.iter().map(|job| job.owner.clone()).collect();
@@ -332,6 +343,7 @@ impl Default for ApplicationContext {
             jobs_sender: jobs_sender,
             resources_receiver: resources_receiver,
             resources_sender: resources_sender,
+            is_connected: false,
 
             filtered_jobs: Vec::new(),
             filters: JobFilters::default(),
