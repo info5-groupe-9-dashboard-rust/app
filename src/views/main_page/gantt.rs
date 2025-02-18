@@ -1,7 +1,9 @@
-use crate::{models::data_structure::{application_context::ApplicationContext, cluster::Cluster, host::Host, job::Job}, views::components::{gantt_grid_spacing::GridSpacing, gantt_group_by::{GroupBy, GroupByEnum}, gantt_job_color::JobColor, gantt_sorting::Sorting, job_details::JobDetailsWindow}};
+use std::collections::BTreeMap;
+
+use crate::{models::data_structure::{application_context::ApplicationContext, cluster::Cluster, host::Host, job::{self, Job}}, views::components::{gantt_grid_spacing::GridSpacing, gantt_group_by::{GroupBy, GroupByEnum}, gantt_job_color::JobColor, gantt_sorting::Sorting, job_details::JobDetailsWindow}};
 use chrono::DateTime;
 use eframe::egui;
-use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle};
+use egui::{ahash::{HashMap, HashMapExt}, lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle};
 use crate::views::view::View;
 
 /**
@@ -84,63 +86,63 @@ impl View for GanttChart {
 
             let available_height = ui.max_rect().bottom() - ui.min_rect().bottom();
             ScrollArea::vertical().show(ui, |ui| {
-                let mut canvas = ui.available_rect_before_wrap();
-                canvas.max.y = f32::INFINITY;
-                let response = ui.interact(canvas, ui.id().with("canvas"), Sense::click_and_drag());
+            let mut canvas = ui.available_rect_before_wrap();
+            canvas.max.y = f32::INFINITY;
+            let response = ui.interact(canvas, ui.id().with("canvas"), Sense::click_and_drag());
 
-                let min_s = min_start;
-                let max_s = max_end;
+            let min_s = min_start;
+            let max_s = max_end;
 
-                // Initialize canvas info
-                let info = Info {
-                    ctx: ui.ctx().clone(),
-                    canvas,
-                    response,
-                    painter: ui.painter_at(canvas),
-                    text_height: 15.0,
-                    start_s: min_s,
-                    stop_s: max_s,
-                    font_id: TextStyle::Body.resolve(ui.style()),
-                };
+            // Initialize canvas info
+            let info = Info {
+                ctx: ui.ctx().clone(),
+                canvas,
+                response,
+                painter: ui.painter_at(canvas),
+                text_height: 15.0,
+                start_s: min_s,
+                stop_s: max_s,
+                font_id: TextStyle::Body.resolve(ui.style()),
+            };
 
-                // When we reset the view, we want to zoom to the full range
-                if reset_view {
-                    self.options.zoom_to_relative_s_range = Some((
-                        info.ctx.input(|i| i.time),
-                        (0., (info.stop_s - info.start_s) as f64),
-                    ));
-                }
+            // When we reset the view, we want to zoom to the full range
+            if reset_view {
+                self.options.zoom_to_relative_s_range = Some((
+                info.ctx.input(|i| i.time),
+                (0., (info.stop_s - info.start_s) as f64),
+                ));
+            }
 
-                // Interact with the canvas
-                interact_with_canvas(&mut self.options, &info.response, &info);
+            // Interact with the canvas
+            interact_with_canvas(&mut self.options, &info.response, &info);
 
-                // Put the timeline
-                let where_to_put_timeline = info.painter.add(Shape::Noop);
+            // Put the timeline
+            let where_to_put_timeline = info.painter.add(Shape::Noop);
 
-                // Paint the canvas
-                let max_y = ui_canvas(
-                    &mut self.options,
-                    app,
-                    &info,
-                    (min_s, max_s),
-                    &mut self.job_details_windows,
-                );
+            // Paint the canvas
+            let max_y = ui_canvas(
+                &mut self.options,
+                app,
+                &info,
+                (min_s, max_s),
+                &mut self.job_details_windows,
+            );
 
-                let mut used_rect = canvas;
-                used_rect.max.y = max_y;
+            let mut used_rect = canvas;
+            used_rect.max.y = max_y;
 
-                // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
-                used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
+            // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
+            used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
 
-                let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
-                info.painter
-                    .set(where_to_put_timeline, Shape::Vec(timeline));
+            let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
+            info.painter
+                .set(where_to_put_timeline, Shape::Vec(timeline));
 
-                // Adding a line to show the current time AFTER all other elements
-                let current_time_line = paint_current_time_line(&info, &self.options, used_rect);
-                info.painter.add(current_time_line);
+            // Adding a line to show the current time AFTER all other elements
+            let current_time_line = paint_current_time_line(&info, &self.options, used_rect);
+            info.painter.add(current_time_line);
 
-                ui.allocate_rect(used_rect, Sense::hover());
+            ui.allocate_rect(used_rect, Sense::hover());
             });
         });
 
@@ -256,17 +258,28 @@ fn ui_canvas(
     match options.group_by.value {
         // Group by owner
         GroupByEnum::Owner => {
-            cursor_y = paint_aggregated_jobs_by_owner(info, options, jobs, cursor_y, details_window);
+
+            let mut jobs_by_id: BTreeMap<u32, Vec<Job>> = BTreeMap::new();
+            for job in jobs {
+                let id = job.id.clone();
+                jobs_by_id.entry(id).or_insert_with(Vec::new).push(job);
+            }
+
+            let mut jobs_by_id_by_owner: BTreeMap<String, BTreeMap<u32, Vec<Job>>> = BTreeMap::new();
+            for (id, job_list) in jobs_by_id {
+                let owner = job_list[0].owner.clone();
+                jobs_by_id_by_owner.entry(owner).or_insert_with(BTreeMap::new).insert(id, job_list);
+            }
+
+            cursor_y = paint_aggregated_jobs(info, options, jobs_by_id_by_owner, cursor_y, details_window);
         }
         // Group by host
         GroupByEnum::Host => {
-            let hosts = app.all_clusters.iter().flat_map(|cluster| cluster.hosts.clone()).collect();
-            cursor_y = paint_aggregated_jobs_by_host(info, options, hosts, jobs, cursor_y, details_window);
+
         }
         // Group by cluster
         GroupByEnum::Cluster => {
-            let clusters = app.all_clusters.clone();
-            cursor_y = paint_aggregated_jobs_by_cluster(info, options, clusters, jobs, cursor_y, details_window);
+
         }
     }
 
@@ -376,130 +389,81 @@ fn paint_job_tooltip(info: &Info, options: &mut Options) {
 }
 
 /**
- * Paints aggregated jobs by owner
+ * Paints aggregated jobs
  */
-fn paint_aggregated_jobs_by_owner(
+fn paint_aggregated_jobs(
     info: &Info,
     options: &mut Options,
-    jobs: Vec<Job>,
+    jobs: BTreeMap<String, BTreeMap<u32, Vec<Job>>>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
 ) -> f32 {
-    let mut jobs_by_owner = std::collections::BTreeMap::new();
-    for job in jobs {
-        let owner = job.owner.clone();
-        jobs_by_owner.entry(owner).or_insert_with(Vec::new).push(job);
-    }
+    let spacing_between_owners = 20.0;
+    let spacing_between_ids = 15.0; // Espacement entre chaque groupe d'ID
+    let spacing_between_jobs = 5.0;
+    let offset_owner = 10.0; // Décalage pour afficher owner sous la ligne
 
-    for (owner, jobs) in jobs_by_owner {
-        cursor_y = paint_jobs_group(info, options, owner, jobs, cursor_y, details_window);
-    }
+    cursor_y += spacing_between_owners;
 
-    cursor_y
-}
-
-/**
- * Paints aggregated jobs by cluster
- */
-fn paint_aggregated_jobs_by_cluster(
-    info: &Info,
-    options: &mut Options,
-    clusters: Vec<Cluster>,
-    jobs: Vec<Job>,
-    mut cursor_y: f32,
-    details_window: &mut Vec<JobDetailsWindow>,
-) -> f32 {
-    let mut jobs_by_cluster = std::collections::BTreeMap::new();
-    for cluster in clusters {
-        let jobs_in_cluster: Vec<Job> = jobs
-                    .iter()
-                    .filter(|job| {
-                        cluster
-                            .resource_ids
-                            .iter()
-                            .any(|id| job.assigned_resources.contains(&(*id as u32)))
-                    })
-                    .cloned()
-                    .collect();
-        jobs_by_cluster.insert(cluster.name, jobs_in_cluster);
-    }
-
-    for (cluster_name, jobs) in jobs_by_cluster {
-        cursor_y = paint_jobs_group(info, options, cluster_name, jobs, cursor_y, details_window);
-    }
-
-    cursor_y
-}
-
-/**
- * Paints aggregated jobs by host
- */
-fn paint_aggregated_jobs_by_host(
-    info: &Info,
-    options: &mut Options,
-    hosts: Vec<Host>,
-    jobs: Vec<Job>,
-    mut cursor_y: f32,
-    details_window: &mut Vec<JobDetailsWindow>,
-) -> f32 {
-    let mut jobs_by_host = std::collections::BTreeMap::new();
-    for host in hosts {
-        let jobs_on_host: Vec<Job> = jobs
-                    .iter()
-                    .filter(|job| {
-                        host
-                            .resource_ids
-                            .iter()
-                            .any(|id| job.assigned_resources.contains(&(*id as u32)))
-                    })
-                    .cloned()
-                    .collect();
-        jobs_by_host.insert(host.name, jobs_on_host);
-    }
-
-    for (host_name, jobs) in jobs_by_host {
-        cursor_y = paint_jobs_group(info, options, host_name, jobs, cursor_y, details_window);
-    }
-
-    cursor_y
-}
-
-/**
- * Paints grouped jobs
- */
-fn paint_jobs_group(
-    info: &Info,
-    options: &mut Options,
-    info_label: String,
-    jobs: Vec<Job>,
-    mut cursor_y: f32,
-    details_window: &mut Vec<JobDetailsWindow>,
-) -> f32 {
-    cursor_y += 2.0;
-    let line_y = cursor_y;
-    cursor_y += 2.0;
-    let text_pos = pos2(info.canvas.min.x, cursor_y);
-
-    for job in jobs {
-        paint_job_info(info, info_label.clone(), text_pos, &mut false);
-
+    for (owner, id_map) in jobs {
+        
+        // Tracer une ligne horizontale pour séparer les owners
         info.painter.line_segment(
             [
-                pos2(info.canvas.min.x, line_y),
-                pos2(info.canvas.max.x, line_y),
+                pos2(info.canvas.min.x, cursor_y),
+                pos2(info.canvas.max.x, cursor_y),
             ],
-            Stroke::new(1.0, Rgba::from_white_alpha(0.5)),
+            Stroke::new(1.5, Color32::WHITE), // Ligne plus marquée
         );
 
-        cursor_y += info.text_height;
-        paint_job(info, options, &job, cursor_y, details_window);
-        cursor_y += options.spacing;
+        cursor_y += offset_owner; // Décalage avant d'afficher le propriétaire
+
+        // Afficher le nom du propriétaire
+        let text_pos = pos2(info.canvas.min.x, cursor_y);
+        paint_job_info_owner(info, owner, text_pos, &mut false);
+
+        cursor_y += spacing_between_owners; // Espacement après le propriétaire
+
+        // Trier les IDs pour assurer un affichage ordonné (optionnel)
+        let mut sorted_ids: Vec<_> = id_map.keys().copied().collect();
+        sorted_ids.sort();
+
+        for id in sorted_ids {
+            if let Some(job_list) = id_map.get(&id) {
+                
+                // Tracer une ligne pour séparer chaque ID
+                info.painter.line_segment(
+                    [
+                        pos2(info.canvas.min.x, cursor_y),
+                        pos2(info.canvas.max.x, cursor_y),
+                    ],
+                    Stroke::new(1.0, Rgba::from_white_alpha(0.8)), // Ligne plus discrète que celle des owners
+                );
+
+                cursor_y += spacing_between_ids; // Espacement après la ligne de l'ID
+
+                // Affichage des jobs sous l'ID actuel
+                for job in job_list {
+                    let job_start_y = cursor_y; // Assurer l'alignement vertical
+
+                    // Dessiner le job (arrière-plan)
+                    paint_job(info, options, &job, job_start_y, details_window);
+
+                    // Ensuite, dessiner job_info_id (au-dessus)
+                    let job_text_pos = pos2(info.canvas.min.x, job_start_y);
+                    paint_job_info_id(info, job.clone(), job_text_pos, &mut false);
+
+                    cursor_y += info.text_height + spacing_between_jobs + options.spacing;
+                }
+            }
+        }
+
+        cursor_y += spacing_between_owners;
     }
-    cursor_y += options.rect_height + options.spacing;
-    cursor_y += info.text_height;
 
     cursor_y
 }
+
 
 #[derive(PartialEq)]
 enum PaintResult {
@@ -616,6 +580,87 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
     });
 
     let rect = Rect::from_min_size(pos, galley.size());
+
+    let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
+        rect.contains(mouse_pos)
+    } else {
+        false
+    };
+
+    // Text color
+    let text_color = if is_hovered {
+        Color32::WHITE
+    } else {
+        Color32::from_white_alpha(229)
+    };
+
+    // Background color
+    let back_color = if is_hovered {
+        Color32::from_black_alpha(100)
+    } else {
+        Color32::BLACK
+    };
+
+    info.painter.rect_filled(rect.expand(2.0), 0.0, back_color);
+    info.painter.galley(rect.min, galley, text_color);
+
+    if is_hovered && info.response.clicked() {
+        *collapsed = !(*collapsed);
+    }
+}
+
+fn paint_job_info_owner(info: &Info, owner: String, pos: Pos2, collapsed: &mut bool) {
+    let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
+
+    let galley = info.ctx.fonts(|f| {
+        f.layout_no_wrap(
+            format!("{} {}", collapsed_symbol, owner),
+            info.font_id.clone(),
+            egui::Color32::PLACEHOLDER,
+        )
+    });
+
+    let rect = Rect::from_min_size(pos, galley.size());
+
+    let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
+        rect.contains(mouse_pos)
+    } else {
+        false
+    };
+
+    // Text color
+    let text_color = if is_hovered {
+        Color32::WHITE
+    } else {
+        Color32::from_white_alpha(229)
+    };
+
+    // Background color
+    let back_color = if is_hovered {
+        Color32::from_black_alpha(100)
+    } else {
+        Color32::BLACK
+    };
+
+    info.painter.rect_filled(rect.expand(2.0), 0.0, back_color);
+    info.painter.galley(rect.min, galley, text_color);
+
+    if is_hovered && info.response.clicked() {
+        *collapsed = !(*collapsed);
+    }
+}
+
+fn paint_job_info_id(info: &Info, job: Job, pos: Pos2, collapsed: &mut bool) {
+
+    let galley = info.ctx.fonts(|f| {
+        f.layout_no_wrap(
+            format!("- {}", job.id),
+            info.font_id.clone(),
+            egui::Color32::PLACEHOLDER,
+        )
+    });
+
+    let rect = Rect::from_min_size(pos2(pos.x + 50.0, pos.y), galley.size());
 
     let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
         rect.contains(mouse_pos)
