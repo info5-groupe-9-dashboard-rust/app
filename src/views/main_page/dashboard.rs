@@ -1,6 +1,7 @@
 use crate::models::data_structure::job::JobState;
 use crate::views::components::dashboard_components::job_table::JobTable;
 use crate::views::components::dashboard_components::metric_box::MetricBox;
+use crate::views::components::dashboard_components::metric_chart::create_jobstate_chart;
 use crate::views::components::dashboard_components::metric_grid::MetricGrid;
 use crate::{models::data_structure::application_context::ApplicationContext, views::view::View};
 use eframe::egui::{self, RichText};
@@ -54,6 +55,11 @@ impl View for Dashboard {
                             ));
                         }
                     }
+
+                    // Add the job state chart
+                    let chart = create_jobstate_chart(app.filtered_jobs.clone());
+                    grid.add_chart(chart);
+
                 });
 
                 ui.add_space(10.0);

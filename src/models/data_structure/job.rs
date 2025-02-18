@@ -5,7 +5,7 @@ use strum_macros::EnumIter;
 #[cfg(target_arch = "wasm32")]
 use chrono::{DateTime, Utc};
 
-#[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq, PartialOrd, Ord)]
+#[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq, PartialOrd, Ord,Hash)]
 pub enum JobState {
     Unknown,
     Waiting,
