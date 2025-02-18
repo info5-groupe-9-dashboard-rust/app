@@ -1,5 +1,6 @@
 use eframe::egui;
-use super::metric_box::MetricBox;
+use egui::Widget;
+use super::{metric_box::MetricBox, metric_chart::MetricChart};
 
 pub struct MetricGrid {
     columns: usize,
@@ -9,8 +10,8 @@ pub struct MetricGrid {
 impl Default for MetricGrid {
     fn default() -> Self {
         Self {
-            columns: 4,
-            spacing: 12.0, 
+            columns: 3,
+            spacing: 10.0, 
         }
     }
 }
@@ -67,6 +68,15 @@ impl<'a> MetricGridBuilder<'a> {
         }
 
         self.ui.add_sized([self.column_width, MetricBox::MIN_HEIGHT], metric);
+        self.current_column += 1;
+    }
+
+    pub fn add_chart(&mut self, chart: MetricChart) {
+        if self.current_column >= self.columns {
+            self.new_row();
+        }
+
+        self.ui.add_sized([self.column_width, MetricBox::MIN_HEIGHT], chart);
         self.current_column += 1;
     }
 
