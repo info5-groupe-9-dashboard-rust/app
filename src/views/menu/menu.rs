@@ -30,7 +30,7 @@ impl Default for Menu {
 }
 
 impl View for Menu {
-    fn render(&mut self, ui: &mut egui::Ui, _app: &mut ApplicationContext) {
+    fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         self.options_pane.apply_options(ui.ctx());
 
         ui.horizontal(|ui| {
@@ -40,7 +40,7 @@ impl View for Menu {
                     std::process::exit(0);
                 }
                 if ui.button(t!("app.menu.logout")).clicked() {
-                    // app.logout();
+                    app.logout();
                 }
             });
 
