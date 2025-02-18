@@ -5,5 +5,5 @@ pub struct Host {
     pub name: String,
     pub cpus: Vec<Cpu>,
     pub network_address: String,
-    pub resource_ids: Vec<i32>,
+    pub resource_ids: Vec<u32>,
 }
