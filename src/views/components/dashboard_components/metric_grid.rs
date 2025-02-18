@@ -22,33 +22,27 @@ impl MetricGrid {
     {
         let available_width = ui.available_width();
         
-        // Calculer la largeur minimale nécessaire pour la grille
-        let min_grid_width = (MetricBox::MIN_WIDTH * self.columns as f32) + 
+        // First calculate the total minimum width needed
+        let min_total_width = (MetricBox::MIN_WIDTH * self.columns as f32) + 
             (self.spacing * (self.columns - 1) as f32);
         
-        // Si la largeur disponible est inférieure au minimum, ajuster le nombre de colonnes
-        let effective_columns = if available_width < min_grid_width {
-            ((available_width + self.spacing) / (MetricBox::MIN_WIDTH + self.spacing))
-                .floor()
-                .max(1.0) as usize
-        } else {
-            self.columns
-        };
+        // If available width is less than minimum, use minimum
+        let actual_width = available_width.max(min_total_width);
+        
+        // Recalculate column width taking spacing into account
+        let column_width = (actual_width - (self.spacing * (self.columns - 1) as f32)) / self.columns as f32;
 
-        let total_spacing = self.spacing * (effective_columns - 1) as f32;
-        let column_width = ((available_width - total_spacing) / effective_columns as f32)
-            .max(MetricBox::MIN_WIDTH);
 
         egui::Grid::new("metrics_grid")
             .spacing([self.spacing, self.spacing])
             .min_col_width(column_width)
-            .max_col_width(column_width)
+            .max_col_width(column_width) // Ajouter une largeur maximale
             .show(ui, |ui| {
                 let mut builder = MetricGridBuilder {
                     ui,
                     column_width,
                     current_column: 0,
-                    columns: effective_columns,
+                    columns: self.columns,
                 };
                 add_contents(&mut builder);
                 
