@@ -1,8 +1,7 @@
-use crate::{models::data_structure::{application_context::ApplicationContext, application_options::ApplicationOptions}, views::{components::time_selector::TimeSelector, view::{View, ViewType}}};
+use crate::{models::data_structure::application_context::ApplicationContext, views::{components::time_selector::TimeSelector, view::{View, ViewType}}};
 use eframe::egui;
-use egui::{include_image, Image, ImageSource, vec2 as size2};
 
-use super::{filtering::Filtering};
+use super::filtering::Filtering;
 
 pub struct Tools {
     time_selector: TimeSelector,
@@ -46,10 +45,14 @@ impl View for Tools {
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
 
-                // Refresh Button
-                let refresh_btn = egui::Button::new("⟳").frame(true);
-                if ui.add(refresh_btn).clicked() {
-                    app.update_now();
+                let refresh_btn = egui::Button::new("⟳");
+                let refresh_btn_response = if *app.is_refreshing.lock().unwrap() {
+                    ui.add_enabled(false, refresh_btn)
+                } else {
+                    ui.add(refresh_btn)
+                };
+                if refresh_btn_response.clicked() {
+                    app.instant_update();
                 }
 
                 // Menu Refresh Rate
@@ -63,7 +66,7 @@ impl View for Tools {
                     ];
 
                     for (rate, label) in refresh_rates {
-                        let mut selected = *app.refresh_rate.lock().unwrap() == rate;
+                        let selected = *app.refresh_rate.lock().unwrap() == rate;
                         let display_label = if selected {
                             format!("{} ✔", label)
                         } else {
