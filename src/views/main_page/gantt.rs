@@ -587,7 +587,7 @@ fn paint_job(
 
     // Add click detection for the job
     if is_hovered && info.response.secondary_clicked() {
-        let window = JobDetailsWindow::new(job.clone());
+        let window = JobDetailsWindow::new(job.clone(), vec![]);
         details_window.push(window);
     }
 

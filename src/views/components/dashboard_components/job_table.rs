@@ -1,3 +1,5 @@
+use crate::models::data_structure::application_context::ApplicationContext;
+use crate::models::utils::utils::get_clusters_for_job;
 use crate::{models::data_structure::job::Job, views::components::job_details::JobDetailsWindow};
 use crate::models::utils::date_converter::format_timestamp;
 use eframe::egui;
@@ -10,7 +12,7 @@ pub struct JobTable {
     details_window: Vec<JobDetailsWindow>,
     start_idx: usize,
     end_idx: usize,
-    displayed_jobs: Vec<Job>,
+    displayed_jobs_per_page: Vec<Job>,
     sort_key: SortKey,
     sort_ascending: bool,
 }
@@ -23,7 +25,7 @@ impl Default for JobTable {
             details_window: Vec::new(),
             start_idx: 0,
             end_idx: 0,
-            displayed_jobs: Vec::new(),
+            displayed_jobs_per_page: Vec::new(),
             sort_key: SortKey::Id,
             sort_ascending: true,
         }
@@ -40,8 +42,8 @@ enum SortKey {
 }
 
 impl JobTable {
-    pub fn ui(&mut self, ui: &mut Ui, jobs: &Vec<Job>) {
-        self.displayed_jobs = jobs.clone();
+    pub fn ui(&mut self, ui: &mut Ui, app: &mut ApplicationContext) {
+        self.displayed_jobs_per_page = app.filtered_jobs.clone();
         self.sort_jobs();
 
         ui.add_space(10.0);
@@ -49,18 +51,18 @@ impl JobTable {
         ui.add_space(8.0);
 
         self.start_idx = self.page * self.jobs_per_page;
-        self.end_idx = (self.start_idx + self.jobs_per_page).min(jobs.len());
-        let total_pages = (jobs.len() as f32 / self.jobs_per_page as f32).ceil() as usize;
+        self.end_idx = (self.start_idx + self.jobs_per_page).min(app.filtered_jobs.len());
+        let total_pages = (app.filtered_jobs.len() as f32 / self.jobs_per_page as f32).ceil() as usize;
 
         // println!(
-        //     "start_idx: {}, end_idx: {}, total_pages: {}, jobs len {}",
+        //     "start_idx: {}, end_idx: {}, total_pages: {}, app.filtered_jobs len {}",
         //     self.start_idx,
         //     self.end_idx,
         //     total_pages,
-        //     jobs.len()
+        //     app.filtered_jobs.len()
         // );
 
-        if self.start_idx >= jobs.len() {
+        if self.start_idx >= app.filtered_jobs.len() {
             self.reset_pagination();
             return;
         }
@@ -156,7 +158,7 @@ impl JobTable {
                 });
             })
             .body(|mut body| {
-                for job in self.displayed_jobs[self.start_idx..self.end_idx].iter() {
+                for job in self.displayed_jobs_per_page[self.start_idx..self.end_idx].iter() {
                     body.row(20.0, |mut row| {
                         let row_index = self.start_idx + row.index() + 1;
                         row.col(|ui| {
@@ -164,7 +166,7 @@ impl JobTable {
                         });
                         row.col(|ui| {
                             if ui.button(job.id.to_string()).clicked() {
-                                self.details_window.push(JobDetailsWindow::new(job.clone()));
+                                self.details_window.push(JobDetailsWindow::new(job.clone(), get_clusters_for_job(job, &app.all_clusters) ));
                             }
                         });
                         row.col(|ui| {
@@ -208,40 +210,40 @@ impl JobTable {
         match self.sort_key {
             SortKey::Id => {
                 if self.sort_ascending {
-                    self.displayed_jobs.sort_by(|a, b| a.id.cmp(&b.id));
+                    self.displayed_jobs_per_page.sort_by(|a, b| a.id.cmp(&b.id));
                 } else {
-                    self.displayed_jobs.sort_by(|a, b| b.id.cmp(&a.id));
+                    self.displayed_jobs_per_page.sort_by(|a, b| b.id.cmp(&a.id));
                 }
             }
             SortKey::Owner => {
                 if self.sort_ascending {
-                    self.displayed_jobs.sort_by(|a, b| a.owner.cmp(&b.owner));
+                    self.displayed_jobs_per_page.sort_by(|a, b| a.owner.cmp(&b.owner));
                 } else {
-                    self.displayed_jobs.sort_by(|a, b| b.owner.cmp(&a.owner));
+                    self.displayed_jobs_per_page.sort_by(|a, b| b.owner.cmp(&a.owner));
                 }
             }
             SortKey::State => {
                 if self.sort_ascending {
-                    self.displayed_jobs.sort_by(|a, b| a.state.cmp(&b.state));
+                    self.displayed_jobs_per_page.sort_by(|a, b| a.state.cmp(&b.state));
                 } else {
-                    self.displayed_jobs.sort_by(|a, b| b.state.cmp(&a.state));
+                    self.displayed_jobs_per_page.sort_by(|a, b| b.state.cmp(&a.state));
                 }
             }
             SortKey::StartTime => {
                 if self.sort_ascending {
-                    self.displayed_jobs
+                    self.displayed_jobs_per_page
                         .sort_by(|a, b| a.scheduled_start.cmp(&b.scheduled_start));
                 } else {
-                    self.displayed_jobs
+                    self.displayed_jobs_per_page
                         .sort_by(|a, b| b.scheduled_start.cmp(&a.scheduled_start));
                 }
             }
             SortKey::WallTime => {
                 if self.sort_ascending {
-                    self.displayed_jobs
+                    self.displayed_jobs_per_page
                         .sort_by(|a, b| a.walltime.cmp(&b.walltime));
                 } else {
-                    self.displayed_jobs
+                    self.displayed_jobs_per_page
                         .sort_by(|a, b| b.walltime.cmp(&a.walltime));
                 }
             }
