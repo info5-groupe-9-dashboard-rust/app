@@ -1,6 +1,5 @@
 use chrono::DateTime;
 use chrono::Utc;
-use std::sync::Arc;
 
 use std::time::Duration;
 
@@ -56,7 +55,8 @@ impl ApplicationContext {
     let start = *self.start_date.lock().unwrap();
     let end = *self.end_date.lock().unwrap();
 
-    let sender = self.jobs_sender.clone();
+    let jobs_sender = self.jobs_sender.clone();
+    let resources_sender = self.resources_sender.clone();
     // Get the data in a different thread
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -65,7 +65,15 @@ impl ApplicationContext {
             let res = get_current_jobs_for_period(start, end);
             if res {
                 let jobs = get_jobs_from_json("./data/data.json");
-                sender.send(jobs).unwrap();
+                let resources = get_resources_from_json("./data/data.json");
+
+                jobs_sender.send(jobs).unwrap_or_else(|e| {
+                    println!("Error while sending jobs: {}", e);
+                });
+
+                resources_sender.send(resources).unwrap_or_else(|e| {
+                    println!("Error while sending resources: {}", e);
+                });
             } else {
                 // LOG ERROR
                 print!("Error while fetching data");
@@ -89,7 +97,8 @@ impl ApplicationContext {
     // In a different thread, update the data every refresh_rate seconds
     pub fn update_periodically(&mut self) {
     let rate = *self.refresh_rate.lock().unwrap();
-    let sender = self.jobs_sender.clone();
+    let jobs_sender = self.jobs_sender.clone();
+    let resources_sender = self.resources_sender.clone();
     let start = *self.start_date.lock().unwrap();
     let end = *self.end_date.lock().unwrap();
     let is_refreshing = self.is_refreshing.clone();
@@ -112,7 +121,15 @@ impl ApplicationContext {
                 let res = get_current_jobs_for_period(start, end);
                 if res {
                     let jobs = get_jobs_from_json("./data/data.json");
-                    sender.send(jobs).unwrap();
+                    let resources = get_resources_from_json("./data/data.json");
+
+                    jobs_sender.send(jobs).unwrap_or_else(|e| {
+                        println!("Error while sending jobs: {}", e);
+                    });
+
+                    resources_sender.send(resources).unwrap_or_else(|e| {
+                        println!("Error while sending resources: {}", e);
+                    });
                 } else {
                     // LOG ERROR
                     print!("Error while fetching data");

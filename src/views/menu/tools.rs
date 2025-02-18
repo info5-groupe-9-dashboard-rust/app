@@ -3,6 +3,7 @@ use eframe::egui;
 
 use super::filtering::Filtering;
 
+#[allow(dead_code)]
 pub struct Tools {
     time_selector: TimeSelector,
     filtering_pane: Filtering
