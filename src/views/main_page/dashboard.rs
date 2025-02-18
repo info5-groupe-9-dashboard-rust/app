@@ -66,7 +66,7 @@ impl View for Dashboard {
                 ui.separator();
 
                 // Draw the job table
-                self.job_table.ui(ui, &app.filtered_jobs);
+                self.job_table.ui(ui, app);
             });
 
     }
