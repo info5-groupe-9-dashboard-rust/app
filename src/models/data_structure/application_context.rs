@@ -64,11 +64,7 @@ impl ApplicationContext {
                         hosts: vec![Host {
                             name: resource.host.as_ref().unwrap_or(&"".to_string()).clone(),
                             cpus: vec![Cpu {
-                                name: resource
-                                    .nodemodel
-                                    .as_ref()
-                                    .unwrap_or(&"".to_string())
-                                    .clone(),
+                                name: resource.cputype.as_ref().unwrap_or(&"".to_string()).clone(),
                                 resources: vec![Resource {
                                     id: resource.resource_id.unwrap_or(0) as u32,
                                     state: match resource
@@ -123,11 +119,7 @@ impl ApplicationContext {
                         cluster.hosts.push(Host {
                             name: resource.host.as_ref().unwrap_or(&"".to_string()).clone(),
                             cpus: vec![Cpu {
-                                name: resource
-                                    .nodemodel
-                                    .as_ref()
-                                    .unwrap_or(&"".to_string())
-                                    .clone(),
+                                name: resource.cputype.as_ref().unwrap_or(&"".to_string()).clone(),
                                 resources: vec![Resource {
                                     id: resource.resource_id.unwrap_or(0) as u32,
                                     state: match resource
@@ -179,19 +171,10 @@ impl ApplicationContext {
                             })
                             .unwrap();
                         if !host.cpus.iter().any(|cpu| {
-                            cpu.name
-                                == resource
-                                    .nodemodel
-                                    .as_ref()
-                                    .unwrap_or(&"".to_string())
-                                    .clone()
+                            cpu.name == resource.cputype.as_ref().unwrap_or(&"".to_string()).clone()
                         }) {
                             host.cpus.push(Cpu {
-                                name: resource
-                                    .nodemodel
-                                    .as_ref()
-                                    .unwrap_or(&"".to_string())
-                                    .clone(),
+                                name: resource.cputype.as_ref().unwrap_or(&"".to_string()).clone(),
                                 resources: vec![Resource {
                                     id: resource.resource_id.unwrap_or(0) as u32,
                                     state: match resource
@@ -236,7 +219,7 @@ impl ApplicationContext {
                                 .find(|cpu| {
                                     cpu.name
                                         == resource
-                                            .nodemodel
+                                            .cputype
                                             .as_ref()
                                             .unwrap_or(&"".to_string())
                                             .clone()
