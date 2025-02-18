@@ -69,7 +69,7 @@ impl ApplicationContext {
                                     .unwrap_or(&"".to_string())
                                     .clone(),
                                 resources: vec![Resource {
-                                    id: resource.resource_id.unwrap_or(0) as i32,
+                                    id: resource.resource_id.unwrap_or(0) as u32,
                                     state: match resource
                                         .state
                                         .as_ref()
@@ -95,16 +95,16 @@ impl ApplicationContext {
                                     .as_ref()
                                     .unwrap_or(&"".to_string())
                                     .clone(),
-                                resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
+                                resource_ids: vec![resource.resource_id.unwrap_or(0) as u32],
                             }],
                             network_address: resource
                                 .network_address
                                 .as_ref()
                                 .unwrap_or(&"".to_string())
                                 .clone(),
-                            resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
+                            resource_ids: vec![resource.resource_id.unwrap_or(0) as u32],
                         }],
-                        resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
+                        resource_ids: vec![resource.resource_id.unwrap_or(0) as u32],
                     };
 
                     // Add the cluster to all_clusters
@@ -128,7 +128,7 @@ impl ApplicationContext {
                                     .unwrap_or(&"".to_string())
                                     .clone(),
                                 resources: vec![Resource {
-                                    id: resource.resource_id.unwrap_or(0) as i32,
+                                    id: resource.resource_id.unwrap_or(0) as u32,
                                     state: match resource
                                         .state
                                         .as_ref()
@@ -154,19 +154,19 @@ impl ApplicationContext {
                                     .as_ref()
                                     .unwrap_or(&"".to_string())
                                     .clone(),
-                                resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
+                                resource_ids: vec![resource.resource_id.unwrap_or(0) as u32],
                             }],
                             network_address: resource
                                 .network_address
                                 .as_ref()
                                 .unwrap_or(&"".to_string())
                                 .clone(),
-                            resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
+                            resource_ids: vec![resource.resource_id.unwrap_or(0) as u32],
                         });
                         // add the resource id to the cluster
                         cluster
                             .resource_ids
-                            .push(resource.resource_id.unwrap_or(0) as i32);
+                            .push(resource.resource_id.unwrap_or(0) as u32);
                     } else {
                         // if the host already exists, check if the cpu exists and add the cpu if it doesn't
                         let host = cluster
@@ -192,7 +192,7 @@ impl ApplicationContext {
                                     .unwrap_or(&"".to_string())
                                     .clone(),
                                 resources: vec![Resource {
-                                    id: resource.resource_id.unwrap_or(0) as i32,
+                                    id: resource.resource_id.unwrap_or(0) as u32,
                                     state: match resource
                                         .state
                                         .as_ref()
@@ -218,15 +218,15 @@ impl ApplicationContext {
                                     .as_ref()
                                     .unwrap_or(&"".to_string())
                                     .clone(),
-                                resource_ids: vec![resource.resource_id.unwrap_or(0) as i32],
+                                resource_ids: vec![resource.resource_id.unwrap_or(0) as u32],
                             });
 
                             // add the resource id to the host and the cluster
                             host.resource_ids
-                                .push(resource.resource_id.unwrap_or(0) as i32);
+                                .push(resource.resource_id.unwrap_or(0) as u32);
                             cluster
                                 .resource_ids
-                                .push(resource.resource_id.unwrap_or(0) as i32);
+                                .push(resource.resource_id.unwrap_or(0) as u32);
                         } else {
                             // if the cpu already exists, add the resource to the cpu
                             let cpu = host
@@ -242,7 +242,7 @@ impl ApplicationContext {
                                 })
                                 .unwrap();
                             cpu.resources.push(Resource {
-                                id: resource.resource_id.unwrap_or(0) as i32,
+                                id: resource.resource_id.unwrap_or(0) as u32,
                                 state: match resource
                                     .state
                                     .as_ref()
@@ -259,12 +259,12 @@ impl ApplicationContext {
 
                             // add the resource id to the cpu, the host and the cluster
                             cpu.resource_ids
-                                .push(resource.resource_id.unwrap_or(0) as i32);
+                                .push(resource.resource_id.unwrap_or(0) as u32);
                             host.resource_ids
-                                .push(resource.resource_id.unwrap_or(0) as i32);
+                                .push(resource.resource_id.unwrap_or(0) as u32);
                             cluster
                                 .resource_ids
-                                .push(resource.resource_id.unwrap_or(0) as i32);
+                                .push(resource.resource_id.unwrap_or(0) as u32);
                         }
                     }
                 }
