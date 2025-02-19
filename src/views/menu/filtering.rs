@@ -187,7 +187,6 @@ impl Filtering {
 
         for cluster in &app.all_clusters {
             ui.horizontal(|ui| {
-                // Partie gauche : checkbox et nom du cluster
                 let mut is_selected = self
                     .temp_filters
                     .clusters
@@ -269,6 +268,6 @@ fn extract_number(s: &str) -> Option<u32> {
 fn compare_host_names(a: &str, b: &str) -> Ordering {
     match (extract_number(a), extract_number(b)) {
         (Some(num_a), Some(num_b)) => num_a.cmp(&num_b),
-        _ => a.cmp(b), // Fallback à la comparaison de chaînes si l'extraction échoue
+        _ => a.cmp(b),
     }
 }
