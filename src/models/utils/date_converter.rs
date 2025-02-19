@@ -6,7 +6,8 @@ pub fn format_timestamp(ts: i64) -> String {
     } else {
         if let Some(dt) = DateTime::from_timestamp(ts, 0) {
             dt.with_timezone(&Local)
-            .format("%Y-%m-%d %H:%M:%S").to_string()
+            .format("%Y-%m-%d %H:%M:%S %Z")
+            .to_string()
         } else {
             "Invalid timestamp".to_string()
         }

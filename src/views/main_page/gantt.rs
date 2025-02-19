@@ -11,7 +11,7 @@ use crate::{
         job_details::JobDetailsWindow,
     },
 };
-use chrono::DateTime;
+use chrono::{DateTime, Local};
 use eframe::egui;
 use egui::{
     lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response,
