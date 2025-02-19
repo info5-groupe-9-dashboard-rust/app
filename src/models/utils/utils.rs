@@ -19,7 +19,44 @@ pub fn convert_id_to_color(id: u32) -> egui::Color32 {
     egui::Color32::from_rgb(r, g, b)
 }
 
-pub fn get_clusters_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<Cluster> {
+// Return the name of all the clusters where the job is running
+pub fn get_clusters_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
+    let mut result: Vec<String> = Vec::new();
+
+    for resource in &job.assigned_resources {
+        for cluster in clusters {
+            if cluster.resource_ids.contains(&resource) {
+                if !result.contains(&cluster.name) {
+                    result.push(cluster.name.clone());
+                }
+            }
+        }
+    }
+
+    result
+}
+
+pub fn get_hosts_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
+    let mut result: Vec<String> = Vec::new();
+
+    for resource in &job.assigned_resources {
+        for cluster in clusters {
+            if cluster.resource_ids.contains(&resource) {
+                for host in &cluster.hosts {
+                    if host.resource_ids.contains(&resource) {
+                        if !result.contains(&host.name) {
+                            result.push(host.name.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    result
+}
+
+pub fn get_tree_structure_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<Cluster> {
     let mut result: Vec<Cluster> = Vec::new();
 
     for resource in &job.assigned_resources {

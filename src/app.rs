@@ -1,9 +1,12 @@
-use crate::views::menu::tools::Tools;
-use crate::{models::data_structure::application_context::ApplicationContext, views::main_page::anthentification::Authentification};
 use crate::views::main_page::dashboard::Dashboard;
 use crate::views::main_page::gantt::GanttChart;
 use crate::views::menu::menu::Menu;
+use crate::views::menu::tools::Tools;
 use crate::views::view::View;
+use crate::{
+    models::data_structure::application_context::ApplicationContext,
+    views::main_page::anthentification::Authentification,
+};
 use eframe::egui::{self, CentralPanel, TopBottomPanel};
 
 pub struct App {
@@ -12,7 +15,7 @@ pub struct App {
     pub authentification_view: Authentification,
     pub menu: Menu,
     pub tools: Tools,
-    pub application_context: ApplicationContext
+    pub application_context: ApplicationContext,
 }
 
 impl App {
@@ -40,32 +43,30 @@ impl eframe::App for App {
         self.application_context.check_data_update();
 
         CentralPanel::default().show(ctx, |_ui| {
-            
             if self.application_context.is_connected {
                 TopBottomPanel::top("tool_bar").show(ctx, |ui| {
                     self.tools.render(ui, &mut self.application_context);
                 });
             }
 
-            CentralPanel::default().show(ctx, |ui| {
-
-                match self.application_context.view_type {
-                    crate::views::view::ViewType::Dashboard => {
-                        self.dashboard_view.render(ui, &mut self.application_context);
-                    }
-                    crate::views::view::ViewType::Gantt => {
-                        self.gantt_view.render(ui, &mut self.application_context);
-                    } 
-                    crate::views::view::ViewType::Authentification => {
-                        self.authentification_view.render(ui, &mut self.application_context);
-                    }
+            CentralPanel::default().show(ctx, |ui| match self.application_context.view_type {
+                crate::views::view::ViewType::Dashboard => {
+                    self.dashboard_view
+                        .render(ui, &mut self.application_context);
+                }
+                crate::views::view::ViewType::Gantt => {
+                    self.gantt_view.render(ui, &mut self.application_context);
+                }
+                crate::views::view::ViewType::Authentification => {
+                    self.authentification_view
+                        .render(ui, &mut self.application_context);
                 }
             });
         });
 
         TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                // Afficher un indicateur de mise à jour dans la barre supérieure
+                // Display the current refresh rate
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if *self.application_context.is_refreshing.lock().unwrap() {
                         ui.add(egui::Spinner::new());

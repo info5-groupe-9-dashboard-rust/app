@@ -92,7 +92,7 @@ impl View for GanttChart {
             });
         });
 
-        Frame::dark_canvas(ui.style()).show(ui, |ui| {
+        Frame::canvas(ui.style()).show(ui, |ui| {
             ui.visuals_mut().clip_rect_margin = 0.0;
 
             let available_height = ui.max_rect().bottom() - ui.min_rect().bottom();
@@ -284,13 +284,42 @@ fn ui_canvas(
                     .insert(id, job_list);
             }
 
-            cursor_y =
-                paint_aggregated_jobs(info, options, jobs_by_id_by_owner, cursor_y, details_window);
+            cursor_y = paint_aggregated_jobs_u32(
+                info,
+                options,
+                jobs_by_id_by_owner,
+                cursor_y,
+                details_window,
+            );
         }
         // Group by host
         GroupByEnum::Host => {}
         // Group by cluster
-        GroupByEnum::Cluster => {}
+        GroupByEnum::Cluster => {
+            // Group by cluster and then by host
+            let mut jobs_by_cluster_by_host: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
+                BTreeMap::new();
+            for job in jobs {
+                for cluster in job.clusters.iter() {
+                    for host in job.hosts.iter() {
+                        jobs_by_cluster_by_host
+                            .entry(cluster.clone())
+                            .or_insert_with(BTreeMap::new)
+                            .entry(host.clone())
+                            .or_insert_with(Vec::new)
+                            .push(job.clone());
+                    }
+                }
+            }
+
+            cursor_y = paint_aggregated_jobs_string(
+                info,
+                options,
+                jobs_by_cluster_by_host,
+                cursor_y,
+                details_window,
+            );
+        }
     }
 
     // Paint tooltip for hovered job if there is one
@@ -401,7 +430,84 @@ fn paint_job_tooltip(info: &Info, options: &mut Options) {
 /**
  * Paints aggregated jobs
  */
-fn paint_aggregated_jobs(
+fn paint_aggregated_jobs_string(
+    info: &Info,
+    options: &mut Options,
+    jobs: BTreeMap<String, BTreeMap<String, Vec<Job>>>,
+    mut cursor_y: f32,
+    details_window: &mut Vec<JobDetailsWindow>,
+) -> f32 {
+    let spacing_between_owners = 20.0;
+    let spacing_between_ids = 15.0; // Espacement entre chaque groupe d'ID
+    let spacing_between_jobs = 5.0;
+    let offset_owner = 10.0; // Décalage pour afficher owner sous la ligne
+
+    cursor_y += spacing_between_owners;
+
+    for (owner, id_map) in jobs {
+        // Tracer une ligne horizontale pour séparer les owners
+        info.painter.line_segment(
+            [
+                pos2(info.canvas.min.x, cursor_y),
+                pos2(info.canvas.max.x, cursor_y),
+            ],
+            Stroke::new(1.5, Color32::WHITE), // Ligne plus marquée
+        );
+
+        cursor_y += offset_owner; // Décalage avant d'afficher le propriétaire
+
+        // Afficher le nom du propriétaire
+        let text_pos = pos2(info.canvas.min.x, cursor_y);
+        paint_job_info_owner(info, owner, text_pos, &mut false);
+
+        cursor_y += spacing_between_owners; // Espacement après le propriétaire
+
+        // Trier les IDs pour assurer un affichage ordonné (optionnel)
+        let mut sorted_ids: Vec<_> = id_map.keys().collect();
+        sorted_ids.sort();
+
+        for name in sorted_ids {
+            if let Some(job_list) = id_map.get(name) {
+                // Tracer une ligne pour séparer chaque ID
+                info.painter.line_segment(
+                    [
+                        pos2(info.canvas.min.x, cursor_y),
+                        pos2(info.canvas.max.x, cursor_y),
+                    ],
+                    Stroke::new(1.0, Rgba::from_white_alpha(0.8)), // Ligne plus discrète que celle des owners
+                );
+
+                cursor_y += spacing_between_ids; // Espacement après la ligne de l'ID
+
+                let mut once = false;
+                // Affichage des jobs sous l'ID actuel
+                for job in job_list {
+                    let job_start_y = cursor_y; // Assurer l'alignement vertical
+
+                    // Dessiner le job (arrière-plan)
+                    paint_job(info, options, &job, job_start_y, details_window);
+
+                    // Ensuite, dessiner job_info_id (au-dessus)
+                    if !once {
+                        let job_text_pos = pos2(info.canvas.min.x, job_start_y);
+                        paint_job_info_host(info, name, job_text_pos, &mut false);
+                        once = true;
+                    }
+
+                    cursor_y += info.text_height + spacing_between_jobs + options.spacing;
+                }
+            }
+        }
+        cursor_y += spacing_between_owners;
+    }
+
+    cursor_y
+}
+
+/**
+ * Paints aggregated jobs
+ */
+fn paint_aggregated_jobs_u32(
     info: &Info,
     options: &mut Options,
     jobs: BTreeMap<String, BTreeMap<u32, Vec<Job>>>,
@@ -633,6 +739,45 @@ fn paint_job_info_owner(info: &Info, owner: String, pos: Pos2, collapsed: &mut b
     });
 
     let rect = Rect::from_min_size(pos, galley.size());
+
+    let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
+        rect.contains(mouse_pos)
+    } else {
+        false
+    };
+
+    // Text color
+    let text_color = if is_hovered {
+        Color32::WHITE
+    } else {
+        Color32::from_white_alpha(229)
+    };
+
+    // Background color
+    let back_color = if is_hovered {
+        Color32::from_black_alpha(100)
+    } else {
+        Color32::BLACK
+    };
+
+    info.painter.rect_filled(rect.expand(2.0), 0.0, back_color);
+    info.painter.galley(rect.min, galley, text_color);
+
+    if is_hovered && info.response.clicked() {
+        *collapsed = !(*collapsed);
+    }
+}
+
+fn paint_job_info_host(info: &Info, host: &String, pos: Pos2, collapsed: &mut bool) {
+    let galley = info.ctx.fonts(|f| {
+        f.layout_no_wrap(
+            format!("{}", host),
+            info.font_id.clone(),
+            egui::Color32::PLACEHOLDER,
+        )
+    });
+
+    let rect = Rect::from_min_size(pos2(pos.x + 50.0, pos.y), galley.size());
 
     let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
         rect.contains(mouse_pos)
