@@ -1,6 +1,5 @@
-use chrono::Utc;
-use std::sync::Arc;
 use chrono::DateTime;
+use chrono::Utc;
 
 use std::time::Duration;
 
@@ -19,6 +18,7 @@ impl ApplicationContext {
     pub fn update_refresh_rate(&mut self, new_rate: u64) {
         let mut rate = self.refresh_rate.lock().unwrap();
         *rate = new_rate;
+        println!("New refresh rate: {:?}", self.refresh_rate);
     }
 
     pub fn update_start_date(&mut self, new_start: DateTime<Utc>) {
@@ -39,37 +39,116 @@ impl ApplicationContext {
         *self.end_date.lock().unwrap()
     }
 
-    pub fn update_periodically(&mut self) {
+    pub fn instant_update(&mut self) {
+        let is_refreshing = self.is_refreshing.clone();
+
+        // if the app is already refreshing, return
+        if *is_refreshing.lock().unwrap() {
+            print!("Already refreshing");
+            return;
+        }
+
+        // set refreshing to true
+        *is_refreshing.lock().unwrap() = true;
+
+        // get dates
+        let start = *self.start_date.lock().unwrap();
+        let end = *self.end_date.lock().unwrap();
+
+        let jobs_sender = self.jobs_sender.clone();
+        let resources_sender = self.resources_sender.clone();
+        // Get the data in a different thread
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let start_date = Arc::clone(&self.start_date);
-            let end_date = Arc::clone(&self.end_date);
-            let refresh_rate = Arc::clone(&self.refresh_rate);
-            let jobs_sender = self.jobs_sender.clone();
-            let resources_sender = self.resources_sender.clone();
-    
-            thread::spawn(move || loop {
-                let start = *start_date.lock().unwrap();
-                let end = *end_date.lock().unwrap();
+            let is_refreshing_clone = is_refreshing.clone();
+            thread::spawn(move || {
                 let res = get_current_jobs_for_period(start, end);
                 if res {
                     let jobs = get_jobs_from_json("./data/data.json");
                     let resources = get_resources_from_json("./data/data.json");
-                    
+
                     jobs_sender.send(jobs).unwrap_or_else(|e| {
                         println!("Error while sending jobs: {}", e);
                     });
-                    
+
                     resources_sender.send(resources).unwrap_or_else(|e| {
                         println!("Error while sending resources: {}", e);
                     });
                 } else {
-                    println!("Error while fetching data");
+                    // LOG ERROR
+                    print!("Error while fetching data");
                 }
-                
-                let rate = *refresh_rate.lock().unwrap();
-                thread::sleep(Duration::from_secs(rate));
+                // set refreshing to false
+                *is_refreshing_clone.lock().unwrap() = false;
             });
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            // LOG DEBUG
+            // log::info!("instant_update: start_date: {:?}, end_date: {:?}", start, end);
+            let jobs = mock_jobs();
+            sender.send(jobs).unwrap();
+            // set refreshing to false
+            *is_refreshing.lock().unwrap() = false;
+        }
+    }
+
+    // In a different thread, update the data every refresh_rate seconds
+    pub fn update_periodically(&mut self) {
+        let rate = *self.refresh_rate.lock().unwrap();
+        let jobs_sender = self.jobs_sender.clone();
+        let resources_sender = self.resources_sender.clone();
+        let start = *self.start_date.lock().unwrap();
+        let end = *self.end_date.lock().unwrap();
+        let is_refreshing = self.is_refreshing.clone();
+
+        // Get the data in a different thread
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            thread::spawn(move || {
+                loop {
+                    // Check if already refreshing
+                    if *is_refreshing.lock().unwrap() {
+                        print!("Already refreshing");
+                        thread::sleep(Duration::from_secs(rate));
+                        continue;
+                    }
+
+                    // Set refreshing to true
+                    *is_refreshing.lock().unwrap() = true;
+
+                    let res = get_current_jobs_for_period(start, end);
+                    if res {
+                        let jobs = get_jobs_from_json("./data/data.json");
+                        let resources = get_resources_from_json("./data/data.json");
+
+                        jobs_sender.send(jobs).unwrap_or_else(|e| {
+                            println!("Error while sending jobs: {}", e);
+                        });
+
+                        resources_sender.send(resources).unwrap_or_else(|e| {
+                            println!("Error while sending resources: {}", e);
+                        });
+                    } else {
+                        // LOG ERROR
+                        print!("Error while fetching data");
+                    }
+
+                    // Set refreshing to false
+                    *is_refreshing.lock().unwrap() = false;
+
+                    thread::sleep(Duration::from_secs(rate));
+                }
+            });
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            // LOG DEBUG
+            // log::info!("update_periodically: start_date: {:?}, end_date: {:?}", start, end);
+            let jobs = mock_jobs();
+            sender.send(jobs).unwrap();
         }
     }
 

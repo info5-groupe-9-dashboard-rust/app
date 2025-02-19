@@ -1,5 +1,6 @@
 app:
   title: 'Tableau de bord HPC'
+  mode: 'Mode :'
   menu:
     file: 'Fichier'
     options: 'Options'
@@ -8,13 +9,13 @@ app:
     view: 'Vue'
     dashboard: 'Tableau de bord'
     gantt: 'Diagramme de Gantt'
-    filters: 'Filtrer'
+    filters: 'Filtres'
 
     refresh_rate:
-      button: 'Fréquence de rafraîchissement'
-      refresh_30: '30 secondes'
-      refresh_60: '1 minute'
-      refresh_300: '5 minutes'
+      button: 'Rafraîchissement auto.'
+      refresh_30: '30 s'
+      refresh_60: '1 min'
+      refresh_300: '5 min'
   options:
     title: 'Options'
     save:
@@ -36,10 +37,7 @@ app:
       choose: 'Choisir une taille de police'
   dashboard:
     title: 'Tableau de bord'
-    metrics:
-      total_jobs: 'Total des Jobs'
-      running: 'En cours'
-      waiting: 'En attente'
+    total_jobs: 'Total des Jobs'
   gantt:
     title: 'Diagramme de Gantt - Jobs OAR'
     zoom_in: 'Zoom +'
@@ -87,7 +85,7 @@ app:
       start_time: "Heure de début"
       walltime: "Durée"
   filters:
-    title: 'Filtrer'
+    title: 'Filtres'
     from: 'De'
     to: 'À'
     states: 'Statuts'

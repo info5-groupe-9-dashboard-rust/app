@@ -1,5 +1,6 @@
 app:
   title: 'HPC Dashboard'
+  mode: 'Mode:'
   menu:
     file: 'File'
     options: 'Options'
@@ -8,12 +9,12 @@ app:
     view: 'View'
     dashboard: 'Dashboard'
     gantt: 'Gantt Chart'
-    filters: 'Filter'
+    filters: 'Filters'
     refresh_rate:
       button: 'Refresh Rate'
-      refresh_30: '30 seconds'
-      refresh_60: '1 minute'
-      refresh_300: '5 minutes'
+      refresh_30: '30 s'
+      refresh_60: '1 min'
+      refresh_300: '5 min'
   options:
     title: 'Options'
     save:
@@ -35,10 +36,7 @@ app:
       choose: 'Choose a font size'
   dashboard:
     title: 'Dashboard'
-    metrics:
-      total_jobs: 'Total Jobs'
-      running: 'Running'
-      waiting: 'Waiting'
+    total_jobs: 'Total Jobs'
   gantt:
     title: 'Gantt Chart - OAR Jobs'
     zoom_in: 'Zoom +'
@@ -86,7 +84,7 @@ app:
       start_time: "Start time"
       walltime: "Walltime"
   filters:
-    title: 'Filter'
+    title: 'Filters'
     from: 'From'
     to: 'to'
     states: 'States'

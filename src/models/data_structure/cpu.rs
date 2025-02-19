@@ -7,5 +7,5 @@ pub struct Cpu {
     pub chassis: String,
     pub core_count: i32,
     pub cpufreq: f32,
-    pub resource_ids: Vec<i32>,
+    pub resource_ids: Vec<u32>,
 }

@@ -1,17 +1,29 @@
 use std::collections::BTreeMap;
 
-use crate::{models::data_structure::{application_context::ApplicationContext, cluster::Cluster, host::Host, job::{self, Job}}, views::components::{gantt_grid_spacing::GridSpacing, gantt_group_by::{GroupBy, GroupByEnum}, gantt_job_color::JobColor, gantt_sorting::Sorting, job_details::JobDetailsWindow}};
+use crate::views::view::View;
+use crate::{
+    models::data_structure::{application_context::ApplicationContext, job::Job},
+    views::components::{
+        gantt_grid_spacing::GridSpacing,
+        gantt_group_by::{GroupBy, GroupByEnum},
+        gantt_job_color::JobColor,
+        gantt_sorting::Sorting,
+        job_details::JobDetailsWindow,
+    },
+};
 use chrono::DateTime;
 use eframe::egui;
-use egui::{ahash::{HashMap, HashMapExt}, lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle};
-use crate::views::view::View;
+use egui::{
+    lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response,
+    Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle,
+};
 
 /**
  * GanttChart struct
  */
 pub struct GanttChart {
-    options: Options, // options for the GanttChart
-    job_details_windows: Vec<JobDetailsWindow> // job details windows
+    options: Options,                           // options for the GanttChart
+    job_details_windows: Vec<JobDetailsWindow>, // job details windows
 }
 
 /**
@@ -53,7 +65,6 @@ impl View for GanttChart {
 
         // Settings menu
         ui.horizontal(|ui| {
-
             ui.menu_button("🔧 Settings", |ui| {
                 ui.set_max_height(500.0);
 
@@ -80,69 +91,69 @@ impl View for GanttChart {
                 );
             });
         });
-        
+
         Frame::dark_canvas(ui.style()).show(ui, |ui| {
             ui.visuals_mut().clip_rect_margin = 0.0;
 
             let available_height = ui.max_rect().bottom() - ui.min_rect().bottom();
             ScrollArea::vertical().show(ui, |ui| {
-            let mut canvas = ui.available_rect_before_wrap();
-            canvas.max.y = f32::INFINITY;
-            let response = ui.interact(canvas, ui.id().with("canvas"), Sense::click_and_drag());
+                let mut canvas = ui.available_rect_before_wrap();
+                canvas.max.y = f32::INFINITY;
+                let response = ui.interact(canvas, ui.id().with("canvas"), Sense::click_and_drag());
 
-            let min_s = min_start;
-            let max_s = max_end;
+                let min_s = min_start;
+                let max_s = max_end;
 
-            // Initialize canvas info
-            let info = Info {
-                ctx: ui.ctx().clone(),
-                canvas,
-                response,
-                painter: ui.painter_at(canvas),
-                text_height: 15.0,
-                start_s: min_s,
-                stop_s: max_s,
-                font_id: TextStyle::Body.resolve(ui.style()),
-            };
+                // Initialize canvas info
+                let info = Info {
+                    ctx: ui.ctx().clone(),
+                    canvas,
+                    response,
+                    painter: ui.painter_at(canvas),
+                    text_height: 15.0,
+                    start_s: min_s,
+                    stop_s: max_s,
+                    font_id: TextStyle::Body.resolve(ui.style()),
+                };
 
-            // When we reset the view, we want to zoom to the full range
-            if reset_view {
-                self.options.zoom_to_relative_s_range = Some((
-                info.ctx.input(|i| i.time),
-                (0., (info.stop_s - info.start_s) as f64),
-                ));
-            }
+                // When we reset the view, we want to zoom to the full range
+                if reset_view {
+                    self.options.zoom_to_relative_s_range = Some((
+                        info.ctx.input(|i| i.time),
+                        (0., (info.stop_s - info.start_s) as f64),
+                    ));
+                }
 
-            // Interact with the canvas
-            interact_with_canvas(&mut self.options, &info.response, &info);
+                // Interact with the canvas
+                interact_with_canvas(&mut self.options, &info.response, &info);
 
-            // Put the timeline
-            let where_to_put_timeline = info.painter.add(Shape::Noop);
+                // Put the timeline
+                let where_to_put_timeline = info.painter.add(Shape::Noop);
 
-            // Paint the canvas
-            let max_y = ui_canvas(
-                &mut self.options,
-                app,
-                &info,
-                (min_s, max_s),
-                &mut self.job_details_windows,
-            );
+                // Paint the canvas
+                let max_y = ui_canvas(
+                    &mut self.options,
+                    app,
+                    &info,
+                    (min_s, max_s),
+                    &mut self.job_details_windows,
+                );
 
-            let mut used_rect = canvas;
-            used_rect.max.y = max_y;
+                let mut used_rect = canvas;
+                used_rect.max.y = max_y;
 
-            // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
-            used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
+                // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
+                used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
 
-            let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
-            info.painter
-                .set(where_to_put_timeline, Shape::Vec(timeline));
+                let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
+                info.painter
+                    .set(where_to_put_timeline, Shape::Vec(timeline));
 
-            // Adding a line to show the current time AFTER all other elements
-            let current_time_line = paint_current_time_line(&info, &self.options, used_rect);
-            info.painter.add(current_time_line);
+                // Adding a line to show the current time AFTER all other elements
+                let current_time_line = paint_current_time_line(&info, &self.options, used_rect);
+                info.painter.add(current_time_line);
 
-            ui.allocate_rect(used_rect, Sense::hover());
+                ui.allocate_rect(used_rect, Sense::hover());
             });
         });
 
@@ -161,18 +172,17 @@ impl View for GanttChart {
 /****************************************************************************************************************************/
 
 struct Info {
-    ctx: egui::Context, // context
-    canvas: Rect, // canvas to paint
-    response: Response, // response from the canvas
+    ctx: egui::Context,     // context
+    canvas: Rect,           // canvas to paint
+    response: Response,     // response from the canvas
     painter: egui::Painter, // painter for the canvas
-    text_height: f32, // height of a line of text
-    start_s: i64, // start time in seconds
-    stop_s: i64, // stop time in seconds
-    font_id: FontId, // font id
+    text_height: f32,       // height of a line of text
+    start_s: i64,           // start time in seconds
+    stop_s: i64,            // stop time in seconds
+    font_id: FontId,        // font id
 }
 
 impl Info {
-
     /**
      * Returns the x-coordinate (in points from the canvas) to the given timestamp
      */
@@ -191,20 +201,20 @@ impl Info {
  * Options struct
  */
 pub struct Options {
-    pub canvas_width_s: f32, // Canvas width
-    pub sideways_pan_in_points: f32, // Sideways pan in points
-    pub cull_width: f32, // Culling width
-    pub min_width: f32, // Minimum width of a job
-    pub rect_height: f32, // Height of a job
-    pub spacing: f32, // Vertical spacing between jobs
-    pub rounding: f32, // Rounded corners
-    pub sorting: Sorting, // Sorting
-    pub group_by: GroupBy, // Group by
+    pub canvas_width_s: f32,               // Canvas width
+    pub sideways_pan_in_points: f32,       // Sideways pan in points
+    pub cull_width: f32,                   // Culling width
+    pub min_width: f32,                    // Minimum width of a job
+    pub rect_height: f32,                  // Height of a job
+    pub spacing: f32,                      // Vertical spacing between jobs
+    pub rounding: f32,                     // Rounded corners
+    pub sorting: Sorting,                  // Sorting
+    pub group_by: GroupBy,                 // Group by
     pub grid_spacing_minutes: GridSpacing, // Grid spacing in minutes
-    pub job_color: JobColor, // Job color
-    current_hovered_job: Option<Job>, // Current hovered job
+    pub job_color: JobColor,               // Job color
+    current_hovered_job: Option<Job>,      // Current hovered job
     #[cfg_attr(feature = "serde", serde(skip))]
-    zoom_to_relative_s_range: Option<(f64, (f64, f64))> // Zoom to relative s range
+    zoom_to_relative_s_range: Option<(f64, (f64, f64))>, // Zoom to relative s range
 }
 
 /**
@@ -213,19 +223,19 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            canvas_width_s: 0.0, // no zoom
-            sideways_pan_in_points: 0.0, // no pan
-            cull_width: 0.0, // no culling
-            min_width: 1.0, // minimum width of a job
-            rect_height: 16.0, // height of a job
-            spacing: 5.0, // vertical spacing between jobs
-            rounding: 4.0, // rounded corners
-            group_by: Default::default(), // group by component
+            canvas_width_s: 0.0,                      // no zoom
+            sideways_pan_in_points: 0.0,              // no pan
+            cull_width: 0.0,                          // no culling
+            min_width: 1.0,                           // minimum width of a job
+            rect_height: 16.0,                        // height of a job
+            spacing: 5.0,                             // vertical spacing between jobs
+            rounding: 4.0,                            // rounded corners
+            group_by: Default::default(),             // group by component
             grid_spacing_minutes: Default::default(), // grid spacing component
-            sorting: Default::default(), // sorting component
-            job_color: Default::default(), // job color component
-            zoom_to_relative_s_range: None, // no zooming by default
-            current_hovered_job: None // no hovered job by default
+            sorting: Default::default(),              // sorting component
+            job_color: Default::default(),            // job color component
+            zoom_to_relative_s_range: None,           // no zooming by default
+            current_hovered_job: None,                // no hovered job by default
         }
     }
 }
@@ -258,29 +268,29 @@ fn ui_canvas(
     match options.group_by.value {
         // Group by owner
         GroupByEnum::Owner => {
-
             let mut jobs_by_id: BTreeMap<u32, Vec<Job>> = BTreeMap::new();
             for job in jobs {
                 let id = job.id.clone();
                 jobs_by_id.entry(id).or_insert_with(Vec::new).push(job);
             }
 
-            let mut jobs_by_id_by_owner: BTreeMap<String, BTreeMap<u32, Vec<Job>>> = BTreeMap::new();
+            let mut jobs_by_id_by_owner: BTreeMap<String, BTreeMap<u32, Vec<Job>>> =
+                BTreeMap::new();
             for (id, job_list) in jobs_by_id {
                 let owner = job_list[0].owner.clone();
-                jobs_by_id_by_owner.entry(owner).or_insert_with(BTreeMap::new).insert(id, job_list);
+                jobs_by_id_by_owner
+                    .entry(owner)
+                    .or_insert_with(BTreeMap::new)
+                    .insert(id, job_list);
             }
 
-            cursor_y = paint_aggregated_jobs(info, options, jobs_by_id_by_owner, cursor_y, details_window);
+            cursor_y =
+                paint_aggregated_jobs(info, options, jobs_by_id_by_owner, cursor_y, details_window);
         }
         // Group by host
-        GroupByEnum::Host => {
-
-        }
+        GroupByEnum::Host => {}
         // Group by cluster
-        GroupByEnum::Cluster => {
-
-        }
+        GroupByEnum::Cluster => {}
     }
 
     // Paint tooltip for hovered job if there is one
@@ -374,7 +384,7 @@ fn paint_job_tooltip(info: &Info, options: &mut Options) {
                 grid_text(job.scheduled_start),
                 job.walltime
             );
-            
+
             egui::show_tooltip(
                 &info.ctx,
                 info.response.layer_id,
@@ -406,7 +416,6 @@ fn paint_aggregated_jobs(
     cursor_y += spacing_between_owners;
 
     for (owner, id_map) in jobs {
-        
         // Tracer une ligne horizontale pour séparer les owners
         info.painter.line_segment(
             [
@@ -430,7 +439,6 @@ fn paint_aggregated_jobs(
 
         for id in sorted_ids {
             if let Some(job_list) = id_map.get(&id) {
-                
                 // Tracer une ligne pour séparer chaque ID
                 info.painter.line_segment(
                     [
@@ -463,7 +471,6 @@ fn paint_aggregated_jobs(
 
     cursor_y
 }
-
 
 #[derive(PartialEq)]
 enum PaintResult {
@@ -514,7 +521,7 @@ fn paint_job(
 
     // Add click detection for the job
     if is_hovered && info.response.secondary_clicked() {
-        let window = JobDetailsWindow::new(job.clone());
+        let window = JobDetailsWindow::new(job.clone(), vec![]);
         details_window.push(window);
     }
 
@@ -533,8 +540,12 @@ fn paint_job(
         ));
     }
 
-    let (hovered_color, normal_color) = if options.job_color.is_random() {job.get_gantt_color() } else { job.state.get_color()};
-    
+    let (hovered_color, normal_color) = if options.job_color.is_random() {
+        job.get_gantt_color()
+    } else {
+        job.state.get_color()
+    };
+
     let fill_color = if is_hovered {
         hovered_color
     } else {
@@ -568,6 +579,7 @@ fn paint_job(
 /**
  * Paints a job info appearing on the left side of the canvas
  */
+#[allow(dead_code)]
 fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bool) {
     let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
 
@@ -651,7 +663,6 @@ fn paint_job_info_owner(info: &Info, owner: String, pos: Pos2, collapsed: &mut b
 }
 
 fn paint_job_info_id(info: &Info, job: Job, pos: Pos2, collapsed: &mut bool) {
-
     let galley = info.ctx.fonts(|f| {
         f.layout_no_wrap(
             format!("- {}", job.id),
@@ -799,10 +810,7 @@ fn paint_current_time_line(info: &Info, options: &Options, canvas: Rect) -> egui
     let current_time = chrono::Utc::now().timestamp();
     let line_x = info.point_from_s(options, current_time);
     egui::Shape::line_segment(
-        [
-            pos2(line_x, canvas.min.y),
-            pos2(line_x, canvas.max.y),
-        ],
+        [pos2(line_x, canvas.min.y), pos2(line_x, canvas.max.y)],
         Stroke::new(2.0, Color32::RED),
     )
 }

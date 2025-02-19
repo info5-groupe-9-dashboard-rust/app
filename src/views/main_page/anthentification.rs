@@ -44,7 +44,7 @@ impl View for Authentification {
                     // password field
                     ui.label(RichText::new("Mot de passe"));
                     ui.add_space(4.0);
-                    ui.add(egui::TextEdit::singleline(&mut self.password)
+                    let password_edit = ui.add(egui::TextEdit::singleline(&mut self.password)
                         .password(true));
                     ui.add_space(20.0);
 
@@ -55,12 +55,14 @@ impl View for Authentification {
                     }
 
                     // Connect button
-                    if ui.button("Se connecter").clicked() {
+                    if ui.button("Se connecter").clicked() || password_edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                         if self.username == "admin" && self.password == "admin" {
-                            app.view_type = crate::views::view::ViewType::Dashboard;
+                            app.login();
                         } else {
                             self.error_message = Some("Identifiants incorrects".to_string());
                         }
+
+                        self.password.clear();
                     }
                 });
         });
