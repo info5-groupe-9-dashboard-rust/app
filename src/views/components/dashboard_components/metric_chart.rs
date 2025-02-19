@@ -1,9 +1,10 @@
 use egui::{Response, RichText, Vec2, Widget};
-use egui_plot::{Plot, BarChart, Bar, BoxPlot };
+use egui_plot::{Bar, BarChart, BoxPlot, Plot};
 use std::collections::HashMap;
 
 use crate::models::data_structure::job::Job;
 
+#[allow(dead_code)]
 pub enum ChartType {
     Bar(BarChart),
     Box(BoxPlot),
@@ -37,20 +38,21 @@ impl MetricChart {
                 ui.set_min_size(size);
                 ui.vertical_centered(|ui| {
                     let title_size = (13.0 * size.x / Self::MIN_WIDTH).min(16.0);
-                    
+
                     ui.add_space(size.y * 0.1);
-                    ui.label(RichText::new(&self.title)
-                        .color(egui::Color32::from_gray(160))
-                        .size(title_size));
+                    ui.label(
+                        RichText::new(&self.title)
+                            .color(egui::Color32::from_gray(160))
+                            .size(title_size),
+                    );
                     ui.add_space(size.y * 0.15);
                     Plot::new("metric_chart")
-                    .view_aspect(2.0)
-                    .show(ui, |plot_ui| {
-                        match self.chart {
+                        .view_aspect(2.0)
+                        .show(ui, |plot_ui| match self.chart {
                             ChartType::Bar(bar_chart) => plot_ui.bar_chart(bar_chart),
                             ChartType::Box(boxplot_chart) => plot_ui.box_plot(boxplot_chart),
-                        }
-                    }).response // Return the response from the Plot widget
+                        })
+                        .response // Return the response from the Plot widget
                 });
             })
             .response
@@ -74,9 +76,15 @@ pub fn create_jobstate_chart(jobs: Vec<Job>) -> MetricChart {
     let mut state_counts: Vec<_> = job_states.into_iter().collect();
     state_counts.sort_by_key(|(state, _)| state.get_label());
 
-    let bars: Vec<Bar> = state_counts.into_iter().enumerate().map(|(index, (state, count))| {
-        Bar::new(index as f64, count as f64).name(state.get_label()).fill(state.get_color().0)
-    }).collect();
+    let bars: Vec<Bar> = state_counts
+        .into_iter()
+        .enumerate()
+        .map(|(index, (state, count))| {
+            Bar::new(index as f64, count as f64)
+                .name(state.get_label())
+                .fill(state.get_color().0)
+        })
+        .collect();
 
     let plot = BarChart::new(bars).name("Job States");
     MetricChart::new("Job State", ChartType::Bar(plot))

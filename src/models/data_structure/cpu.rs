@@ -1,6 +1,6 @@
 use crate::models::data_structure::resource::Resource;
 
-#[allow(dead_code)]
+#[derive(Clone)]
 pub struct Cpu {
     pub name: String,
     pub resources: Vec<Resource>,
