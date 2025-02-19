@@ -1,7 +1,7 @@
 use crate::models::data_structure::application_context::ApplicationContext;
-use crate::models::utils::utils::get_clusters_for_job;
-use crate::{models::data_structure::job::Job, views::components::job_details::JobDetailsWindow};
 use crate::models::utils::date_converter::format_timestamp;
+use crate::models::utils::utils::get_tree_structure_for_job;
+use crate::{models::data_structure::job::Job, views::components::job_details::JobDetailsWindow};
 use eframe::egui;
 use egui::{RichText, Sense, Ui};
 use egui_extras::{Column, TableBuilder};
@@ -52,7 +52,8 @@ impl JobTable {
 
         self.start_idx = self.page * self.jobs_per_page;
         self.end_idx = (self.start_idx + self.jobs_per_page).min(app.filtered_jobs.len());
-        let total_pages = (app.filtered_jobs.len() as f32 / self.jobs_per_page as f32).ceil() as usize;
+        let total_pages =
+            (app.filtered_jobs.len() as f32 / self.jobs_per_page as f32).ceil() as usize;
 
         // println!(
         //     "start_idx: {}, end_idx: {}, total_pages: {}, app.filtered_jobs len {}",
@@ -75,9 +76,7 @@ impl JobTable {
             {
                 self.page -= 1;
             }
-            ui.label(
-                RichText::new(format!("Page {} / {}", self.page + 1, total_pages)).size(14.0),
-            );
+            ui.label(RichText::new(format!("Page {} / {}", self.page + 1, total_pages)).size(14.0));
             if ui
                 .button(RichText::new(t!("app.job_table.next")).size(14.0))
                 .clicked()
@@ -166,7 +165,10 @@ impl JobTable {
                         });
                         row.col(|ui| {
                             if ui.button(job.id.to_string()).clicked() {
-                                self.details_window.push(JobDetailsWindow::new(job.clone(), get_clusters_for_job(job, &app.all_clusters) ));
+                                self.details_window.push(JobDetailsWindow::new(
+                                    job.clone(),
+                                    get_tree_structure_for_job(job, &app.all_clusters),
+                                ));
                             }
                         });
                         row.col(|ui| {
@@ -217,16 +219,20 @@ impl JobTable {
             }
             SortKey::Owner => {
                 if self.sort_ascending {
-                    self.displayed_jobs_per_page.sort_by(|a, b| a.owner.cmp(&b.owner));
+                    self.displayed_jobs_per_page
+                        .sort_by(|a, b| a.owner.cmp(&b.owner));
                 } else {
-                    self.displayed_jobs_per_page.sort_by(|a, b| b.owner.cmp(&a.owner));
+                    self.displayed_jobs_per_page
+                        .sort_by(|a, b| b.owner.cmp(&a.owner));
                 }
             }
             SortKey::State => {
                 if self.sort_ascending {
-                    self.displayed_jobs_per_page.sort_by(|a, b| a.state.cmp(&b.state));
+                    self.displayed_jobs_per_page
+                        .sort_by(|a, b| a.state.cmp(&b.state));
                 } else {
-                    self.displayed_jobs_per_page.sort_by(|a, b| b.state.cmp(&a.state));
+                    self.displayed_jobs_per_page
+                        .sort_by(|a, b| b.state.cmp(&a.state));
                 }
             }
             SortKey::StartTime => {

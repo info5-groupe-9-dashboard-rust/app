@@ -5,6 +5,7 @@ use super::resource::Resource;
 use super::strata::Strata;
 use crate::models::data_structure::cpu::Cpu;
 use crate::models::data_structure::host::Host;
+use crate::models::utils::utils::{get_clusters_for_job, get_hosts_for_job};
 use crate::views::view::ViewType;
 use chrono::{DateTime, Local};
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -13,7 +14,6 @@ use std::sync::{Arc, Mutex};
 #[cfg(target_arch = "wasm32")]
 use crate::models::job::mock_jobs;
 
-#[allow(dead_code)]
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>,
     pub filtered_jobs: Vec<Job>,
@@ -37,7 +37,6 @@ pub struct ApplicationContext {
 
 impl ApplicationContext {
     pub fn check_job_update(&mut self) {
-        // Check if new data is available
         if let Ok(new_jobs) = self.jobs_receiver.try_recv() {
             self.all_jobs = new_jobs;
             self.is_loading = false;
@@ -252,6 +251,10 @@ impl ApplicationContext {
                         }
                     }
                 }
+            }
+            for job in self.all_jobs.iter_mut() {
+                job.clusters = get_clusters_for_job(job, &self.all_clusters);
+                job.hosts = get_hosts_for_job(job, &self.all_clusters);
             }
         }
     }

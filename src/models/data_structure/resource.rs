@@ -18,7 +18,6 @@ impl Clone for ResourceState {
     }
 }
 
-
 #[derive(Clone)]
 pub struct Resource {
     pub id: u32,

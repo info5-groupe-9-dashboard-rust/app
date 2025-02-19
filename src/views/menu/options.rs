@@ -1,6 +1,8 @@
+use crate::models::data_structure::application_options::{
+    ApplicationOptions, LanguageOption, ThemeOption,
+};
 use eframe::egui::{self};
 use std::time::{Duration, Instant};
-use crate::models::data_structure::application_options::{ApplicationOptions, LanguageOption, ThemeOption};
 
 use eframe::egui::Grid;
 
@@ -11,7 +13,6 @@ pub struct Options {
 }
 
 impl Options {
-
     pub fn open(&mut self) {
         self.open = true;
     }
@@ -29,7 +30,8 @@ impl Options {
             .and_then(|json| std::fs::write(file_path, json).map_err(serde_json::Error::io))
         {
             Ok(_) => {
-                self.save_status = Some((t!("app.options.save.success").to_string(), Instant::now()));
+                self.save_status =
+                    Some((t!("app.options.save.success").to_string(), Instant::now()));
             }
             Err(_) => {
                 self.save_status = Some((t!("app.options.save.error").to_string(), Instant::now()));
@@ -39,10 +41,12 @@ impl Options {
 
     pub fn load_from_file(file_path: &str) -> Self {
         let application_options = match std::fs::read_to_string(file_path) {
-            Ok(json) => serde_json::from_str(&json).unwrap_or_else(|_| ApplicationOptions::default()),
+            Ok(json) => {
+                serde_json::from_str(&json).unwrap_or_else(|_| ApplicationOptions::default())
+            }
             Err(_) => ApplicationOptions::default(), // Fallback to default if file read fails
         };
-    
+
         Options {
             application_options,
             open: false,
@@ -97,15 +101,14 @@ impl Options {
 
 impl Options {
     pub fn ui(&mut self, ui: &mut egui::Ui) {
-            let mut open = self.open; // Copier la valeur de self.open dans une variable locale
-            
-            egui::Window::new(t!("app.options.title"))
+        let mut open = self.open; // Local copy to avoid borrowing issues
+
+        egui::Window::new(t!("app.options.title"))
             .collapsible(true)
             .movable(true)
             .open(&mut open)
             .default_size([400.0, 500.0])
             .show(ui.ctx(), |ui| {
-    
                 Grid::new("options_grid")
                     .num_columns(2)
                     .spacing([10.0, 8.0])
@@ -115,13 +118,13 @@ impl Options {
                         self.render_language_selector(ui);
                         self.render_font_size_selector(ui);
                     });
-        
+
                 ui.add_space(10.0);
-        
+
                 if ui.button(t!("app.options.save.title")).clicked() {
                     self.save_to_file("options.json");
                 }
-        
+
                 // Show the save status message for a few seconds
                 if let Some((message, timestamp)) = &self.save_status {
                     if timestamp.elapsed() < Duration::new(3, 0) {
@@ -131,7 +134,7 @@ impl Options {
                     }
                 }
             });
-            self.open = open;
+        self.open = open;
     }
 
     fn render_theme_selector(&mut self, ui: &mut egui::Ui) {
@@ -143,7 +146,14 @@ impl Options {
                     (ThemeOption::Dark, t!("app.options.theme.dark")),
                     (ThemeOption::Light, t!("app.options.theme.light")),
                 ] {
-                    if ui.selectable_value(&mut self.application_options.selected_theme, theme, label).clicked() {
+                    if ui
+                        .selectable_value(
+                            &mut self.application_options.selected_theme,
+                            theme,
+                            label,
+                        )
+                        .clicked()
+                    {
                         self.apply_theme(ui.ctx());
                     }
                 }
@@ -160,7 +170,14 @@ impl Options {
                     (LanguageOption::English, t!("app.options.language.en")),
                     (LanguageOption::Français, t!("app.options.language.fr")),
                 ] {
-                    if ui.selectable_value(&mut self.application_options.selected_language, lang, label).clicked() {
+                    if ui
+                        .selectable_value(
+                            &mut self.application_options.selected_language,
+                            lang,
+                            label,
+                        )
+                        .clicked()
+                    {
                         self.apply_language();
                     }
                 }
@@ -174,12 +191,18 @@ impl Options {
             .selected_text(format!("{}", self.application_options.font_size))
             .show_ui(ui, |ui| {
                 for size in 10..=30 {
-                    if ui.selectable_value(&mut self.application_options.font_size, size, size.to_string()).clicked() {
+                    if ui
+                        .selectable_value(
+                            &mut self.application_options.font_size,
+                            size,
+                            size.to_string(),
+                        )
+                        .clicked()
+                    {
                         self.apply_font_size(ui.ctx());
                     }
                 }
             });
         ui.end_row();
     }
-
 }

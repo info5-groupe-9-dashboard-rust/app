@@ -1,6 +1,6 @@
 use crate::models::data_structure::cluster::Cluster;
-use crate::models::utils::date_converter::format_timestamp;
 use crate::models::data_structure::job::Job;
+use crate::models::utils::date_converter::format_timestamp;
 use eframe::egui;
 
 pub struct JobDetailsWindow {
@@ -10,7 +10,7 @@ pub struct JobDetailsWindow {
 }
 
 impl JobDetailsWindow {
-    pub fn new(job: Job, cluster : Vec<Cluster>) -> Self {
+    pub fn new(job: Job, cluster: Vec<Cluster>) -> Self {
         Self {
             open: true,
             job: job,
@@ -119,59 +119,84 @@ impl JobDetailsWindow {
                                     egui::CollapsingHeader::new(format!("{}", cluster.name))
                                         .default_open(false)
                                         .show(ui, |ui| {
-                                            for host  in &cluster.hosts {
-                                                egui::CollapsingHeader::new(format!("{}", host.name))
-                                                    .default_open(false)
-                                                    .show(ui, |ui| {
-                                                        
-                                                        ui.horizontal(|ui| {
-                                                            ui.label("Network Address: ");
-                                                            ui.strong(format!("{}", host.network_address));
-                                                        });
+                                            for host in &cluster.hosts {
+                                                egui::CollapsingHeader::new(format!(
+                                                    "{}",
+                                                    host.name
+                                                ))
+                                                .default_open(false)
+                                                .show(ui, |ui| {
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Network Address: ");
+                                                        ui.strong(format!(
+                                                            "{}",
+                                                            host.network_address
+                                                        ));
+                                                    });
 
-                                                        for cpu in &host.cpus {
-                                                            egui::CollapsingHeader::new(format!("{}", cpu.name))
+                                                    for cpu in &host.cpus {
+                                                        egui::CollapsingHeader::new(format!(
+                                                            "{}",
+                                                            cpu.name
+                                                        ))
+                                                        .default_open(false)
+                                                        .show(ui, |ui| {
+                                                            ui.horizontal(|ui| {
+                                                                ui.label("Chassis: ");
+                                                                ui.strong(format!(
+                                                                    "{}",
+                                                                    cpu.chassis
+                                                                ));
+                                                            });
+
+                                                            ui.horizontal(|ui| {
+                                                                ui.label("Core Count: ");
+                                                                ui.strong(format!(
+                                                                    "{}",
+                                                                    cpu.core_count
+                                                                ));
+                                                            });
+
+                                                            ui.horizontal(|ui| {
+                                                                ui.label("CPU Frequency: ");
+                                                                ui.strong(format!(
+                                                                    "{}",
+                                                                    cpu.cpufreq
+                                                                ));
+                                                            });
+
+                                                            for resource in &cpu.resources {
+                                                                egui::CollapsingHeader::new(
+                                                                    format!("{}", resource.id),
+                                                                )
                                                                 .default_open(false)
                                                                 .show(ui, |ui| {
                                                                     ui.horizontal(|ui| {
-                                                                        ui.label("Chassis: ");
-                                                                        ui.strong(format!("{}", cpu.chassis));
+                                                                        ui.label("State: ");
+                                                                        ui.strong(format!(
+                                                                            "{}",
+                                                                            resource.state
+                                                                        ));
                                                                     });
-
                                                                     ui.horizontal(|ui| {
-                                                                        ui.label("Core Count: ");
-                                                                        ui.strong(format!("{}", cpu.core_count));
+                                                                        ui.label("Thread Count: ");
+                                                                        ui.strong(format!(
+                                                                            "{}",
+                                                                            resource.thread_count
+                                                                        ));
                                                                     });
-
-                                                                    ui.horizontal(|ui| {
-                                                                        ui.label("CPU Frequency: ");
-                                                                        ui.strong(format!("{}", cpu.cpufreq));
-                                                                    });
-
-                                                                    for resource in &cpu.resources {
-                                                                        egui::CollapsingHeader::new(format!("{}", resource.id))
-                                                                            .default_open(false)
-                                                                            .show(ui, |ui| {
-                                                                                ui.horizontal(|ui| {
-                                                                                    ui.label("State: ");
-                                                                                    ui.strong(format!("{}", resource.state));
-                                                                                });
-                                                                                ui.horizontal(|ui| {
-                                                                                    ui.label("Thread Count: ");
-                                                                                    ui.strong(format!("{}", resource.thread_count));
-                                                                                });
-                                                                            });
-                                                                    }
                                                                 });
-                                                        }
-                                                    });
+                                                            }
+                                                        });
+                                                    }
+                                                });
                                             }
                                         });
                                 }
                             });
                     });
                 }
-                
+
                 ui.add_space(8.0);
             });
     }
