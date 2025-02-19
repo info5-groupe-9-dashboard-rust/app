@@ -1,6 +1,4 @@
 use std::collections::BTreeMap;
-use std::option;
-
 use crate::models::utils::date_converter::format_timestamp;
 use crate::views::view::View;
 use crate::{
@@ -26,6 +24,7 @@ use egui::{
 pub struct GanttChart {
     options: Options,                           // options for the GanttChart
     job_details_windows: Vec<JobDetailsWindow>, // job details windows
+    collapsed_jobs: BTreeMap<String, bool>,     // collapsed jobs
 }
 
 /**
@@ -36,6 +35,7 @@ impl Default for GanttChart {
         GanttChart {
             options: Default::default(),
             job_details_windows: Vec::new(),
+            collapsed_jobs: BTreeMap::new()
         }
     }
 }
@@ -142,6 +142,7 @@ impl View for GanttChart {
                     &info,
                     (min_s, max_s),
                     &mut self.job_details_windows,
+                    &mut self.collapsed_jobs
                 );
 
                 let mut used_rect = canvas;
@@ -258,6 +259,7 @@ fn ui_canvas(
     info: &Info,
     (min_ns, max_ns): (i64, i64),
     details_window: &mut Vec<JobDetailsWindow>,
+    collapsed_jobs: &mut BTreeMap<String, bool>,
 ) -> f32 {
     if options.canvas_width_s <= 0.0 {
         options.canvas_width_s = (max_ns - min_ns) as f32;
@@ -288,6 +290,7 @@ fn ui_canvas(
                 jobs_by_owner,
                 cursor_y,
                 details_window,
+                collapsed_jobs
             );
         },
 
@@ -314,6 +317,7 @@ fn ui_canvas(
                                     jobs_by_host_by_owner,
                                     cursor_y,
                                     details_window,
+                                    collapsed_jobs
                                 );
                             },
                 AggregateByLevel2Enum::None => {
@@ -333,6 +337,7 @@ fn ui_canvas(
                                     jobs_by_host,
                                     cursor_y,
                                     details_window,
+                                    collapsed_jobs
                                 );
                             }
                 AggregateByLevel2Enum::Host => {
@@ -365,6 +370,7 @@ fn ui_canvas(
                                     jobs_by_cluster_by_owner,
                                     cursor_y,
                                     details_window,
+                                    collapsed_jobs
                                 );
                             },
                 AggregateByLevel2Enum::None => {
@@ -384,6 +390,7 @@ fn ui_canvas(
                                     jobs_by_cluster,
                                     cursor_y,
                                     details_window,
+                                    collapsed_jobs
                                 );
                             }
                 AggregateByLevel2Enum::Host => {
@@ -408,6 +415,7 @@ fn ui_canvas(
                             jobs_by_cluster_by_host,
                             cursor_y,
                             details_window,
+                            collapsed_jobs
                         );
                     },
             }
@@ -528,15 +536,15 @@ fn paint_aggregated_jobs_level_1(
     jobs: BTreeMap<String, Vec<Job>>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
+    collapsed_jobs: &mut BTreeMap<String, bool>,
 ) -> f32 {
     let spacing_between_level_1 = 20.0;
     let spacing_between_jobs = 5.0;
-    let offset_owner = 10.0; // Offset before displaying the owner
+    let offset_level_1 = 10.0;
 
     cursor_y += spacing_between_level_1;
 
     for (level_1, job_list) in jobs {
-        // Draw a horizontal line to separate owners
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, cursor_y),
@@ -545,22 +553,24 @@ fn paint_aggregated_jobs_level_1(
             Stroke::new(1.5, Color32::WHITE), // More marked line
         );
 
-        cursor_y += offset_owner; // Offset before displaying the owner
+        cursor_y += offset_level_1;
 
-        // Display the owner's name
         let text_pos = pos2(info.canvas.min.x, cursor_y);
-        paint_job_info(info, level_1, text_pos, &mut false, 1);
+        let is_collapsed = collapsed_jobs
+            .entry(level_1.clone())
+            .or_insert(false);
+        paint_job_info(info, level_1, text_pos, is_collapsed, 1);
 
         cursor_y += spacing_between_level_1; // Spacing after the owner
 
-        // Display jobs under the current owner
-        for job in job_list {
-            let job_start_y = cursor_y; // Ensure vertical alignment
-
-            // Draw the job (background)
-            paint_job(info, options, &job, job_start_y, details_window);
-
-            cursor_y += info.text_height + spacing_between_jobs + options.spacing;
+        // Only show jobs if section is not collapsed
+        if !*is_collapsed {
+            for job in job_list {
+                let job_start_y = cursor_y;
+                paint_job(info, options, &job, job_start_y, details_window);
+                cursor_y += info.text_height + spacing_between_jobs + options.spacing;
+            }
+            cursor_y += spacing_between_level_1;
         }
 
         cursor_y += spacing_between_level_1;
@@ -578,16 +588,17 @@ fn paint_aggregated_jobs_level_2(
     jobs: BTreeMap<String, BTreeMap<String, Vec<Job>>>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
+    collapsed_jobs: &mut BTreeMap<String, bool>
 ) -> f32 {
-    let spacing_between_owners = 20.0;
-    let spacing_between_ids = 15.0; // Space between each group of IDs
+    let spacing_between_level_1 = 20.0;
+    let spacing_between_level_2 = 15.0;
     let spacing_between_jobs = 5.0;
-    let offset_owner = 10.0; // Offset before displaying the owner
+    let offset_level_1 = 10.0;
 
-    cursor_y += spacing_between_owners;
+    cursor_y += spacing_between_level_1;
 
-    for (owner, id_map) in jobs {
-        // Draw a horizontal line to separate owners
+    for (level_1, level_2_map) in jobs {
+
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, cursor_y),
@@ -596,51 +607,55 @@ fn paint_aggregated_jobs_level_2(
             Stroke::new(1.5, Color32::WHITE), // More marked line
         );
 
-        cursor_y += offset_owner; // Offset before displaying the owner
+        cursor_y += offset_level_1;
 
-        // Display the owner's name
         let text_pos = pos2(info.canvas.min.x, cursor_y);
-        paint_job_info(info, owner, text_pos, &mut false, 1);
+        let is_collapsed = collapsed_jobs
+            .entry(level_1.clone())
+            .or_insert(false);
+        paint_job_info(info, level_1, text_pos, is_collapsed, 1);
 
-        cursor_y += spacing_between_owners; // Spacing after the owner
+        cursor_y += spacing_between_level_1;
 
-        // Sort the IDs to ensure an ordered display (optional)
-        let mut sorted_ids: Vec<_> = id_map.keys().collect();
-        sorted_ids.sort();
+        if !*is_collapsed {
 
-        for name in sorted_ids {
-            if let Some(job_list) = id_map.get(name) {
-                // Draw a line to separate each ID
-                info.painter.line_segment(
-                    [
-                        pos2(info.canvas.min.x, cursor_y),
-                        pos2(info.canvas.max.x, cursor_y),
-                    ],
-                    Stroke::new(0.5, Rgba::from_white_alpha(0.5)), // Line more discreet than owners
-                );
+            let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
+            sorted_level_2.sort();
 
-                cursor_y += spacing_between_ids; // Spacing after the ID line
+            for level_2 in sorted_level_2 {
+                if let Some(job_list) = level_2_map.get(level_2) {
+                    // Draw a line to separate
+                    info.painter.line_segment(
+                        [
+                            pos2(info.canvas.min.x, cursor_y),
+                            pos2(info.canvas.max.x, cursor_y),
+                        ],
+                        Stroke::new(0.5, Rgba::from_white_alpha(0.5)), // Line more discreet
+                    );
 
-                let mut once = false;
-                // Display jobs under the current ID
-                for job in job_list {
-                    let job_start_y = cursor_y; // Ensure vertical alignment
+                    cursor_y += spacing_between_level_2;
 
-                    // Draw the job (background)
-                    paint_job(info, options, &job, job_start_y, details_window);
+                    let mut once = false;
+                    // Display jobs
+                    for job in job_list {
+                        let job_start_y = cursor_y; // Ensure vertical alignment
 
-                    // Then, draw job_info_id (above)
-                    if !once {
-                        let job_text_pos = pos2(info.canvas.min.x, job_start_y);
-                        paint_job_info(info, name.to_string(), job_text_pos, &mut false, 2);
-                        once = true;
+                        // Draw the job (background)
+                        paint_job(info, options, &job, job_start_y, details_window);
+
+                        // Then, draw job_info (above)
+                        if !once {
+                            let job_text_pos = pos2(info.canvas.min.x, job_start_y);
+                            paint_job_info(info, level_2.to_string(), job_text_pos, &mut false, 2);
+                            once = true;
+                        }
+
+                        cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                     }
-
-                    cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                 }
             }
         }
-        cursor_y += spacing_between_owners;
+        cursor_y += spacing_between_level_1;
     }
 
     cursor_y

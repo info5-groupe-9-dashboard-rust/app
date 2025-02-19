@@ -1,8 +1,7 @@
 use std::cmp::Ordering;
 
 use crate::models::data_structure::{
-    application_context::ApplicationContext, cluster::Cluster, cpu::Cpu, filters::JobFilters,
-    host::Host, job::JobState,
+    application_context::ApplicationContext, cluster::Cluster, filters::JobFilters, job::JobState,
 };
 use eframe::egui::{self, Grid, RichText};
 use egui::{ScrollArea, TextEdit};
