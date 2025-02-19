@@ -96,7 +96,7 @@ pub fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
 }
 
 pub fn get_resources_from_json(file_path: &str) -> Vec<Strata> {
-    // Ouvrir le fichier
+    // Open the file
     let file_res = File::open(file_path);
 
     let mut file = match file_res {
@@ -107,14 +107,14 @@ pub fn get_resources_from_json(file_path: &str) -> Vec<Strata> {
         }
     };
 
-    // Lire le contenu du fichier
+    // Read the file content
     let mut data = String::new();
     if let Err(e) = file.read_to_string(&mut data) {
         println!("Impossible de lire le fichier: {}", e);
         return Vec::new();
     }
 
-    // Parser le JSON
+    // Parse the JSON content
     let json: Value = match serde_json::from_str(&data) {
         Ok(v) => v,
         Err(e) => {
@@ -125,10 +125,10 @@ pub fn get_resources_from_json(file_path: &str) -> Vec<Strata> {
 
     let mut resources = Vec::new();
 
-    // Extraire la section "resources"
+    // Get the resources array
     if let Some(resources_array) = json.get("resources").and_then(|v| v.as_array()) {
         for resource_value in resources_array {
-            // Désérialiser directement chaque ressource
+            // Try to parse the resource
             if let Ok(resource) = serde_json::from_value::<Strata>(resource_value.clone()) {
                 resources.push(resource);
             }

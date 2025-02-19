@@ -438,56 +438,56 @@ fn paint_aggregated_jobs_string(
     details_window: &mut Vec<JobDetailsWindow>,
 ) -> f32 {
     let spacing_between_owners = 20.0;
-    let spacing_between_ids = 15.0; // Espacement entre chaque groupe d'ID
+    let spacing_between_ids = 15.0; // Space between each group of IDs
     let spacing_between_jobs = 5.0;
-    let offset_owner = 10.0; // Décalage pour afficher owner sous la ligne
+    let offset_owner = 10.0; // Offset before displaying the owner
 
     cursor_y += spacing_between_owners;
 
     for (owner, id_map) in jobs {
-        // Tracer une ligne horizontale pour séparer les owners
+        // Draw a horizontal line to separate owners
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, cursor_y),
                 pos2(info.canvas.max.x, cursor_y),
             ],
-            Stroke::new(1.5, Color32::WHITE), // Ligne plus marquée
+            Stroke::new(1.5, Color32::WHITE), // More marked line
         );
 
-        cursor_y += offset_owner; // Décalage avant d'afficher le propriétaire
+        cursor_y += offset_owner; // Offset before displaying the owner
 
-        // Afficher le nom du propriétaire
+        // Display the owner's name
         let text_pos = pos2(info.canvas.min.x, cursor_y);
         paint_job_info_owner(info, owner, text_pos, &mut false);
 
-        cursor_y += spacing_between_owners; // Espacement après le propriétaire
+        cursor_y += spacing_between_owners; // Spacing after the owner
 
-        // Trier les IDs pour assurer un affichage ordonné (optionnel)
+        // Sort the IDs to ensure an ordered display (optional)
         let mut sorted_ids: Vec<_> = id_map.keys().collect();
         sorted_ids.sort();
 
         for name in sorted_ids {
             if let Some(job_list) = id_map.get(name) {
-                // Tracer une ligne pour séparer chaque ID
+                // Draw a line to separate each ID
                 info.painter.line_segment(
                     [
                         pos2(info.canvas.min.x, cursor_y),
                         pos2(info.canvas.max.x, cursor_y),
                     ],
-                    Stroke::new(1.0, Rgba::from_white_alpha(0.8)), // Ligne plus discrète que celle des owners
+                    Stroke::new(1.0, Rgba::from_white_alpha(0.8)), // Line more discreet than owners
                 );
 
-                cursor_y += spacing_between_ids; // Espacement après la ligne de l'ID
+                cursor_y += spacing_between_ids; // Spacing after the ID line
 
                 let mut once = false;
-                // Affichage des jobs sous l'ID actuel
+                // Display jobs under the current ID
                 for job in job_list {
-                    let job_start_y = cursor_y; // Assurer l'alignement vertical
+                    let job_start_y = cursor_y; // Ensure vertical alignment
 
-                    // Dessiner le job (arrière-plan)
+                    // Draw the job (background)
                     paint_job(info, options, &job, job_start_y, details_window);
 
-                    // Ensuite, dessiner job_info_id (au-dessus)
+                    // Then, draw job_info_id (above)
                     if !once {
                         let job_text_pos = pos2(info.canvas.min.x, job_start_y);
                         paint_job_info_host(info, name, job_text_pos, &mut false);
@@ -515,55 +515,55 @@ fn paint_aggregated_jobs_u32(
     details_window: &mut Vec<JobDetailsWindow>,
 ) -> f32 {
     let spacing_between_owners = 20.0;
-    let spacing_between_ids = 15.0; // Espacement entre chaque groupe d'ID
+    let spacing_between_ids = 15.0; // Space between each group of IDs
     let spacing_between_jobs = 5.0;
-    let offset_owner = 10.0; // Décalage pour afficher owner sous la ligne
+    let offset_owner = 10.0; // Offset before displaying the owner
 
     cursor_y += spacing_between_owners;
 
     for (owner, id_map) in jobs {
-        // Tracer une ligne horizontale pour séparer les owners
+        // Draw a horizontal line to separate owners
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, cursor_y),
                 pos2(info.canvas.max.x, cursor_y),
             ],
-            Stroke::new(1.5, Color32::WHITE), // Ligne plus marquée
+            Stroke::new(1.5, Color32::WHITE), // More marked line
         );
 
-        cursor_y += offset_owner; // Décalage avant d'afficher le propriétaire
+        cursor_y += offset_owner; // Offset before displaying the owner
 
-        // Afficher le nom du propriétaire
+        // Display the owner's name
         let text_pos = pos2(info.canvas.min.x, cursor_y);
         paint_job_info_owner(info, owner, text_pos, &mut false);
 
-        cursor_y += spacing_between_owners; // Espacement après le propriétaire
+        cursor_y += spacing_between_owners; // Spacing after the owner
 
-        // Trier les IDs pour assurer un affichage ordonné (optionnel)
+        // Sort the IDs to ensure an ordered display (optional)
         let mut sorted_ids: Vec<_> = id_map.keys().copied().collect();
         sorted_ids.sort();
 
         for id in sorted_ids {
             if let Some(job_list) = id_map.get(&id) {
-                // Tracer une ligne pour séparer chaque ID
+                // Draw a line to separate each ID
                 info.painter.line_segment(
                     [
                         pos2(info.canvas.min.x, cursor_y),
                         pos2(info.canvas.max.x, cursor_y),
                     ],
-                    Stroke::new(1.0, Rgba::from_white_alpha(0.8)), // Ligne plus discrète que celle des owners
+                    Stroke::new(1.0, Rgba::from_white_alpha(0.8)), // Line more discreet than owners
                 );
 
-                cursor_y += spacing_between_ids; // Espacement après la ligne de l'ID
+                cursor_y += spacing_between_ids; // Spacing after the ID line
 
-                // Affichage des jobs sous l'ID actuel
+                // Display jobs under the current ID
                 for job in job_list {
-                    let job_start_y = cursor_y; // Assurer l'alignement vertical
+                    let job_start_y = cursor_y; // Ensure vertical alignment
 
-                    // Dessiner le job (arrière-plan)
+                    // Draw the job (background)
                     paint_job(info, options, &job, job_start_y, details_window);
 
-                    // Ensuite, dessiner job_info_id (au-dessus)
+                    // Then, draw job_info_id (above)
                     let job_text_pos = pos2(info.canvas.min.x, job_start_y);
                     paint_job_info_id(info, job.clone(), job_text_pos, &mut false);
 

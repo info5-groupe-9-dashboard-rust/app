@@ -24,10 +24,9 @@ impl Filtering {
         self.open = true;
     }
 
-    // Si la popup est ouverte, on la dessine
-
+    // If the window is open, render the filters
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        let mut open = self.open; // Copier la valeur de self.open dans une variable locale
+        let mut open = self.open; // Copy the value of self.open to a mutable variable
         if self.open {
             egui::Window::new("Filters")
                 .collapsible(true)
@@ -37,9 +36,9 @@ impl Filtering {
                 .show(ui.ctx(), |ui| {
                     ui.heading("Filter Options");
 
-                    ui.separator(); // Ligne de séparation
+                    ui.separator(); // Add a separator
 
-                    // Appeler les fonctions de rendu des filtres ici
+                    // Render the job id range
                     self.render_job_id_range(ui);
                     ui.add_space(10.0);
 
@@ -52,13 +51,13 @@ impl Filtering {
 
                     ui.horizontal(|ui| {
                         if ui.button(t!("app.filters.apply")).clicked() {
-                            app.filters = JobFilters::copy(&self.temp_filters); // Appliquer les filtres
+                            app.filters = JobFilters::copy(&self.temp_filters); // add the temporary filters to the app filters
                             println!("Applying filters: {:?}", app.filters);
-                            app.filter_jobs(); // Appliquer les filtres
-                            self.open = false; // Fermer la fenêtre popup
+                            app.filter_jobs(); // Filter the jobs
+                            self.open = false; // Close the window
                         }
                         if ui.button(t!("app.filters.reset")).clicked() {
-                            self.reset_filters(); // Réinitialiser les filtres temporaires
+                            self.reset_filters(); // Reset the filters
                             app.filters = JobFilters::default();
                         }
                     });

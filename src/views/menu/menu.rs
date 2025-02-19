@@ -9,12 +9,11 @@ use eframe::egui;
 use super::options::Options;
 
 pub struct Menu {
-    options_pane: Options
+    options_pane: Options,
 }
 
 impl Default for Menu {
     fn default() -> Self {
-
         let application_options = ApplicationOptions::default();
 
         let options_pane = if std::path::Path::new("options.json").exists() {
@@ -23,9 +22,7 @@ impl Default for Menu {
             Options::new(application_options.clone())
         };
 
-        Menu {
-            options_pane,
-        }
+        Menu { options_pane }
     }
 }
 
@@ -34,7 +31,7 @@ impl View for Menu {
         self.options_pane.apply_options(ui.ctx());
 
         ui.horizontal(|ui| {
-            // Menu Fichier
+            // Menu File
             ui.menu_button(t!("app.menu.file"), |ui| {
                 if ui.button("Quitter").clicked() {
                     std::process::exit(0);

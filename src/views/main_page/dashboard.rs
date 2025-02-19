@@ -23,51 +23,48 @@ impl Default for Dashboard {
 
 impl View for Dashboard {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
+        egui::TopBottomPanel::top("title").show(ui.ctx(), |ui| {
+            ui.heading(RichText::new(t!("app.dashboard.title")).strong().size(20.0));
+        });
 
-            egui::TopBottomPanel::top("title").show(ui.ctx(), |ui| {
-                ui.heading(RichText::new(t!("app.dashboard.title")).strong().size(20.0));
-            });
+        egui::CentralPanel::default().show(ui.ctx(), |ui| {
+            self.metric_grid.show(ui, |grid| {
+                // Add total jobs metric
+                grid.add_metric(MetricBox::new(
+                    t!("app.dashboard.total_jobs").to_string(),
+                    app.filtered_jobs.len().to_string(),
+                    egui::Color32::from_rgb(70, 100, 150),
+                ));
 
-            egui::CentralPanel::default().show(ui.ctx(), |ui| {
-                self.metric_grid.show(ui, |grid| {
-                    
-                    // Add total jobs metric
-                    grid.add_metric(MetricBox::new(
-                        t!("app.dashboard.total_jobs").to_string(),
-                        app.filtered_jobs.len().to_string(),
-                        egui::Color32::from_rgb(70, 100, 150),
-                    ));
-                    
-                    
-                   // N'ajouter que les métriques avec un compteur > 0
-                    for state in JobState::iter() {
-                        let count = app.filtered_jobs
-                            .iter()
-                            .filter(|j| j.state == state)
-                            .count();
+                // Add the job state metrics
+                for state in JobState::iter() {
+                    let count = app
+                        .filtered_jobs
+                        .iter()
+                        .filter(|j| j.state == state)
+                        .count();
 
-                        if count > 0 {
-                            let translation_key = format!("app.job_state.{}", state.to_string().to_lowercase());
-                            grid.add_metric(MetricBox::new(
-                                t!(&translation_key).to_string(),
-                                count.to_string(),
-                                state.get_color().0,
-                            ));
-                        }
+                    if count > 0 {
+                        let translation_key =
+                            format!("app.job_state.{}", state.to_string().to_lowercase());
+                        grid.add_metric(MetricBox::new(
+                            t!(&translation_key).to_string(),
+                            count.to_string(),
+                            state.get_color().0,
+                        ));
                     }
+                }
 
-                    // Add the job state chart
-                    let chart = create_jobstate_chart(app.filtered_jobs.clone());
-                    grid.add_chart(chart);
-
-                });
-
-                ui.add_space(10.0);
-                ui.separator();
-
-                // Draw the job table
-                self.job_table.ui(ui, app);
+                // Add the job state chart
+                let chart = create_jobstate_chart(app.filtered_jobs.clone());
+                grid.add_chart(chart);
             });
 
+            ui.add_space(10.0);
+            ui.separator();
+
+            // Draw the job table
+            self.job_table.ui(ui, app);
+        });
     }
 }
