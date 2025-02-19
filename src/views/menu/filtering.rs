@@ -1,8 +1,11 @@
+use std::cmp::Ordering;
+
 use crate::models::data_structure::{
-    application_context::ApplicationContext, filters::JobFilters, job::JobState,
+    application_context::ApplicationContext, cluster::Cluster, cpu::Cpu, filters::JobFilters,
+    host::Host, job::JobState,
 };
 use eframe::egui::{self, Grid, RichText};
-use egui::TextEdit;
+use egui::{ScrollArea, TextEdit};
 use strum::IntoEnumIterator;
 
 pub struct Filtering {
@@ -32,7 +35,7 @@ impl Filtering {
                 .collapsible(true)
                 .movable(true)
                 .open(&mut open)
-                .default_size([400.0, 500.0])
+                .default_size([600.0, 500.0])
                 .show(ui.ctx(), |ui| {
                     ui.heading("Filter Options");
 
@@ -42,17 +45,29 @@ impl Filtering {
                     self.render_job_id_range(ui);
                     ui.add_space(10.0);
 
-                    self.render_owners_selector(ui, app);
+                    egui::CollapsingHeader::new("Owners")
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            self.render_owners_selector(ui, app);
+                        });
                     ui.add_space(10.0);
 
-                    self.render_states_selector(ui);
+                    egui::CollapsingHeader::new("Job States")
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            self.render_states_selector(ui);
+                        });
+                    ui.add_space(10.0);
+
+                    ui.menu_button("Clusters", |ui| {
+                        self.render_cluster_menu(ui, app);
+                    });
 
                     ui.add_space(20.0);
 
                     ui.horizontal(|ui| {
                         if ui.button(t!("app.filters.apply")).clicked() {
                             app.filters = JobFilters::copy(&self.temp_filters); // add the temporary filters to the app filters
-                            println!("Applying filters: {:?}", app.filters);
                             app.filter_jobs(); // Filter the jobs
                             self.open = false; // Close the window
                         }
@@ -71,7 +86,6 @@ impl Filtering {
     }
 
     fn render_job_id_range(&mut self, ui: &mut egui::Ui) {
-        ui.label(RichText::new(t!("Job Id")).strong());
         ui.horizontal(|ui| {
             let mut start_id = self
                 .temp_filters
@@ -109,8 +123,6 @@ impl Filtering {
     }
 
     fn render_owners_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        ui.label(RichText::new(t!("Owners")).strong());
-
         let unique_owners = app.get_unique_owners();
         let mut selected_owners = self.temp_filters.owners.clone().unwrap_or_default();
 
@@ -140,8 +152,6 @@ impl Filtering {
     }
 
     fn render_states_selector(&mut self, ui: &mut egui::Ui) {
-        ui.label(RichText::new(t!("app.filters.states")).strong());
-
         let mut selected_states = self.temp_filters.states.clone().unwrap_or_default();
 
         Grid::new("states_grid")
@@ -170,5 +180,94 @@ impl Filtering {
                     }
                 }
             });
+    }
+
+    fn render_cluster_menu(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
+        ui.set_max_width(124.0);
+
+        for cluster in &app.all_clusters {
+            ui.horizontal(|ui| {
+                let mut is_selected = self
+                    .temp_filters
+                    .clusters
+                    .as_ref()
+                    .map_or(false, |clusters| {
+                        clusters.iter().any(|c| c.name == cluster.name)
+                    });
+
+                if ui.checkbox(&mut is_selected, "").changed() {
+                    if is_selected {
+                        if let Some(clusters) = &mut self.temp_filters.clusters {
+                            clusters.push(cluster.clone());
+                        } else {
+                            self.temp_filters.clusters = Some(vec![cluster.clone()]);
+                        }
+                    } else {
+                        if let Some(clusters) = &mut self.temp_filters.clusters {
+                            clusters.retain(|c| c.name != cluster.name);
+                        }
+                    }
+                }
+
+                ui.label(&cluster.name);
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.menu_button(" ", |ui| {
+                        self.render_host_menu(ui, cluster);
+                    });
+                });
+            });
+        }
+    }
+
+    fn render_host_menu(&mut self, ui: &mut egui::Ui, cluster: &Cluster) {
+        ui.set_max_width(300.0);
+
+        let mut hosts = cluster.hosts.clone();
+        hosts.sort_by(|a, b| compare_host_names(&a.name, &b.name));
+
+        let mut selected_cluster = self
+            .temp_filters
+            .clusters
+            .as_mut()
+            .and_then(|clusters| clusters.iter_mut().find(|c| c.name == cluster.name));
+
+        if let Some(cluster) = selected_cluster.as_mut() {
+            if ui.button("Deselect All").clicked() {
+                cluster.hosts.clear();
+            }
+        }
+
+        ScrollArea::vertical()
+            .min_scrolled_height(50.0)
+            .max_height(250.0)
+            .show(ui, |ui| {
+                for host in hosts {
+                    let mut is_selected = selected_cluster
+                        .as_ref()
+                        .map_or(false, |c| c.hosts.iter().any(|h| h.name == host.name));
+
+                    if ui.checkbox(&mut is_selected, &host.name).changed() {
+                        if let Some(cluster) = selected_cluster.as_mut() {
+                            if is_selected {
+                                cluster.hosts.push(host.clone());
+                            } else {
+                                cluster.hosts.retain(|h| h.name != host.name);
+                            }
+                        }
+                    }
+                }
+            });
+    }
+}
+
+fn extract_number(s: &str) -> Option<u32> {
+    s.split('-').nth(1)?.split('.').next()?.parse().ok()
+}
+
+fn compare_host_names(a: &str, b: &str) -> Ordering {
+    match (extract_number(a), extract_number(b)) {
+        (Some(num_a), Some(num_b)) => num_a.cmp(&num_b),
+        _ => a.cmp(b),
     }
 }

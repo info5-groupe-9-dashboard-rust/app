@@ -1,6 +1,7 @@
 use crate::models::data_structure::cpu::Cpu;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
+
 pub struct Host {
     pub name: String,
     pub cpus: Vec<Cpu>,

@@ -1,4 +1,5 @@
 use std::fmt::Display;
+#[derive(Debug, PartialEq)]
 
 pub enum ResourceState {
     Dead,
@@ -18,7 +19,7 @@ impl Clone for ResourceState {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Resource {
     pub id: u32,
     pub state: ResourceState,

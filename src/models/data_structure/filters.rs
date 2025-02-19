@@ -1,4 +1,4 @@
-use super::job::JobState;
+use super::{cluster::Cluster, job::JobState};
 
 #[derive(Default, Debug)]
 
@@ -8,6 +8,7 @@ pub struct JobFilters {
     pub states: Option<Vec<JobState>>,
     pub scheduled_start_time: Option<i64>,
     pub wall_time: Option<i64>,
+    pub clusters: Option<Vec<Cluster>>,
 }
 
 #[allow(dead_code)]
@@ -23,6 +24,7 @@ impl JobFilters {
             states: filter.states.clone(),
             scheduled_start_time: filter.scheduled_start_time,
             wall_time: filter.wall_time,
+            clusters: filter.clusters.clone(),
         }
     }
 
@@ -44,6 +46,10 @@ impl JobFilters {
 
     pub fn set_wall_time(&mut self, wall_time: i64) {
         self.wall_time = Some(wall_time);
+    }
+
+    pub fn set_clusters(&mut self, selected_clusters: Option<Vec<Cluster>>) {
+        self.clusters = selected_clusters;
     }
 
     pub fn reset(&mut self) {

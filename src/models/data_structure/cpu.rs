@@ -1,6 +1,7 @@
 use crate::models::data_structure::resource::Resource;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
+
 pub struct Cpu {
     pub name: String,
     pub resources: Vec<Resource>,
