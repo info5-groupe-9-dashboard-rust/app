@@ -68,7 +68,6 @@ impl Filtering {
                     ui.horizontal(|ui| {
                         if ui.button(t!("app.filters.apply")).clicked() {
                             app.filters = JobFilters::copy(&self.temp_filters); // add the temporary filters to the app filters
-                            println!("Applying filters: {:?}", app.filters);
                             app.filter_jobs(); // Filter the jobs
                             self.open = false; // Close the window
                         }
