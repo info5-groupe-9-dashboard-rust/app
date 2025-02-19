@@ -1,7 +1,7 @@
 use crate::models::data_structure::job::{Job, JobState};
 use crate::models::data_structure::strata::Strata;
 use crate::models::utils::utils::convert_id_to_color;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local};
 use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
@@ -32,7 +32,7 @@ pub fn test_connection(host: &str) -> bool {
  * @return List of jobs
  */
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> bool {
+pub fn get_current_jobs_for_period(start_date: DateTime<Local>, end_date: DateTime<Local>) -> bool {
     // Test connection first
 
     if !test_connection("grenoble.g5k") {

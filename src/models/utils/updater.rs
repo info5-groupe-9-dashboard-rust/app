@@ -1,5 +1,4 @@
-use chrono::DateTime;
-use chrono::Utc;
+use chrono::{DateTime, Local};
 
 use std::time::Duration;
 
@@ -21,21 +20,21 @@ impl ApplicationContext {
         println!("New refresh rate: {:?}", self.refresh_rate);
     }
 
-    pub fn update_start_date(&mut self, new_start: DateTime<Utc>) {
+    pub fn update_start_date(&mut self, new_start: DateTime<Local>) {
         let mut start = self.start_date.lock().unwrap();
         *start = new_start;
     }
 
-    pub fn update_end_date(&mut self, new_end: DateTime<Utc>) {
+    pub fn update_end_date(&mut self, new_end: DateTime<Local>) {
         let mut end = self.end_date.lock().unwrap();
         *end = new_end;
     }
 
-    pub fn get_start_date(&self) -> DateTime<Utc> {
+    pub fn get_start_date(&self) -> DateTime<Local> {
         *self.start_date.lock().unwrap()
     }
 
-    pub fn get_end_date(&self) -> DateTime<Utc> {
+    pub fn get_end_date(&self) -> DateTime<Local> {
         *self.end_date.lock().unwrap()
     }
 
@@ -152,7 +151,7 @@ impl ApplicationContext {
         }
     }
 
-    pub fn update_period(&mut self, start_date: DateTime<Utc>, end_date: DateTime<Utc>) {
+    pub fn update_period(&mut self, start_date: DateTime<Local>, end_date: DateTime<Local>) {
         self.update_start_date(start_date);
         self.update_end_date(end_date);
         self.is_loading = true;

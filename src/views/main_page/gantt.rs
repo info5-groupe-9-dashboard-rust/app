@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::models::utils::date_converter::format_timestamp;
 use crate::views::view::View;
 use crate::{
     models::data_structure::{application_context::ApplicationContext, job::Job},
@@ -11,7 +12,7 @@ use crate::{
         job_details::JobDetailsWindow,
     },
 };
-use chrono::DateTime;
+use chrono::{DateTime, Local};
 use eframe::egui;
 use egui::{
     lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response,
@@ -410,7 +411,7 @@ fn paint_job_tooltip(info: &Info, options: &mut Options) {
                 job.id,
                 job.owner,
                 job.state.get_label(),
-                grid_text(job.scheduled_start),
+                format_timestamp(job.scheduled_start),
                 job.walltime
             );
 
@@ -968,7 +969,9 @@ fn grid_text(ts: i64) -> String {
         "N/A".to_string()
     } else {
         if let Some(dt) = DateTime::from_timestamp(ts, 0) {
-            dt.format("%Y-%m-%d %H:%M:%S").to_string()
+
+            dt.with_timezone(&Local)
+            .format("%Y-%m-%d %H:%M:%S").to_string()
         } else {
             "Invalid timestamp".to_string()
         }

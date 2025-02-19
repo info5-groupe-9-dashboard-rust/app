@@ -3,7 +3,7 @@ use std::fmt;
 use strum_macros::EnumIter;
 
 #[cfg(target_arch = "wasm32")]
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local};
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq, PartialOrd, Ord, Hash)]
 pub enum JobState {
@@ -213,7 +213,7 @@ pub fn mock_job(id: u32) -> Job {
     };
 
     // Coherent timestamp generation
-    let now = Utc::now().timestamp();
+    let now = Local::now().timestamp();
     let submission_time = now - (random_index(86400) as i64);
     let scheduled_start = submission_time + (random_index(3300) as i64 + 300);
     let start_time = if random_float() < 0.7 {
