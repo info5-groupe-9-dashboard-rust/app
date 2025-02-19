@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::option;
 
 use crate::models::utils::date_converter::format_timestamp;
 use crate::views::view::View;
@@ -6,7 +7,7 @@ use crate::{
     models::data_structure::{application_context::ApplicationContext, job::Job},
     views::components::{
         gantt_grid_spacing::GridSpacing,
-        gantt_group_by::{GroupBy, GroupByEnum},
+        gantt_aggregate_by::{AggregateBy, AggregateByLevel1Enum, AggregateByLevel2Enum},
         gantt_job_color::JobColor,
         gantt_sorting::Sorting,
         job_details::JobDetailsWindow,
@@ -69,14 +70,17 @@ impl View for GanttChart {
             ui.menu_button("🔧 Settings", |ui| {
                 ui.set_max_height(500.0);
 
-                // Group by component (owner, cluster, host)
-                self.options.group_by.ui(ui);
+                // Aggregate by component (levels)
+                self.options.aggregate_by.ui(ui);
+                ui.separator();
 
                 // Grid spacing component (10 min, 30 min, 60 min)
                 self.options.grid_spacing_minutes.ui(ui);
+                ui.separator();
 
                 // Job color component (random, state)
                 self.options.job_color.ui(ui);
+                ui.separator();
 
                 // Sorting options component (sort by, reversed)
                 self.options.sorting.ui(ui);
@@ -210,7 +214,7 @@ pub struct Options {
     pub spacing: f32,                      // Vertical spacing between jobs
     pub rounding: f32,                     // Rounded corners
     pub sorting: Sorting,                  // Sorting
-    pub group_by: GroupBy,                 // Group by
+    pub aggregate_by: AggregateBy,         // Aggregate by
     pub grid_spacing_minutes: GridSpacing, // Grid spacing in minutes
     pub job_color: JobColor,               // Job color
     current_hovered_job: Option<Job>,      // Current hovered job
@@ -231,7 +235,7 @@ impl Default for Options {
             rect_height: 16.0,                        // height of a job
             spacing: 5.0,                             // vertical spacing between jobs
             rounding: 4.0,                            // rounded corners
-            group_by: Default::default(),             // group by component
+            aggregate_by: Default::default(),         // aggregate by component
             grid_spacing_minutes: Default::default(), // grid spacing component
             sorting: Default::default(),              // sorting component
             job_color: Default::default(),            // job color component
@@ -266,60 +270,147 @@ fn ui_canvas(
     // Apply sorting
     let jobs = options.sorting.sort(app.filtered_jobs.clone());
 
-    match options.group_by.value {
-        // Group by owner
-        GroupByEnum::Owner => {
-            let mut jobs_by_id: BTreeMap<u32, Vec<Job>> = BTreeMap::new();
+    match options.aggregate_by.level_1 {
+
+        // Aggregate by owner only
+        AggregateByLevel1Enum::Owner => {
+            let mut jobs_by_owner: BTreeMap<String, Vec<Job>> = BTreeMap::new();
             for job in jobs {
-                let id = job.id.clone();
-                jobs_by_id.entry(id).or_insert_with(Vec::new).push(job);
+                jobs_by_owner
+                    .entry(job.owner.clone())
+                    .or_insert_with(Vec::new)
+                    .push(job.clone());
             }
 
-            let mut jobs_by_id_by_owner: BTreeMap<String, BTreeMap<u32, Vec<Job>>> =
-                BTreeMap::new();
-            for (id, job_list) in jobs_by_id {
-                let owner = job_list[0].owner.clone();
-                jobs_by_id_by_owner
-                    .entry(owner)
-                    .or_insert_with(BTreeMap::new)
-                    .insert(id, job_list);
-            }
-
-            cursor_y = paint_aggregated_jobs_u32(
+            cursor_y = paint_aggregated_jobs_level_1(
                 info,
                 options,
-                jobs_by_id_by_owner,
+                jobs_by_owner,
                 cursor_y,
                 details_window,
             );
-        }
-        // Group by host
-        GroupByEnum::Host => {}
-        // Group by cluster
-        GroupByEnum::Cluster => {
-            // Group by cluster and then by host
-            let mut jobs_by_cluster_by_host: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
-                BTreeMap::new();
-            for job in jobs {
-                for cluster in job.clusters.iter() {
-                    for host in job.hosts.iter() {
-                        jobs_by_cluster_by_host
-                            .entry(cluster.clone())
-                            .or_insert_with(BTreeMap::new)
-                            .entry(host.clone())
-                            .or_insert_with(Vec::new)
-                            .push(job.clone());
-                    }
-                }
-            }
+        },
 
-            cursor_y = paint_aggregated_jobs_string(
-                info,
-                options,
-                jobs_by_cluster_by_host,
-                cursor_y,
-                details_window,
-            );
+        // Aggregate by host
+        AggregateByLevel1Enum::Host => {
+            match options.aggregate_by.level_2 {
+                AggregateByLevel2Enum::Owner => {
+                                let mut jobs_by_host_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
+                                    BTreeMap::new();
+                                for job in jobs {
+                                    for host in job.hosts.iter() {
+                                        jobs_by_host_by_owner
+                                            .entry(host.clone())
+                                            .or_insert_with(BTreeMap::new)
+                                            .entry(job.owner.clone())
+                                            .or_insert_with(Vec::new)
+                                            .push(job.clone());
+                                    }
+                                }
+
+                                cursor_y = paint_aggregated_jobs_level_2(
+                                    info,
+                                    options,
+                                    jobs_by_host_by_owner,
+                                    cursor_y,
+                                    details_window,
+                                );
+                            },
+                AggregateByLevel2Enum::None => {
+                                let mut jobs_by_host: BTreeMap<String, Vec<Job>> = BTreeMap::new();
+                                for job in jobs {
+                                    for host in job.hosts.iter() {
+                                        jobs_by_host
+                                            .entry(host.clone())
+                                            .or_insert_with(Vec::new)
+                                            .push(job.clone());
+                                    }
+                                }
+
+                                cursor_y = paint_aggregated_jobs_level_1(
+                                    info,
+                                    options,
+                                    jobs_by_host,
+                                    cursor_y,
+                                    details_window,
+                                );
+                            }
+                AggregateByLevel2Enum::Host => {
+                        // nothing to do here
+                    },
+            }
+        },
+
+        // Aggregate by cluster
+        AggregateByLevel1Enum::Cluster => {
+
+            match options.aggregate_by.level_2 {
+                AggregateByLevel2Enum::Owner => {
+                                let mut jobs_by_cluster_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
+                                    BTreeMap::new();
+                                for job in jobs {
+                                    for cluster in job.clusters.iter() {
+                                        jobs_by_cluster_by_owner
+                                            .entry(cluster.clone())
+                                            .or_insert_with(BTreeMap::new)
+                                            .entry(job.owner.clone())
+                                            .or_insert_with(Vec::new)
+                                            .push(job.clone());
+                                    }
+                                }
+
+                                cursor_y = paint_aggregated_jobs_level_2(
+                                    info,
+                                    options,
+                                    jobs_by_cluster_by_owner,
+                                    cursor_y,
+                                    details_window,
+                                );
+                            },
+                AggregateByLevel2Enum::None => {
+                                let mut jobs_by_cluster: BTreeMap<String, Vec<Job>> = BTreeMap::new();
+                                for job in jobs {
+                                    for cluster in job.clusters.iter() {
+                                        jobs_by_cluster
+                                            .entry(cluster.clone())
+                                            .or_insert_with(Vec::new)
+                                            .push(job.clone());
+                                    }
+                                }
+
+                                cursor_y = paint_aggregated_jobs_level_1(
+                                    info,
+                                    options,
+                                    jobs_by_cluster,
+                                    cursor_y,
+                                    details_window,
+                                );
+                            }
+                AggregateByLevel2Enum::Host => {
+                        let mut jobs_by_cluster_by_host: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
+                            BTreeMap::new();
+                        for job in jobs {
+                            for cluster in job.clusters.iter() {
+                                for host in job.hosts.iter() {
+                                    jobs_by_cluster_by_host
+                                        .entry(cluster.clone())
+                                        .or_insert_with(BTreeMap::new)
+                                        .entry(host.clone())
+                                        .or_insert_with(Vec::new)
+                                        .push(job.clone());
+                                }
+                            }
+                        }
+
+                        cursor_y = paint_aggregated_jobs_level_2(
+                            info,
+                            options,
+                            jobs_by_cluster_by_host,
+                            cursor_y,
+                            details_window,
+                        );
+                    },
+            }
         }
     }
 
@@ -429,9 +520,59 @@ fn paint_job_tooltip(info: &Info, options: &mut Options) {
 }
 
 /**
- * Paints aggregated jobs
+ * Paints jobs with 1 level of aggregation
  */
-fn paint_aggregated_jobs_string(
+fn paint_aggregated_jobs_level_1(
+    info: &Info,
+    options: &mut Options,
+    jobs: BTreeMap<String, Vec<Job>>,
+    mut cursor_y: f32,
+    details_window: &mut Vec<JobDetailsWindow>,
+) -> f32 {
+    let spacing_between_level_1 = 20.0;
+    let spacing_between_jobs = 5.0;
+    let offset_owner = 10.0; // Offset before displaying the owner
+
+    cursor_y += spacing_between_level_1;
+
+    for (level_1, job_list) in jobs {
+        // Draw a horizontal line to separate owners
+        info.painter.line_segment(
+            [
+                pos2(info.canvas.min.x, cursor_y),
+                pos2(info.canvas.max.x, cursor_y),
+            ],
+            Stroke::new(1.5, Color32::WHITE), // More marked line
+        );
+
+        cursor_y += offset_owner; // Offset before displaying the owner
+
+        // Display the owner's name
+        let text_pos = pos2(info.canvas.min.x, cursor_y);
+        paint_job_info(info, level_1, text_pos, &mut false, 1);
+
+        cursor_y += spacing_between_level_1; // Spacing after the owner
+
+        // Display jobs under the current owner
+        for job in job_list {
+            let job_start_y = cursor_y; // Ensure vertical alignment
+
+            // Draw the job (background)
+            paint_job(info, options, &job, job_start_y, details_window);
+
+            cursor_y += info.text_height + spacing_between_jobs + options.spacing;
+        }
+
+        cursor_y += spacing_between_level_1;
+    }
+
+    cursor_y
+}
+
+/**
+ * Paints jobs with 2 levels of aggregation
+ */
+fn paint_aggregated_jobs_level_2(
     info: &Info,
     options: &mut Options,
     jobs: BTreeMap<String, BTreeMap<String, Vec<Job>>>,
@@ -459,7 +600,7 @@ fn paint_aggregated_jobs_string(
 
         // Display the owner's name
         let text_pos = pos2(info.canvas.min.x, cursor_y);
-        paint_job_info_owner(info, owner, text_pos, &mut false);
+        paint_job_info(info, owner, text_pos, &mut false, 1);
 
         cursor_y += spacing_between_owners; // Spacing after the owner
 
@@ -475,7 +616,7 @@ fn paint_aggregated_jobs_string(
                         pos2(info.canvas.min.x, cursor_y),
                         pos2(info.canvas.max.x, cursor_y),
                     ],
-                    Stroke::new(1.0, Rgba::from_white_alpha(0.8)), // Line more discreet than owners
+                    Stroke::new(0.5, Rgba::from_white_alpha(0.5)), // Line more discreet than owners
                 );
 
                 cursor_y += spacing_between_ids; // Spacing after the ID line
@@ -491,7 +632,7 @@ fn paint_aggregated_jobs_string(
                     // Then, draw job_info_id (above)
                     if !once {
                         let job_text_pos = pos2(info.canvas.min.x, job_start_y);
-                        paint_job_info_host(info, name, job_text_pos, &mut false);
+                        paint_job_info(info, name.to_string(), job_text_pos, &mut false, 2);
                         once = true;
                     }
 
@@ -499,80 +640,6 @@ fn paint_aggregated_jobs_string(
                 }
             }
         }
-        cursor_y += spacing_between_owners;
-    }
-
-    cursor_y
-}
-
-/**
- * Paints aggregated jobs
- */
-fn paint_aggregated_jobs_u32(
-    info: &Info,
-    options: &mut Options,
-    jobs: BTreeMap<String, BTreeMap<u32, Vec<Job>>>,
-    mut cursor_y: f32,
-    details_window: &mut Vec<JobDetailsWindow>,
-) -> f32 {
-    let spacing_between_owners = 20.0;
-    let spacing_between_ids = 15.0; // Space between each group of IDs
-    let spacing_between_jobs = 5.0;
-    let offset_owner = 10.0; // Offset before displaying the owner
-
-    cursor_y += spacing_between_owners;
-
-    for (owner, id_map) in jobs {
-        // Draw a horizontal line to separate owners
-        info.painter.line_segment(
-            [
-                pos2(info.canvas.min.x, cursor_y),
-                pos2(info.canvas.max.x, cursor_y),
-            ],
-            Stroke::new(1.5, Color32::WHITE), // More marked line
-        );
-
-        cursor_y += offset_owner; // Offset before displaying the owner
-
-        // Display the owner's name
-        let text_pos = pos2(info.canvas.min.x, cursor_y);
-        paint_job_info_owner(info, owner, text_pos, &mut false);
-
-        cursor_y += spacing_between_owners; // Spacing after the owner
-
-        // Sort the IDs to ensure an ordered display (optional)
-        let mut sorted_ids: Vec<_> = id_map.keys().copied().collect();
-        sorted_ids.sort();
-
-        for id in sorted_ids {
-            if let Some(job_list) = id_map.get(&id) {
-                // Draw a line to separate each ID
-                info.painter.line_segment(
-                    [
-                        pos2(info.canvas.min.x, cursor_y),
-                        pos2(info.canvas.max.x, cursor_y),
-                    ],
-                    Stroke::new(1.0, Rgba::from_white_alpha(0.8)), // Line more discreet than owners
-                );
-
-                cursor_y += spacing_between_ids; // Spacing after the ID line
-
-                // Display jobs under the current ID
-                for job in job_list {
-                    let job_start_y = cursor_y; // Ensure vertical alignment
-
-                    // Draw the job (background)
-                    paint_job(info, options, &job, job_start_y, details_window);
-
-                    // Then, draw job_info_id (above)
-                    let job_text_pos = pos2(info.canvas.min.x, job_start_y);
-                    paint_job_info_id(info, job.clone(), job_text_pos, &mut false);
-
-                    cursor_y += info.text_height + spacing_between_jobs + options.spacing;
-                }
-            }
-        }
-
         cursor_y += spacing_between_owners;
     }
 
@@ -686,19 +753,20 @@ fn paint_job(
 /**
  * Paints a job info appearing on the left side of the canvas
  */
-#[allow(dead_code)]
-fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bool) {
+fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bool, level: u8) {
     let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
+    let label = if level == 1 {
+        format!("{} {}", collapsed_symbol, info_label)
+    } else {
+        info_label
+    };
 
     let galley = info.ctx.fonts(|f| {
-        f.layout_no_wrap(
-            format!("{} {}", collapsed_symbol, info_label),
-            info.font_id.clone(),
-            egui::Color32::PLACEHOLDER,
-        )
+        f.layout_no_wrap(label, info.font_id.clone(), egui::Color32::PLACEHOLDER)
     });
 
-    let rect = Rect::from_min_size(pos, galley.size());
+    let offset_x = if level == 1 { 0.0 } else { 50.0 };
+    let rect = Rect::from_min_size(pos2(pos.x + offset_x, pos.y), galley.size());
 
     let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
         rect.contains(mouse_pos)
@@ -714,126 +782,7 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
     };
 
     // Background color
-    let back_color = if is_hovered {
-        Color32::from_black_alpha(100)
-    } else {
-        Color32::BLACK
-    };
-
-    info.painter.rect_filled(rect.expand(2.0), 0.0, back_color);
-    info.painter.galley(rect.min, galley, text_color);
-
-    if is_hovered && info.response.clicked() {
-        *collapsed = !(*collapsed);
-    }
-}
-
-fn paint_job_info_owner(info: &Info, owner: String, pos: Pos2, collapsed: &mut bool) {
-    let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
-
-    let galley = info.ctx.fonts(|f| {
-        f.layout_no_wrap(
-            format!("{} {}", collapsed_symbol, owner),
-            info.font_id.clone(),
-            egui::Color32::PLACEHOLDER,
-        )
-    });
-
-    let rect = Rect::from_min_size(pos, galley.size());
-
-    let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
-        rect.contains(mouse_pos)
-    } else {
-        false
-    };
-
-    // Text color
-    let text_color = if is_hovered {
-        Color32::WHITE
-    } else {
-        Color32::from_white_alpha(229)
-    };
-
-    // Background color
-    let back_color = if is_hovered {
-        Color32::from_black_alpha(100)
-    } else {
-        Color32::BLACK
-    };
-
-    info.painter.rect_filled(rect.expand(2.0), 0.0, back_color);
-    info.painter.galley(rect.min, galley, text_color);
-
-    if is_hovered && info.response.clicked() {
-        *collapsed = !(*collapsed);
-    }
-}
-
-fn paint_job_info_host(info: &Info, host: &String, pos: Pos2, collapsed: &mut bool) {
-    let galley = info.ctx.fonts(|f| {
-        f.layout_no_wrap(
-            format!("{}", host),
-            info.font_id.clone(),
-            egui::Color32::PLACEHOLDER,
-        )
-    });
-
-    let rect = Rect::from_min_size(pos2(pos.x + 50.0, pos.y), galley.size());
-
-    let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
-        rect.contains(mouse_pos)
-    } else {
-        false
-    };
-
-    // Text color
-    let text_color = if is_hovered {
-        Color32::WHITE
-    } else {
-        Color32::from_white_alpha(229)
-    };
-
-    // Background color
-    let back_color = if is_hovered {
-        Color32::from_black_alpha(100)
-    } else {
-        Color32::BLACK
-    };
-
-    info.painter.rect_filled(rect.expand(2.0), 0.0, back_color);
-    info.painter.galley(rect.min, galley, text_color);
-
-    if is_hovered && info.response.clicked() {
-        *collapsed = !(*collapsed);
-    }
-}
-
-fn paint_job_info_id(info: &Info, job: Job, pos: Pos2, collapsed: &mut bool) {
-    let galley = info.ctx.fonts(|f| {
-        f.layout_no_wrap(
-            format!("- {}", job.id),
-            info.font_id.clone(),
-            egui::Color32::PLACEHOLDER,
-        )
-    });
-
-    let rect = Rect::from_min_size(pos2(pos.x + 50.0, pos.y), galley.size());
-
-    let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
-        rect.contains(mouse_pos)
-    } else {
-        false
-    };
-
-    // Text color
-    let text_color = if is_hovered {
-        Color32::WHITE
-    } else {
-        Color32::from_white_alpha(229)
-    };
-
-    // Background color
-    let back_color = if is_hovered {
+    let back_color = if level == 2 {
         Color32::from_black_alpha(100)
     } else {
         Color32::BLACK
