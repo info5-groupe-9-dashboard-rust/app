@@ -62,11 +62,9 @@ impl Filtering {
                         });
                     ui.add_space(10.0);
 
-                    egui::CollapsingHeader::new("Clusters")
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            self.render_cluster_menu(ui, app);
-                        });
+                    ui.menu_button("Clusters", |ui| {
+                        self.render_cluster_menu(ui, app);
+                    });
 
                     ui.add_space(20.0);
 
@@ -191,12 +189,10 @@ impl Filtering {
     }
 
     fn render_cluster_menu(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        ui.set_max_width(200.0); // To make sure we wrap long text
+        ui.set_max_width(124.0);
 
         for cluster in &app.all_clusters {
             ui.horizontal(|ui| {
-                ui.set_width(150.0); // Largeur fixe pour chaque ligne
-
                 // Partie gauche : checkbox et nom du cluster
                 let mut is_selected = self
                     .temp_filters
@@ -205,7 +201,8 @@ impl Filtering {
                     .map_or(false, |clusters| {
                         clusters.iter().any(|c| c.name == cluster.name)
                     });
-                if ui.checkbox(&mut is_selected, &cluster.name).changed() {
+
+                if ui.checkbox(&mut is_selected, "").changed() {
                     if is_selected {
                         if let Some(clusters) = &mut self.temp_filters.clusters {
                             clusters.push(cluster.clone());
@@ -219,72 +216,55 @@ impl Filtering {
                     }
                 }
 
-                // Espace flexible pour pousser le bouton à droite
-                ui.add_space(ui.available_width() - 20.0); // 20.0 est une estimation de la largeur du bouton
+                ui.label(&cluster.name);
 
-                // Bouton ">" à droite
-                ui.menu_button(">", |ui| {
-                    if is_selected {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.menu_button(" ", |ui| {
                         self.render_host_menu(ui, cluster);
-                    }
+                    });
                 });
             });
         }
     }
 
     fn render_host_menu(&mut self, ui: &mut egui::Ui, cluster: &Cluster) {
-        ui.set_max_width(300.0); // To make sure we wrap long text
+        ui.set_max_width(300.0);
 
         let mut hosts = cluster.hosts.clone();
         hosts.sort_by(|a, b| compare_host_names(&a.name, &b.name));
 
-        ScrollArea::vertical().max_height(400.0).show(ui, |ui| {
-            for host in hosts {
-                let mut is_selected =
-                    self.temp_filters
-                        .clusters
+        let mut selected_cluster = self
+            .temp_filters
+            .clusters
+            .as_mut()
+            .and_then(|clusters| clusters.iter_mut().find(|c| c.name == cluster.name));
+
+        if let Some(cluster) = selected_cluster.as_mut() {
+            if ui.button("Deselect All").clicked() {
+                cluster.hosts.clear();
+            }
+        }
+
+        ScrollArea::vertical()
+            .min_scrolled_height(50.0)
+            .max_height(250.0)
+            .show(ui, |ui| {
+                for host in hosts {
+                    let mut is_selected = selected_cluster
                         .as_ref()
-                        .map_or(false, |clusters| {
-                            clusters.iter().any(|c| {
-                                c.name == cluster.name
-                                    && c.hosts.iter().any(|h| h.name == host.name)
-                            })
-                        });
-                if ui.checkbox(&mut is_selected, &host.name).changed() {
-                    if is_selected {
-                        if let Some(clusters) = &mut self.temp_filters.clusters {
-                            if let Some(cluster) =
-                                clusters.iter_mut().find(|c| c.name == cluster.name)
-                            {
+                        .map_or(false, |c| c.hosts.iter().any(|h| h.name == host.name));
+
+                    if ui.checkbox(&mut is_selected, &host.name).changed() {
+                        if let Some(cluster) = selected_cluster.as_mut() {
+                            if is_selected {
                                 cluster.hosts.push(host.clone());
-                            }
-                        }
-                    } else {
-                        if let Some(clusters) = &mut self.temp_filters.clusters {
-                            if let Some(cluster) =
-                                clusters.iter_mut().find(|c| c.name == cluster.name)
-                            {
+                            } else {
                                 cluster.hosts.retain(|h| h.name != host.name);
                             }
                         }
                     }
                 }
-            }
-        });
-    }
-
-    fn render_cpu_menu(&mut self, ui: &mut egui::Ui, host: &mut Host) {
-        for cpu in &mut host.cpus {
-            let mut is_selected = !cpu.resource_ids.is_empty();
-            if ui.checkbox(&mut is_selected, &cpu.name).changed() {
-                if is_selected {
-                    // Ici, vous devriez obtenir les resource_ids du CPU original
-                    // Cela dépend de la façon dont vous stockez ces informations
-                } else {
-                    cpu.resource_ids.clear();
-                }
-            }
-        }
+            });
     }
 }
 
