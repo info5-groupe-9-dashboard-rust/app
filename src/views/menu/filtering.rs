@@ -27,8 +27,9 @@ impl Filtering {
         self.open = true;
     }
 
+    // If the window is open, render the filters
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        let mut open = self.open;
+        let mut open = self.open; // Copy the value of self.open to a mutable variable
         if self.open {
             egui::Window::new("Filters")
                 .collapsible(true)
@@ -38,14 +39,10 @@ impl Filtering {
                 .show(ui.ctx(), |ui| {
                     ui.heading("Filter Options");
 
-                    ui.separator();
+                    ui.separator(); // Add a separator
 
-                    // call filter functions
-                    egui::CollapsingHeader::new("Job ID Range")
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            self.render_job_id_range(ui);
-                        });
+                    // Render the job id range
+                    self.render_job_id_range(ui);
                     ui.add_space(10.0);
 
                     egui::CollapsingHeader::new("Owners")
@@ -70,16 +67,14 @@ impl Filtering {
 
                     ui.horizontal(|ui| {
                         if ui.button(t!("app.filters.apply")).clicked() {
-                            app.job_table.reset_pagination(); // Réinitialiser la pagination
-                            app.filters = JobFilters::copy(&self.temp_filters); // Appliquer les filtres
+                            app.filters = JobFilters::copy(&self.temp_filters); // add the temporary filters to the app filters
                             println!("Applying filters: {:?}", app.filters);
-                            app.filter_jobs(); // Appliquer les filtres
-                            self.open = false; // Fermer la fenêtre popup
+                            app.filter_jobs(); // Filter the jobs
+                            self.open = false; // Close the window
                         }
                         if ui.button(t!("app.filters.reset")).clicked() {
-                            self.reset_filters(); // Réinitialiser les filtres temporaires
+                            self.reset_filters(); // Reset the filters
                             app.filters = JobFilters::default();
-                            app.job_table.reset_pagination(); // Réinitialiser la pagination
                         }
                     });
                 });

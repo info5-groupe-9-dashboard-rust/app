@@ -5,9 +5,9 @@ use super::resource::Resource;
 use super::strata::Strata;
 use crate::models::data_structure::cpu::Cpu;
 use crate::models::data_structure::host::Host;
-use crate::views::components::job_table::JobTable;
+use crate::models::utils::utils::{get_clusters_for_job, get_hosts_for_job};
 use crate::views::view::ViewType;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
@@ -20,14 +20,14 @@ pub struct ApplicationContext {
 
     pub all_clusters: Vec<Cluster>,
 
-    pub start_date: Arc<Mutex<DateTime<Utc>>>,
-    pub end_date: Arc<Mutex<DateTime<Utc>>>,
+    pub start_date: Arc<Mutex<DateTime<Local>>>,
+    pub end_date: Arc<Mutex<DateTime<Local>>>,
     pub view_type: ViewType,
     pub is_loading: bool,
+    pub is_connected: bool,
     pub is_refreshing: Arc<Mutex<bool>>,
     pub refresh_rate: Arc<Mutex<u64>>,
     pub filters: JobFilters,
-    pub job_table: JobTable,
 
     pub jobs_receiver: Receiver<Vec<Job>>,
     pub jobs_sender: Sender<Vec<Job>>,
@@ -37,7 +37,6 @@ pub struct ApplicationContext {
 
 impl ApplicationContext {
     pub fn check_job_update(&mut self) {
-        // Check if new data is available
         if let Ok(new_jobs) = self.jobs_receiver.try_recv() {
             self.all_jobs = new_jobs;
             self.is_loading = false;
@@ -64,11 +63,7 @@ impl ApplicationContext {
                         hosts: vec![Host {
                             name: resource.host.as_ref().unwrap_or(&"".to_string()).clone(),
                             cpus: vec![Cpu {
-                                name: resource
-                                    .nodemodel
-                                    .as_ref()
-                                    .unwrap_or(&"".to_string())
-                                    .clone(),
+                                name: resource.cputype.as_ref().unwrap_or(&"".to_string()).clone(),
                                 resources: vec![Resource {
                                     id: resource.resource_id.unwrap_or(0),
                                     state: match resource
@@ -123,11 +118,7 @@ impl ApplicationContext {
                         cluster.hosts.push(Host {
                             name: resource.host.as_ref().unwrap_or(&"".to_string()).clone(),
                             cpus: vec![Cpu {
-                                name: resource
-                                    .nodemodel
-                                    .as_ref()
-                                    .unwrap_or(&"".to_string())
-                                    .clone(),
+                                name: resource.cputype.as_ref().unwrap_or(&"".to_string()).clone(),
                                 resources: vec![Resource {
                                     id: resource.resource_id.unwrap_or(0),
                                     state: match resource
@@ -177,19 +168,10 @@ impl ApplicationContext {
                             })
                             .unwrap();
                         if !host.cpus.iter().any(|cpu| {
-                            cpu.name
-                                == resource
-                                    .nodemodel
-                                    .as_ref()
-                                    .unwrap_or(&"".to_string())
-                                    .clone()
+                            cpu.name == resource.cputype.as_ref().unwrap_or(&"".to_string()).clone()
                         }) {
                             host.cpus.push(Cpu {
-                                name: resource
-                                    .nodemodel
-                                    .as_ref()
-                                    .unwrap_or(&"".to_string())
-                                    .clone(),
+                                name: resource.cputype.as_ref().unwrap_or(&"".to_string()).clone(),
                                 resources: vec![Resource {
                                     id: resource.resource_id.unwrap_or(0),
                                     state: match resource
@@ -231,7 +213,7 @@ impl ApplicationContext {
                                 .find(|cpu| {
                                     cpu.name
                                         == resource
-                                            .nodemodel
+                                            .cputype
                                             .as_ref()
                                             .unwrap_or(&"".to_string())
                                             .clone()
@@ -261,12 +243,26 @@ impl ApplicationContext {
                     }
                 }
             }
+            for job in self.all_jobs.iter_mut() {
+                job.clusters = get_clusters_for_job(job, &self.all_clusters);
+                job.hosts = get_hosts_for_job(job, &self.all_clusters);
+            }
         }
     }
 
     pub fn check_data_update(&mut self) {
         self.check_job_update();
         self.check_ressource_update();
+    }
+
+    pub fn logout(&mut self) {
+        self.is_connected = false;
+        self.view_type = ViewType::Authentification;
+    }
+
+    pub fn login(&mut self) {
+        self.is_connected = true;
+        self.view_type = ViewType::Gantt;
     }
 
     //gather all unique owners (for completion in filters)
@@ -327,7 +323,7 @@ impl Default for ApplicationContext {
         let (jobs_sender, jobs_receiver) = channel();
         let (resources_sender, resources_receiver) = channel();
 
-        let now: DateTime<Utc> = Utc::now();
+        let now: DateTime<Local> = Local::now();
         let mut context = Self {
             all_jobs: Vec::new(),
             all_clusters: Vec::new(),
@@ -336,6 +332,7 @@ impl Default for ApplicationContext {
             jobs_sender: jobs_sender,
             resources_receiver: resources_receiver,
             resources_sender: resources_sender,
+            is_connected: false,
 
             filtered_jobs: Vec::new(),
             filters: JobFilters::default(),
@@ -345,7 +342,6 @@ impl Default for ApplicationContext {
             is_loading: false,
             is_refreshing: Arc::new(Mutex::new(false)),
             refresh_rate: Arc::new(Mutex::new(30)),
-            job_table: JobTable::default(), // Initialize job_table
         };
         context.update_periodically();
         context

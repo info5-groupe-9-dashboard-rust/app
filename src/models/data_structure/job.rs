@@ -3,9 +3,9 @@ use std::fmt;
 use strum_macros::EnumIter;
 
 #[cfg(target_arch = "wasm32")]
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local};
 
-#[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq, PartialOrd, Ord)]
+#[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq, PartialOrd, Ord, Hash)]
 pub enum JobState {
     Unknown,
     Waiting,
@@ -43,7 +43,6 @@ impl fmt::Display for JobState {
 }
 
 impl JobState {
-
     pub fn get_label(&self) -> String {
         match self {
             JobState::Unknown => t!("app.job_state.unknown").to_string(),
@@ -70,57 +69,55 @@ impl JobState {
             ),
             JobState::Waiting => (
                 egui::Color32::from_rgb(135, 206, 250), // SkyBlue
-                egui::Color32::from_rgb(30, 144, 255), // DodgerBlue
+                egui::Color32::from_rgb(30, 144, 255),  // DodgerBlue
             ),
             JobState::Hold => (
                 egui::Color32::from_rgb(255, 236, 179), // Light Amber
-                egui::Color32::from_rgb(255, 193, 7), // Amber
+                egui::Color32::from_rgb(255, 193, 7),   // Amber
             ),
             JobState::ToLaunch => (
                 egui::Color32::from_rgb(178, 235, 242), // LightCyanBlue
-                egui::Color32::from_rgb(38, 198, 218), // CyanBlue
+                egui::Color32::from_rgb(38, 198, 218),  // CyanBlue
             ),
             JobState::ToError => (
                 egui::Color32::from_rgb(255, 204, 203), // LightPink
-                egui::Color32::from_rgb(244, 67, 54), // Red
+                egui::Color32::from_rgb(244, 67, 54),   // Red
             ),
             JobState::ToAckReservation => (
                 egui::Color32::from_rgb(224, 191, 255), // Soft Purple
-                egui::Color32::from_rgb(156, 39, 176), // Purple
+                egui::Color32::from_rgb(156, 39, 176),  // Purple
             ),
             JobState::Launching => (
                 egui::Color32::from_rgb(197, 255, 198), // MintGreen
-                egui::Color32::from_rgb(56, 142, 60), // DarkGreen
+                egui::Color32::from_rgb(56, 142, 60),   // DarkGreen
             ),
             JobState::Running => (
                 egui::Color32::from_rgb(165, 214, 167), // Soft Green
-                egui::Color32::from_rgb(67, 160, 71), // Medium Green
+                egui::Color32::from_rgb(67, 160, 71),   // Medium Green
             ),
             JobState::Suspended => (
                 egui::Color32::from_rgb(255, 221, 147), // Soft Orange
-                egui::Color32::from_rgb(255, 87, 34), // Deep Orange
+                egui::Color32::from_rgb(255, 87, 34),   // Deep Orange
             ),
             JobState::Resuming => (
                 egui::Color32::from_rgb(129, 199, 132), // Soft Teal Green
-                egui::Color32::from_rgb(0, 150, 136), // Teal Green
+                egui::Color32::from_rgb(0, 150, 136),   // Teal Green
             ),
             JobState::Finishing => (
                 egui::Color32::from_rgb(144, 202, 249), // Soft Blue
-                egui::Color32::from_rgb(33, 150, 243), // Bright Blue
+                egui::Color32::from_rgb(33, 150, 243),  // Bright Blue
             ),
             JobState::Terminated => (
                 egui::Color32::from_rgb(200, 230, 255), // Soft End Blue
-                egui::Color32::from_rgb(13, 71, 161), // Deep Blue
+                egui::Color32::from_rgb(13, 71, 161),   // Deep Blue
             ),
             JobState::Error => (
                 egui::Color32::from_rgb(255, 138, 128), // Soft Red
-                egui::Color32::from_rgb(183, 28, 28), // Dark Red
+                egui::Color32::from_rgb(183, 28, 28),   // Dark Red
             ),
         }
     }
 }
-
-
 
 #[derive(Clone)]
 
@@ -139,6 +136,8 @@ pub struct Job {
     pub stop_time: i64,
     pub exit_code: Option<i32>,
     pub gantt_color: egui::Color32,
+    pub clusters: Vec<String>,
+    pub hosts: Vec<String>,
 }
 
 impl Job {
@@ -157,6 +156,8 @@ impl Job {
         println!("Stop Time: {}", self.stop_time);
         println!("Exit Code: {:?}", self.exit_code);
         println!("Gant Color: {:?}", self.gantt_color);
+        println!("Cluster: {:?}", self.clusters);
+        println!("Host: {:?}", self.hosts);
     }
 
     // Based on gantt color return a tuple of two colors (the second one is darker)
@@ -212,7 +213,7 @@ pub fn mock_job(id: u32) -> Job {
     };
 
     // Coherent timestamp generation
-    let now = Utc::now().timestamp();
+    let now = Local::now().timestamp();
     let submission_time = now - (random_index(86400) as i64);
     let scheduled_start = submission_time + (random_index(3300) as i64 + 300);
     let start_time = if random_float() < 0.7 {

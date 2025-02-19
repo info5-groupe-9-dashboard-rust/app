@@ -1,12 +1,11 @@
-
-use chrono::{DateTime, Utc};
+use crate::models::data_structure::job::{Job, JobState};
+use crate::models::data_structure::strata::Strata;
+use crate::models::utils::utils::convert_id_to_color;
+use chrono::{DateTime, Local};
 use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
 use std::process::Command;
-use crate::models::data_structure::job::{Job, JobState};
-use crate::models::utils::utils::convert_id_to_color;
-use crate::models::data_structure::strata::Strata;
 
 /**
  * Test SSH connection to the specified host
@@ -33,7 +32,7 @@ pub fn test_connection(host: &str) -> bool {
  * @return List of jobs
  */
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> bool {
+pub fn get_current_jobs_for_period(start_date: DateTime<Local>, end_date: DateTime<Local>) -> bool {
     // Test connection first
 
     if !test_connection("grenoble.g5k") {
@@ -57,9 +56,7 @@ pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime
             ),
         ])
         .output()
-        .and_then(|output| {
-            std::fs::write("./data/data.json", output.stdout)
-        });
+        .and_then(|output| std::fs::write("./data/data.json", output.stdout));
 
     if let Err(e) = ssh_status {
         println!("Failed to execute SSH command: {}", e);
@@ -68,7 +65,6 @@ pub fn get_current_jobs_for_period(start_date: DateTime<Utc>, end_date: DateTime
 
     true
 }
-
 
 pub fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
     let file_res = File::open(file_path);
@@ -82,7 +78,8 @@ pub fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
     };
 
     let mut data = String::new();
-    file.read_to_string(&mut data).expect("Unable to read string");
+    file.read_to_string(&mut data)
+        .expect("Unable to read string");
 
     let json: Value = serde_json::from_str(&data).expect("Unable to parse JSON");
     let mut jobs = Vec::new();
@@ -98,48 +95,47 @@ pub fn get_jobs_from_json(file_path: &str) -> Vec<Job> {
     jobs
 }
 
-
 pub fn get_resources_from_json(file_path: &str) -> Vec<Strata> {
-     // Ouvrir le fichier
-     let file_res = File::open(file_path);
+    // Open the file
+    let file_res = File::open(file_path);
 
-     let mut file = match file_res {
-         Ok(file) => file,
-         Err(error) => {
-             println!("Impossible d'ouvrir le fichier: {}", error);
-             return Vec::new();
-         }
-     };
- 
-     // Lire le contenu du fichier
-     let mut data = String::new();
-     if let Err(e) = file.read_to_string(&mut data) {
-         println!("Impossible de lire le fichier: {}", e);
-         return Vec::new();
-     }
- 
-     // Parser le JSON
-     let json: Value = match serde_json::from_str(&data) {
-         Ok(v) => v,
-         Err(e) => {
-             println!("Impossible de parser le JSON: {}", e);
-             return Vec::new();
-         }
-     };
- 
-     let mut resources = Vec::new();
- 
-     // Extraire la section "resources"
-     if let Some(resources_array) = json.get("resources").and_then(|v| v.as_array()) {
-         for resource_value in resources_array {
-             // Désérialiser directement chaque ressource
-             if let Ok(resource) = serde_json::from_value::<Strata>(resource_value.clone()) {
-                 resources.push(resource);
-             }
-         }
-     }
- 
-     resources
+    let mut file = match file_res {
+        Ok(file) => file,
+        Err(error) => {
+            println!("Impossible d'ouvrir le fichier: {}", error);
+            return Vec::new();
+        }
+    };
+
+    // Read the file content
+    let mut data = String::new();
+    if let Err(e) = file.read_to_string(&mut data) {
+        println!("Impossible de lire le fichier: {}", e);
+        return Vec::new();
+    }
+
+    // Parse the JSON content
+    let json: Value = match serde_json::from_str(&data) {
+        Ok(v) => v,
+        Err(e) => {
+            println!("Impossible de parser le JSON: {}", e);
+            return Vec::new();
+        }
+    };
+
+    let mut resources = Vec::new();
+
+    // Get the resources array
+    if let Some(resources_array) = json.get("resources").and_then(|v| v.as_array()) {
+        for resource_value in resources_array {
+            // Try to parse the resource
+            if let Ok(resource) = serde_json::from_value::<Strata>(resource_value.clone()) {
+                resources.push(resource);
+            }
+        }
+    }
+
+    resources
 }
 
 pub fn parse_state_from_json(json_str: &str) -> Result<JobState, serde_json::Error> {
@@ -148,10 +144,17 @@ pub fn parse_state_from_json(json_str: &str) -> Result<JobState, serde_json::Err
 
 fn from_json_value(json: &Value) -> Job {
     Job {
-        id: json["id"].as_str().unwrap_or("0").parse::<u32>().unwrap_or(0),
+        id: json["id"]
+            .as_str()
+            .unwrap_or("0")
+            .parse::<u32>()
+            .unwrap_or(0),
         owner: json["owner"].as_str().unwrap_or("unknown").to_string(),
-        state: parse_state_from_json(&format!("\"{}\"", json["state"].as_str().unwrap_or("unknown")))
-            .unwrap_or(JobState::Unknown),
+        state: parse_state_from_json(&format!(
+            "\"{}\"",
+            json["state"].as_str().unwrap_or("unknown")
+        ))
+        .unwrap_or(JobState::Unknown),
         command: json["command"].as_str().unwrap_or("").to_string(),
         walltime: json["walltime"].as_i64().unwrap_or(0) as i64,
         message: json["message"].as_str().map(|s| s.to_string()),
@@ -167,6 +170,14 @@ fn from_json_value(json: &Value) -> Job {
         stop_time: json["stop_time"].as_i64().unwrap_or(0),
         submission_time: json["submission_time"].as_i64().unwrap_or(0),
         exit_code: json["exit_code"].as_i64().map(|n| n as i32),
-        gantt_color: convert_id_to_color(json["id"].as_str().unwrap_or("0").parse::<u32>().unwrap_or(0)),
+        gantt_color: convert_id_to_color(
+            json["id"]
+                .as_str()
+                .unwrap_or("0")
+                .parse::<u32>()
+                .unwrap_or(0),
+        ),
+        clusters: Vec::new(),
+        hosts: Vec::new(),
     }
 }
