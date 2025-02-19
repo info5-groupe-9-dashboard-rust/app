@@ -1,5 +1,5 @@
 use eframe::egui;
-use chrono::{NaiveDate, NaiveTime, NaiveDateTime, Utc, TimeZone, Datelike, Duration};
+use chrono::{NaiveDate, NaiveTime, NaiveDateTime, Local, TimeZone, Datelike, Duration};
 use crate::models::data_structure::application_context::ApplicationContext;
 
 #[allow(dead_code)]
@@ -16,7 +16,7 @@ pub struct TimeSelector {
 impl Default for TimeSelector {
     fn default() -> Self {
         // Initialize the TimeSelector with the current date and time
-        let now = Utc::now();
+        let now = Local::now();
         TimeSelector {
             date_selector_open: false,
             temp_start_date: now.date_naive().to_string(),
@@ -54,7 +54,7 @@ impl TimeSelector {
                     ui.horizontal(|ui| {
                         // Buttons to select predefined periods
                         if ui.button(t!("app.time_selector.modal.today")).clicked() {
-                            let today = Utc::now().date_naive();
+                            let today = Local::now().date_naive();
                             self.temp_start_date = today.to_string();
                             self.temp_end_date = today.to_string();
                             self.temp_start_time = "00:00".to_owned();
@@ -62,7 +62,7 @@ impl TimeSelector {
                             self.error = None;
                         }
                         if ui.button(t!("app.time_selector.modal.week")).clicked() {
-                            let today = Utc::now().date_naive();
+                            let today = Local::now().date_naive();
                             // Select the first day of the current week (Monday) and the last day of the current week (Sunday)
                             let weekday = today.weekday().number_from_monday() as i64;
                             let monday = today - Duration::days(weekday - 1);
@@ -74,7 +74,7 @@ impl TimeSelector {
                             self.error = None;
                         }
                         if ui.button(t!("app.time_selector.modal.month")).clicked() {
-                            let today = Utc::now().date_naive();
+                            let today = Local::now().date_naive();
                             let start_of_month = NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap();
                             // Select the last day of the current month
                             let end_of_month = if today.month() == 12 {
@@ -133,9 +133,7 @@ impl TimeSelector {
 
                                 if start_datetime <= end_datetime {
                                     // Update the application context with the new period
-                                    // app.start_date = Utc.from_utc_datetime(&start_datetime);
-                                    // app.end_date = Utc.from_utc_datetime(&end_datetime);
-                                    app.update_period(Utc.from_utc_datetime(&start_datetime), Utc.from_utc_datetime(&end_datetime));
+                                    app.update_period(Local.from_utc_datetime(&start_datetime), Local.from_utc_datetime(&end_datetime));
                                     println!("Période mise à jour: {} - {}", app.get_start_date(), app.get_end_date());
                                     self.date_selector_open = false;
                                 } else {

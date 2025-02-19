@@ -1,5 +1,4 @@
-use crate::models::data_structure::cluster::{self, Cluster};
-use crate::models::data_structure::{cpu, resource};
+use crate::models::data_structure::cluster::Cluster;
 use crate::models::utils::date_converter::format_timestamp;
 use crate::models::data_structure::job::Job;
 use eframe::egui;

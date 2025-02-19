@@ -6,7 +6,7 @@ use super::strata::Strata;
 use crate::models::data_structure::cpu::Cpu;
 use crate::models::data_structure::host::Host;
 use crate::views::view::ViewType;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
@@ -20,8 +20,8 @@ pub struct ApplicationContext {
 
     pub all_clusters: Vec<Cluster>,
 
-    pub start_date: Arc<Mutex<DateTime<Utc>>>,
-    pub end_date: Arc<Mutex<DateTime<Utc>>>,
+    pub start_date: Arc<Mutex<DateTime<Local>>>,
+    pub end_date: Arc<Mutex<DateTime<Local>>>,
     pub view_type: ViewType,
     pub is_loading: bool,
     pub is_connected: bool,
@@ -317,7 +317,7 @@ impl Default for ApplicationContext {
         let (jobs_sender, jobs_receiver) = channel();
         let (resources_sender, resources_receiver) = channel();
 
-        let now: DateTime<Utc> = Utc::now();
+        let now: DateTime<Local> = Local::now();
         let mut context = Self {
             all_jobs: Vec::new(),
             all_clusters: Vec::new(),

@@ -1,5 +1,5 @@
 use crate::{models::data_structure::{application_context::ApplicationContext, job::Job}, views::components::job_details::JobDetailsWindow};
-use chrono::DateTime;
+use chrono::{DateTime, Local};
 use eframe::egui;
 use egui::{lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response, Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle};
 
@@ -152,8 +152,8 @@ impl View for GanttChart {
 }
 
 fn paint_current_time_line(info: &Info, options: &Options, canvas: Rect) -> egui::Shape {
-    let current_time = chrono::Utc::now().timestamp();
-    let line_x = info.point_from_s(options, current_time);
+    let current_time = chrono::Local::now().timestamp();
+    let line_x: f32 = info.point_from_s(options, current_time);
     egui::Shape::line_segment(
         [
             pos2(line_x, canvas.min.y),
@@ -746,7 +746,9 @@ fn grid_text(ts: i64) -> String {
         "N/A".to_string()
     } else {
         if let Some(dt) = DateTime::from_timestamp(ts, 0) {
-            dt.format("%Y-%m-%d %H:%M:%S").to_string()
+
+            dt.with_timezone(&Local)
+            .format("%Y-%m-%d %H:%M:%S").to_string()
         } else {
             "Invalid timestamp".to_string()
         }
