@@ -1,13 +1,12 @@
 use egui::{Response, RichText, Vec2, Widget};
-use egui_plot::{Bar, BarChart, BoxPlot, Plot};
+use egui_plot::{Bar, BarChart, Plot};
 use std::collections::HashMap;
 
 use crate::models::data_structure::job::Job;
 
-#[allow(dead_code)]
 pub enum ChartType {
     Bar(BarChart),
-    Box(BoxPlot),
+    //Box(BoxPlot),
     // Add more chart types here
 }
 
@@ -50,7 +49,7 @@ impl MetricChart {
                         .view_aspect(2.0)
                         .show(ui, |plot_ui| match self.chart {
                             ChartType::Bar(bar_chart) => plot_ui.bar_chart(bar_chart),
-                            ChartType::Box(boxplot_chart) => plot_ui.box_plot(boxplot_chart),
+                            //ChartType::Box(boxplot_chart) => plot_ui.box_plot(boxplot_chart),
                         })
                         .response // Return the response from the Plot widget
                 });
