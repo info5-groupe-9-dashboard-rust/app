@@ -5,6 +5,7 @@ use super::resource::Resource;
 use super::strata::Strata;
 use crate::models::data_structure::cpu::Cpu;
 use crate::models::data_structure::host::Host;
+use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::utils::{get_clusters_for_job, get_hosts_for_job};
 use crate::views::view::ViewType;
 use chrono::{DateTime, Local};
@@ -99,6 +100,7 @@ impl ApplicationContext {
                                 .unwrap_or(&"".to_string())
                                 .clone(),
                             resource_ids: vec![resource.resource_id.unwrap_or(0)],
+                            state: ResourceState::Unknown,
                         }],
                         resource_ids: vec![resource.resource_id.unwrap_or(0)],
                     };
@@ -154,6 +156,7 @@ impl ApplicationContext {
                                 .unwrap_or(&"".to_string())
                                 .clone(),
                             resource_ids: vec![resource.resource_id.unwrap_or(0)],
+                            state: ResourceState::Unknown,
                         });
                         // add the resource id to the cluster
                         cluster.resource_ids.push(resource.resource_id.unwrap_or(0));
@@ -246,6 +249,34 @@ impl ApplicationContext {
             for job in self.all_jobs.iter_mut() {
                 job.clusters = get_clusters_for_job(job, &self.all_clusters);
                 job.hosts = get_hosts_for_job(job, &self.all_clusters);
+            }
+
+            // For each host set is state to the state the most resources have
+            for cluster in self.all_clusters.iter_mut() {
+                for host in cluster.hosts.iter_mut() {
+                    let mut dead_count = 0;
+                    let mut alive_count = 0;
+                    let mut absent_count = 0;
+                    for cpu in host.cpus.iter() {
+                        for resource in cpu.resources.iter() {
+                            match resource.state {
+                                ResourceState::Dead => dead_count += 1,
+                                ResourceState::Alive => alive_count += 1,
+                                ResourceState::Absent => absent_count += 1,
+                                _ => (),
+                            }
+                        }
+                    }
+                    if dead_count >= alive_count && dead_count >= absent_count {
+                        host.state = ResourceState::Dead;
+                    } else if absent_count >= dead_count && absent_count >= alive_count {
+                        host.state = ResourceState::Absent;
+                    } else if alive_count > dead_count && alive_count > absent_count {
+                        host.state = ResourceState::Alive;
+                    } else {
+                        host.state = ResourceState::Unknown;
+                    }
+                }
             }
         }
     }

@@ -2,6 +2,7 @@ use crate::models::data_structure::cluster::Cluster;
 use crate::models::data_structure::cpu::Cpu;
 use crate::models::data_structure::host::Host;
 use crate::models::data_structure::job::Job;
+use crate::models::data_structure::resource::ResourceState;
 use std::hash::DefaultHasher;
 use std::hash::Hash;
 use std::hash::Hasher;
@@ -129,6 +130,7 @@ pub fn get_tree_structure_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<Clu
                                     resource_ids: vec![*resource],
                                     cpus: Vec::new(),
                                     network_address: host.network_address.clone(),
+                                    state: ResourceState::Unknown,
                                 };
 
                                 for cpu in &host.cpus {
@@ -171,6 +173,7 @@ pub fn get_tree_structure_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<Clu
                                     resource_ids: vec![*resource],
                                     cpus: Vec::new(),
                                     network_address: host.network_address.clone(),
+                                    state: ResourceState::Unknown,
                                 };
 
                                 // for the CPU only keep the CPUs that the job is running on
