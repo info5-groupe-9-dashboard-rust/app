@@ -1,5 +1,5 @@
-use eframe::egui;
 use super::{metric_box::MetricBox, metric_chart::MetricChart};
+use eframe::egui;
 
 pub struct MetricGrid {
     columns: usize,
