@@ -24,7 +24,8 @@ use egui::{
 pub struct GanttChart {
     options: Options,                           // options for the GanttChart
     job_details_windows: Vec<JobDetailsWindow>, // job details windows
-    collapsed_jobs: BTreeMap<String, bool>,     // collapsed jobs
+    collapsed_jobs_level_1: BTreeMap<String, bool>,     // collapsed jobs level_1
+    collapsed_jobs_level_2: BTreeMap<(String, String), bool>,     // collapsed jobs level_2
 }
 
 /**
@@ -35,7 +36,8 @@ impl Default for GanttChart {
         GanttChart {
             options: Default::default(),
             job_details_windows: Vec::new(),
-            collapsed_jobs: BTreeMap::new()
+            collapsed_jobs_level_1: BTreeMap::new(),
+            collapsed_jobs_level_2: BTreeMap::new()
         }
     }
 }
@@ -142,7 +144,8 @@ impl View for GanttChart {
                     &info,
                     (min_s, max_s),
                     &mut self.job_details_windows,
-                    &mut self.collapsed_jobs
+                    &mut self.collapsed_jobs_level_1,
+                    &mut self.collapsed_jobs_level_2
                 );
 
                 let mut used_rect = canvas;
@@ -259,7 +262,8 @@ fn ui_canvas(
     info: &Info,
     (min_ns, max_ns): (i64, i64),
     details_window: &mut Vec<JobDetailsWindow>,
-    collapsed_jobs: &mut BTreeMap<String, bool>,
+    collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
+    collapsed_jobs_level_2: &mut BTreeMap<(String,String), bool>,
 ) -> f32 {
     if options.canvas_width_s <= 0.0 {
         options.canvas_width_s = (max_ns - min_ns) as f32;
@@ -290,7 +294,7 @@ fn ui_canvas(
                 jobs_by_owner,
                 cursor_y,
                 details_window,
-                collapsed_jobs
+                collapsed_jobs_level_1
             );
         },
 
@@ -317,7 +321,8 @@ fn ui_canvas(
                                     jobs_by_host_by_owner,
                                     cursor_y,
                                     details_window,
-                                    collapsed_jobs
+                                    collapsed_jobs_level_1,
+                                    collapsed_jobs_level_2
                                 );
                             },
                 AggregateByLevel2Enum::None => {
@@ -337,7 +342,7 @@ fn ui_canvas(
                                     jobs_by_host,
                                     cursor_y,
                                     details_window,
-                                    collapsed_jobs
+                                    collapsed_jobs_level_1
                                 );
                             }
                 AggregateByLevel2Enum::Host => {
@@ -370,7 +375,8 @@ fn ui_canvas(
                                     jobs_by_cluster_by_owner,
                                     cursor_y,
                                     details_window,
-                                    collapsed_jobs
+                                    collapsed_jobs_level_1,
+                                    collapsed_jobs_level_2
                                 );
                             },
                 AggregateByLevel2Enum::None => {
@@ -390,7 +396,7 @@ fn ui_canvas(
                                     jobs_by_cluster,
                                     cursor_y,
                                     details_window,
-                                    collapsed_jobs
+                                    collapsed_jobs_level_1
                                 );
                             }
                 AggregateByLevel2Enum::Host => {
@@ -415,7 +421,8 @@ fn ui_canvas(
                             jobs_by_cluster_by_host,
                             cursor_y,
                             details_window,
-                            collapsed_jobs
+                            collapsed_jobs_level_1,
+                            collapsed_jobs_level_2
                         );
                     },
             }
@@ -588,7 +595,8 @@ fn paint_aggregated_jobs_level_2(
     jobs: BTreeMap<String, BTreeMap<String, Vec<Job>>>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
-    collapsed_jobs: &mut BTreeMap<String, bool>
+    collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
+    collapsed_jobs_level_2: &mut BTreeMap<(String,String), bool>
 ) -> f32 {
     let spacing_between_level_1 = 20.0;
     let spacing_between_level_2 = 15.0;
@@ -598,7 +606,7 @@ fn paint_aggregated_jobs_level_2(
     cursor_y += spacing_between_level_1;
 
     for (level_1, level_2_map) in jobs {
-
+        let level_1_key = level_1.clone();
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, cursor_y),
@@ -610,14 +618,14 @@ fn paint_aggregated_jobs_level_2(
         cursor_y += offset_level_1;
 
         let text_pos = pos2(info.canvas.min.x, cursor_y);
-        let is_collapsed = collapsed_jobs
+        let is_collapsed_level_1 = collapsed_jobs_level_1
             .entry(level_1.clone())
             .or_insert(false);
-        paint_job_info(info, level_1, text_pos, is_collapsed, 1);
+        paint_job_info(info, level_1, text_pos, is_collapsed_level_1, 1);
 
         cursor_y += spacing_between_level_1;
 
-        if !*is_collapsed {
+        if !*is_collapsed_level_1 {
 
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
             sorted_level_2.sort();
@@ -635,22 +643,24 @@ fn paint_aggregated_jobs_level_2(
 
                     cursor_y += spacing_between_level_2;
 
-                    let mut once = false;
-                    // Display jobs
-                    for job in job_list {
-                        let job_start_y = cursor_y; // Ensure vertical alignment
+                    let text_pos = pos2(info.canvas.min.x + 20.0, cursor_y);
+                    let is_collapsed_level_2 = collapsed_jobs_level_2
+                                            .entry((level_1_key.to_string(), level_2.to_string()))
+                                            .or_insert(false);
+                    paint_job_info(info, level_2.to_string(), text_pos, is_collapsed_level_2, 2);
 
-                        // Draw the job (background)
-                        paint_job(info, options, &job, job_start_y, details_window);
+                    cursor_y += spacing_between_level_2;
 
-                        // Then, draw job_info (above)
-                        if !once {
-                            let job_text_pos = pos2(info.canvas.min.x, job_start_y);
-                            paint_job_info(info, level_2.to_string(), job_text_pos, &mut false, 2);
-                            once = true;
+                    if !*is_collapsed_level_2 {
+                        // Display jobs
+                        for job in job_list {
+                            let job_start_y = cursor_y; // Ensure vertical alignment
+
+                            // Draw the job
+                            paint_job(info, options, &job, job_start_y, details_window);
+
+                            cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                         }
-
-                        cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                     }
                 }
             }
@@ -770,11 +780,7 @@ fn paint_job(
  */
 fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bool, level: u8) {
     let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
-    let label = if level == 1 {
-        format!("{} {}", collapsed_symbol, info_label)
-    } else {
-        info_label
-    };
+    let label = format!("{} {}", collapsed_symbol, info_label);
 
     let galley = info.ctx.fonts(|f| {
         f.layout_no_wrap(label, info.font_id.clone(), egui::Color32::PLACEHOLDER)
