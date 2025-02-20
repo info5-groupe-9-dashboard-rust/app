@@ -165,6 +165,12 @@ impl JobTable {
                         });
                         row.col(|ui| {
                             if ui.button(job.id.to_string()).clicked() {
+                                // check if a window for this job is already open
+                                for window in self.details_window.iter_mut() {
+                                    if window.job.id == job.id {
+                                        return;
+                                    }
+                                }
                                 self.details_window.push(JobDetailsWindow::new(
                                     job.clone(),
                                     get_tree_structure_for_job(job, &app.all_clusters),
