@@ -210,6 +210,5 @@ pub fn get_tree_structure_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<Clu
             }
         }
     }
-
     result
 }

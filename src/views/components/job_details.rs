@@ -4,9 +4,9 @@ use crate::models::utils::date_converter::format_timestamp;
 use eframe::egui;
 
 pub struct JobDetailsWindow {
-    open: bool,
-    job: Job,
-    cluster: Vec<Cluster>,
+    pub open: bool,
+    pub job: Job,
+    pub cluster: Vec<Cluster>,
 }
 
 impl JobDetailsWindow {
