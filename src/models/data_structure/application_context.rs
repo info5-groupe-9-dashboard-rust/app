@@ -103,6 +103,7 @@ impl ApplicationContext {
                             state: ResourceState::Unknown,
                         }],
                         resource_ids: vec![resource.resource_id.unwrap_or(0)],
+                        state: ResourceState::Unknown,
                     };
 
                     // Add the cluster to all_clusters
@@ -276,6 +277,30 @@ impl ApplicationContext {
                     } else {
                         host.state = ResourceState::Unknown;
                     }
+                }
+            }
+
+            // For each cluster set is state to the state the most hosts have
+            for cluster in self.all_clusters.iter_mut() {
+                let mut dead_count = 0;
+                let mut alive_count = 0;
+                let mut absent_count = 0;
+                for host in cluster.hosts.iter() {
+                    match host.state {
+                        ResourceState::Dead => dead_count += 1,
+                        ResourceState::Alive => alive_count += 1,
+                        ResourceState::Absent => absent_count += 1,
+                        _ => (),
+                    }
+                }
+                if dead_count >= alive_count && dead_count >= absent_count {
+                    cluster.state = ResourceState::Dead;
+                } else if absent_count >= dead_count && absent_count >= alive_count {
+                    cluster.state = ResourceState::Absent;
+                } else if alive_count > dead_count && alive_count > absent_count {
+                    cluster.state = ResourceState::Alive;
+                } else {
+                    cluster.state = ResourceState::Unknown;
                 }
             }
         }

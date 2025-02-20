@@ -206,6 +206,7 @@ pub fn get_tree_structure_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<Clu
                                 new_host
                             })
                             .collect(),
+                        state: ResourceState::Unknown,
                     };
 
                     result.push(new_cluster);
