@@ -1,5 +1,5 @@
 use crate::models::data_structure::application_options::{
-    ApplicationOptions, LanguageOption, ThemeOption,
+    ApplicationOptions, LanguageOption
 };
 use eframe::egui::{self};
 use std::time::{Duration, Instant};
@@ -55,20 +55,8 @@ impl Options {
     }
 
     pub fn apply_options(&self, ctx: &egui::Context) {
-        self.apply_theme(ctx);
         self.apply_language();
         self.apply_font_size(ctx);
-    }
-
-    fn apply_theme(&self, ctx: &egui::Context) {
-        let new_visuals = match self.application_options.selected_theme {
-            ThemeOption::Dark => egui::Visuals::dark(),
-            ThemeOption::Light => egui::Visuals::light(),
-        };
-
-        if ctx.style().visuals.dark_mode != new_visuals.dark_mode {
-            ctx.set_visuals(new_visuals);
-        }
     }
 
     fn apply_language(&self) {
@@ -114,7 +102,6 @@ impl Options {
                     .spacing([10.0, 8.0])
                     .striped(true)
                     .show(ui, |ui| {
-                        self.render_theme_selector(ui);
                         self.render_language_selector(ui);
                         self.render_font_size_selector(ui);
                     });
@@ -135,30 +122,6 @@ impl Options {
                 }
             });
         self.open = open;
-    }
-
-    fn render_theme_selector(&mut self, ui: &mut egui::Ui) {
-        ui.label(t!("app.options.theme.title"));
-        egui::ComboBox::from_label(t!("app.options.theme.choose"))
-            .selected_text(format!("{:?}", self.application_options.selected_theme))
-            .show_ui(ui, |ui| {
-                for (theme, label) in [
-                    (ThemeOption::Dark, t!("app.options.theme.dark")),
-                    (ThemeOption::Light, t!("app.options.theme.light")),
-                ] {
-                    if ui
-                        .selectable_value(
-                            &mut self.application_options.selected_theme,
-                            theme,
-                            label,
-                        )
-                        .clicked()
-                    {
-                        self.apply_theme(ui.ctx());
-                    }
-                }
-            });
-        ui.end_row();
     }
 
     fn render_language_selector(&mut self, ui: &mut egui::Ui) {
