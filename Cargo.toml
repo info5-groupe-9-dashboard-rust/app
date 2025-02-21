@@ -1,8 +1,8 @@
 [package]
 name = "rust-dashboard-app"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
-authors = ["Romain MIRAS <romain.miras@gmail.com>", "TODO SOON <todo@gmail.com>"]
+authors = ["Romain MIRAS <romain.miras@gmail.com>", "Alexandre ARLE <arle.alexandre@protonmail.com>", "Amaury GOGUILLOT <goguillot.amaury@gmail.com>", "Rémi DEL MEDICO <redelmedico@gmail.com>"]
 
 [dependencies]
 chrono = { version = "0.4.39", features = ["serde"] }
