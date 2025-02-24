@@ -927,11 +927,14 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                     Color32::from(Rgba::from_black_alpha((text_alpha * 2.0).min(1.0)))
                 };
 
+                // TODO FIX THIS TO CALCULATE THE POSITION BASED ON THE HEIGHT OF THE GANTT
+                let fixed_timeline_y = 101.;
+
                 info.painter.fonts(|f| {
                     // Text at top:
                     shapes.push(egui::Shape::text(
                         f,
-                        pos2(text_x, canvas.min.y),
+                        pos2(text_x, fixed_timeline_y),
                         Align2::LEFT_TOP,
                         &text,
                         info.font_id.clone(),
@@ -939,17 +942,6 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                     ));
                 });
 
-                info.painter.fonts(|f| {
-                    // Text at bottom:
-                    shapes.push(egui::Shape::text(
-                        f,
-                        pos2(text_x, canvas.max.y - info.text_height),
-                        Align2::LEFT_TOP,
-                        &text,
-                        info.font_id.clone(),
-                        text_color
-                    ));
-                });
             }
         }
 
