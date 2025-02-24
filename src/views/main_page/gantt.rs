@@ -499,6 +499,40 @@ fn interact_with_canvas(options: &mut Options, response: &Response, info: &Info)
     }
 }
 
+struct ThemeColors {
+    text: Color32,
+    text_dim: Color32,
+    line: Color32,
+    aggregated_line_level_1: Rgba,
+    aggregated_line_level_2: Rgba,
+    background: Color32,
+}
+
+/**
+ * Returns the theme colors for the Gantt chart
+ */
+fn get_theme_colors(style: &egui::Style) -> ThemeColors {
+    if style.visuals.dark_mode {
+        ThemeColors {
+            text: Color32::WHITE,
+            text_dim: Color32::from_white_alpha(229),
+            line: Color32::WHITE,
+            aggregated_line_level_1: Rgba::from_white_alpha(0.4),
+            aggregated_line_level_2: Rgba::from_white_alpha(0.5),
+            background: Color32::from_black_alpha(100),
+        }
+    } else {
+        ThemeColors {
+            text: Color32::BLACK,
+            text_dim: Color32::from_black_alpha(229),
+            line: Color32::BLACK,
+            aggregated_line_level_1: Rgba::from_black_alpha(0.5),
+            aggregated_line_level_2: Rgba::from_black_alpha(0.7),
+            background: Color32::from_black_alpha(50),
+        }
+    }
+}
+
 /****************************************************************************************************************************/
 // JOB PAINTING
 /****************************************************************************************************************************/
@@ -542,6 +576,9 @@ fn paint_aggregated_jobs_level_1(
     details_window: &mut Vec<JobDetailsWindow>,
     collapsed_jobs: &mut BTreeMap<String, bool>,
 ) -> f32 {
+
+    let theme_colors = get_theme_colors(&info.ctx.style());
+
     let spacing_between_level_1 = 20.0;
     let spacing_between_jobs = 5.0;
     let offset_level_1 = 10.0;
@@ -554,7 +591,7 @@ fn paint_aggregated_jobs_level_1(
                 pos2(info.canvas.min.x, cursor_y),
                 pos2(info.canvas.max.x, cursor_y),
             ],
-            Stroke::new(1.5, Color32::WHITE), // More marked line
+            Stroke::new(1.5, theme_colors.aggregated_line_level_1), // More marked line
         );
 
         cursor_y += offset_level_1;
@@ -593,6 +630,9 @@ fn paint_aggregated_jobs_level_2(
     collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
     collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
 ) -> f32 {
+
+    let theme_colors = get_theme_colors(&info.ctx.style());
+
     let spacing_between_level_1 = 20.0;
     let spacing_between_level_2 = 15.0;
     let spacing_between_jobs = 5.0;
@@ -607,7 +647,7 @@ fn paint_aggregated_jobs_level_2(
                 pos2(info.canvas.min.x, cursor_y),
                 pos2(info.canvas.max.x, cursor_y),
             ],
-            Stroke::new(1.5, Color32::WHITE), // More marked line
+            Stroke::new(1.5, theme_colors.aggregated_line_level_1), // More marked line
         );
 
         cursor_y += offset_level_1;
@@ -632,7 +672,7 @@ fn paint_aggregated_jobs_level_2(
                             pos2(info.canvas.min.x, cursor_y),
                             pos2(info.canvas.max.x, cursor_y),
                         ],
-                        Stroke::new(0.5, Rgba::from_white_alpha(0.5)), // Line more discreet
+                        Stroke::new(0.5, theme_colors.aggregated_line_level_2), // Line more discreet
                     );
 
                     cursor_y += spacing_between_level_2;
@@ -682,6 +722,7 @@ fn paint_job(
     top_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
 ) -> PaintResult {
+    let theme_colors = get_theme_colors(&info.ctx.style());
     let start_x = info.point_from_s(options, job.scheduled_start);
     let stop_time = if (job.scheduled_start + job.walltime) > info.stop_s {
         info.stop_s
@@ -758,9 +799,9 @@ fn paint_job(
             text,
             info.font_id.clone(),
             if is_hovered {
-                Color32::WHITE
+                theme_colors.text
             } else {
-                Color32::from_white_alpha(240)
+                theme_colors.text_dim
             },
         );
     }
@@ -776,12 +817,13 @@ fn paint_job(
  * Paints a job info appearing on the left side of the canvas
  */
 fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bool, level: u8) {
+    let theme_colors = get_theme_colors(&info.ctx.style());
     let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
     let label = format!("{} {}", collapsed_symbol, info_label);
 
     let galley = info
         .ctx
-        .fonts(|f| f.layout_no_wrap(label, info.font_id.clone(), egui::Color32::PLACEHOLDER));
+        .fonts(|f| f.layout_no_wrap(label, info.font_id.clone(), theme_colors.text_dim));
 
     let offset_x = if level == 1 { 0.0 } else { 50.0 };
     let rect = Rect::from_min_size(pos2(pos.x + offset_x, pos.y), galley.size());
@@ -794,19 +836,12 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
 
     // Text color
     let text_color = if is_hovered {
-        Color32::WHITE
+        theme_colors.text
     } else {
-        Color32::from_white_alpha(229)
+        theme_colors.text_dim
     };
 
-    // Background color
-    let back_color = if level == 2 {
-        Color32::from_black_alpha(100)
-    } else {
-        Color32::BLACK
-    };
-
-    info.painter.rect_filled(rect.expand(2.0), 0.0, back_color);
+    info.painter.rect_filled(rect.expand(2.0), 0.0, theme_colors.background);
     info.painter.galley(rect.min, galley, text_color);
 
     if is_hovered && info.response.clicked() {
@@ -823,12 +858,17 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
  */
 fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -> Vec<egui::Shape> {
     let mut shapes = vec![];
+    let theme_colors = get_theme_colors(&info.ctx.style());
 
     // if options.canvas_width_s <= 0.0 {
     //     return shapes;
     // }
 
-    let alpha_multiplier = 0.3; // make it subtle
+    let alpha_multiplier = if info.ctx.style().visuals.dark_mode {
+        0.3 // make it subtle for dark mode
+    } else {
+        0.8 // more visible for light mode
+    };
 
     // We show all measurements relative to start_s
 
@@ -868,7 +908,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 
             shapes.push(egui::Shape::line_segment(
                 [pos2(line_x, canvas.min.y), pos2(line_x, canvas.max.y)],
-                Stroke::new(1.0, Rgba::from_white_alpha(line_alpha * alpha_multiplier)),
+                Stroke::new(1.0, theme_colors.line.linear_multiply(line_alpha * alpha_multiplier)),
             ));
 
             let text_alpha = if big_line {
@@ -882,7 +922,11 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
             if text_alpha > 0.0 {
                 let text = grid_text(grid_s);
                 let text_x = line_x + 4.0;
-                let text_color = Rgba::from_white_alpha((text_alpha * 2.0).min(1.0)).into();
+                let text_color = if info.ctx.style().visuals.dark_mode {
+                    Color32::from(Rgba::from_white_alpha((text_alpha * 2.0).min(1.0)))
+                } else {
+                    Color32::from(Rgba::from_black_alpha((text_alpha * 2.0).min(1.0)))
+                };
 
                 // Position of the top of the gantt
                 // Adjusted to be a bit below the top of the gantt
@@ -896,7 +940,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                         Align2::LEFT_TOP,
                         &text,
                         info.font_id.clone(),
-                        text_color,
+                        text_color
                     ));
                 });
             }
@@ -914,9 +958,10 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 fn paint_current_time_line(info: &Info, options: &Options, canvas: Rect) -> egui::Shape {
     let current_time = chrono::Utc::now().timestamp();
     let line_x = info.point_from_s(options, current_time);
+    
     egui::Shape::line_segment(
         [pos2(line_x, canvas.min.y), pos2(line_x, canvas.max.y)],
-        Stroke::new(2.0, Color32::RED),
+        Stroke::new(2.0, Color32::RED), // Keep red for both themes for better visibility
     )
 }
 
