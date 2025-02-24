@@ -933,6 +933,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 
                 // Position of the top of the gantt
                 // Adjusted to be a bit below the top of the gantt
+                // TODO FIX THIS TO CALCULATE THE POSITION BASED ON THE HEIGHT OF THE GANTT
                 let fixed_timeline_y = 101.;
 
                 info.painter.fonts(|f| {
