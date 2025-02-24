@@ -4,3 +4,4 @@ pub mod date_converter;
 pub mod parser;
 pub mod updater;
 pub mod utils;
+pub mod secret;
