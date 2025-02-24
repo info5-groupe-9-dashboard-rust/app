@@ -1,4 +1,4 @@
-use crate::models::utils::utils::compare_string_with_number;
+use std::cmp::Ordering;
 
 use crate::models::data_structure::{
     application_context::ApplicationContext, cluster::Cluster, filters::JobFilters, job::JobState,
@@ -223,7 +223,7 @@ impl Filtering {
         ui.set_max_width(300.0);
 
         let mut hosts = cluster.hosts.clone();
-        hosts.sort_by(|a, b| compare_string_with_number(&a.name, &b.name));
+        hosts.sort_by(|a, b| compare_host_names(&a.name, &b.name));
 
         let mut selected_cluster = self
             .temp_filters
@@ -257,5 +257,16 @@ impl Filtering {
                     }
                 }
             });
+    }
+}
+
+fn extract_number(s: &str) -> Option<u32> {
+    s.split('-').nth(1)?.split('.').next()?.parse().ok()
+}
+
+fn compare_host_names(a: &str, b: &str) -> Ordering {
+    match (extract_number(a), extract_number(b)) {
+        (Some(num_a), Some(num_b)) => num_a.cmp(&num_b),
+        _ => a.cmp(b),
     }
 }

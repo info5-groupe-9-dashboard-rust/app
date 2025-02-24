@@ -5,8 +5,6 @@ app:
     file: 'File'
     options: 'Options'
     quit: 'Quit'
-    login: 'Login'
-    connected_as: 'Connected as: %{user}'
     logout: 'Logout'
     view: 'View'
     dashboard: 'Dashboard'

@@ -4,8 +4,6 @@ use crate::models::data_structure::host::Host;
 use crate::models::data_structure::job::Job;
 use std::hash::DefaultHasher;
 use std::hash::Hash;
-//
-use std::cmp::Ordering;
 use std::hash::Hasher;
 
 // Convert a job ID to a color (using hash)
@@ -21,110 +19,16 @@ pub fn convert_id_to_color(id: u32) -> egui::Color32 {
     egui::Color32::from_rgb(r, g, b)
 }
 
-// Compare two strings that may contain numbers
-pub fn compare_string_with_number(a: &str, b: &str) -> Ordering {
-    let mut strings_a: Vec<String> = Vec::new();
-    let mut strings_b: Vec<String> = Vec::new();
-    let mut int_a: Vec<i32> = Vec::new();
-    let mut int_b: Vec<i32> = Vec::new();
-    let mut order_a: Vec<String> = Vec::new();
-    let mut order_b: Vec<String> = Vec::new();
-
-    let mut curr = 0;
-
-    let mut string_count = 0;
-
-    if !a.chars().next().unwrap().is_numeric() {
-        order_a.push("string".to_string());
-        strings_a.push(String::new());
-    }
-
-    for c in a.chars() {
-        if c.is_numeric() {
-            curr = curr * 10 + c.to_digit(10).unwrap() as i32;
-        } else if curr == 0 {
-            strings_a[string_count].push(c);
-        } else {
-            strings_a.push(String::new());
-            string_count += 1;
-            strings_a[string_count].push(c);
-            int_a.push(curr);
-            order_a.push("int".to_string());
-            order_a.push("string".to_string());
-            curr = 0;
-        }
-    }
-
-    curr = 0;
-    string_count = 0;
-
-    if !b.chars().next().unwrap().is_numeric() {
-        order_b.push("string".to_string());
-        strings_b.push(String::new());
-    }
-
-    for c in b.chars() {
-        if c.is_numeric() {
-            curr = curr * 10 + c.to_digit(10).unwrap() as i32;
-        } else if curr == 0 {
-            strings_b[string_count].push(c);
-        } else {
-            strings_b.push(String::new());
-            string_count += 1;
-            strings_b[string_count].push(c);
-            int_b.push(curr);
-            order_b.push("int".to_string());
-            order_b.push("string".to_string());
-            curr = 0;
-        }
-    }
-
-    // Once the three vectors are created, we can compare them
-    // the comparison will be done in the same order as the order vector
-    // if the order is the same, we will compare the strings
-
-    let mut index_int = 0;
-    let mut index_string = 0;
-
-    for i in 0..order_a.len() {
-        if order_a[i] == "int" && order_b[i] == "int" {
-            if int_a[index_int] < int_b[index_int] {
-                return Ordering::Less;
-            } else if int_a[index_int] > int_b[index_int] {
-                return Ordering::Greater;
-            }
-            index_int += 1;
-        } else if order_a[i] == "string" && order_b[i] == "string" {
-            if strings_a[index_string] < strings_b[index_string] {
-                return Ordering::Less;
-            } else if strings_a[index_string] > strings_b[index_string] {
-                return Ordering::Greater;
-            }
-            index_string += 1;
-        } else if order_a[i] == "int" && order_b[i] == "string" {
-            return Ordering::Less;
-        } else if order_a[i] == "string" && order_b[i] == "int" {
-            return Ordering::Greater;
-        }
-    }
-
-    if order_a.len() < order_b.len() {
-        return Ordering::Less;
-    } else if order_a.len() > order_b.len() {
-        return Ordering::Greater;
-    }
-
-    return Ordering::Equal;
-}
-
 // Return the name of all the clusters where the job is running
 pub fn get_clusters_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
 
     for resource in &job.assigned_resources {
         for cluster in clusters {
-            if !result.contains(&cluster.name) && cluster.resource_ids.contains(&resource) {
-                result.push(cluster.name.clone());
+            if cluster.resource_ids.contains(&resource) {
+                if !result.contains(&cluster.name) {
+                    result.push(cluster.name.clone());
+                }
             }
         }
     }
@@ -139,8 +43,10 @@ pub fn get_hosts_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
         for cluster in clusters {
             if cluster.resource_ids.contains(&resource) {
                 for host in &cluster.hosts {
-                    if !result.contains(&host.name) && host.resource_ids.contains(&resource) {
-                        result.push(host.name.clone());
+                    if host.resource_ids.contains(&resource) {
+                        if !result.contains(&host.name) {
+                            result.push(host.name.clone());
+                        }
                     }
                 }
             }

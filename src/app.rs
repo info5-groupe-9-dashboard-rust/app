@@ -43,10 +43,11 @@ impl eframe::App for App {
         self.application_context.check_data_update();
 
         CentralPanel::default().show(ctx, |_ui| {
-            
-            TopBottomPanel::top("tool_bar").show(ctx, |ui| {
-                self.tools.render(ui, &mut self.application_context);
-            });
+            if self.application_context.is_connected {
+                TopBottomPanel::top("tool_bar").show(ctx, |ui| {
+                    self.tools.render(ui, &mut self.application_context);
+                });
+            }
 
             CentralPanel::default().show(ctx, |ui| match self.application_context.view_type {
                 crate::views::view::ViewType::Dashboard => {

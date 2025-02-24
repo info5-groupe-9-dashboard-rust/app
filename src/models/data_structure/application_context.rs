@@ -16,17 +16,15 @@ use crate::models::job::mock_jobs;
 
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>,
-    pub swap_all_jobs: Vec<Job>, // Used to store all jobs when refreshing (and swapped with all_jobs when refreshing is done)
     pub filtered_jobs: Vec<Job>,
 
     pub all_clusters: Vec<Cluster>,
-    pub swap_all_clusters: Vec<Cluster>, // Used to store all clusters when refreshing (and swapped with all_clusters when refreshing is done)
 
     pub start_date: Arc<Mutex<DateTime<Local>>>,
     pub end_date: Arc<Mutex<DateTime<Local>>>,
     pub view_type: ViewType,
     pub is_loading: bool,
-    pub user_connected: Option<String>,
+    pub is_connected: bool,
     pub is_refreshing: Arc<Mutex<bool>>,
     pub refresh_rate: Arc<Mutex<u64>>,
     pub filters: JobFilters,
@@ -40,9 +38,10 @@ pub struct ApplicationContext {
 impl ApplicationContext {
     pub fn check_job_update(&mut self) {
         if let Ok(new_jobs) = self.jobs_receiver.try_recv() {
-            self.swap_all_jobs = new_jobs;
+            self.all_jobs = new_jobs;
             self.is_loading = false;
         }
+        self.filter_jobs();
     }
 
     pub fn check_ressource_update(&mut self) {
@@ -54,7 +53,7 @@ impl ApplicationContext {
                     continue;
                 }
                 if !self
-                    .swap_all_clusters
+                    .all_clusters
                     .iter()
                     .any(|cluster| cluster.name == cluster_name)
                 {
@@ -105,11 +104,11 @@ impl ApplicationContext {
                     };
 
                     // Add the cluster to all_clusters
-                    self.swap_all_clusters.push(new_cluster);
+                    self.all_clusters.push(new_cluster);
                 } else {
                     // if the cluster already exists, check if the host exists and add the host if it doesn't
                     let cluster = self
-                        .swap_all_clusters
+                        .all_clusters
                         .iter_mut()
                         .find(|cluster| cluster.name == cluster_name)
                         .unwrap();
@@ -244,9 +243,9 @@ impl ApplicationContext {
                     }
                 }
             }
-            for job in self.swap_all_jobs.iter_mut() {
-                job.clusters = get_clusters_for_job(job, &self.swap_all_clusters);
-                job.hosts = get_hosts_for_job(job, &self.swap_all_clusters);
+            for job in self.all_jobs.iter_mut() {
+                job.clusters = get_clusters_for_job(job, &self.all_clusters);
+                job.hosts = get_hosts_for_job(job, &self.all_clusters);
             }
         }
     }
@@ -254,22 +253,16 @@ impl ApplicationContext {
     pub fn check_data_update(&mut self) {
         self.check_job_update();
         self.check_ressource_update();
-
-        // Swap all_jobs and all_clusters with swap_all_jobs and swap_all_clusters
-        self.all_jobs = self.swap_all_jobs.clone();
-        self.all_clusters = self.swap_all_clusters.clone();
-
-        self.filter_jobs();
     }
 
     pub fn logout(&mut self) {
-        self.user_connected = None;
+        self.is_connected = false;
         self.view_type = ViewType::Authentification;
     }
 
-    pub fn login(&mut self, username: &str) {
-        self.user_connected = Some(username.to_string());
-        self.view_type = ViewType::Dashboard;
+    pub fn login(&mut self) {
+        self.is_connected = true;
+        self.view_type = ViewType::Gantt;
     }
 
     //gather all unique owners (for completion in filters)
@@ -335,20 +328,17 @@ impl Default for ApplicationContext {
             all_jobs: Vec::new(),
             all_clusters: Vec::new(),
 
-            swap_all_jobs: Vec::new(),
-            swap_all_clusters: Vec::new(),
-
             jobs_receiver: jobs_receiver,
             jobs_sender: jobs_sender,
             resources_receiver: resources_receiver,
             resources_sender: resources_sender,
-            user_connected: None,
+            is_connected: false,
 
             filtered_jobs: Vec::new(),
             filters: JobFilters::default(),
             start_date: Arc::new(Mutex::new(now - chrono::Duration::hours(1))),
             end_date: Arc::new(Mutex::new(now + chrono::Duration::hours(1))),
-            view_type: ViewType::Dashboard,
+            view_type: ViewType::Authentification,
             is_loading: false,
             is_refreshing: Arc::new(Mutex::new(false)),
             refresh_rate: Arc::new(Mutex::new(30)),

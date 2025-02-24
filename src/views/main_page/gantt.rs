@@ -1,5 +1,4 @@
 use crate::models::utils::date_converter::format_timestamp;
-use crate::models::utils::utils::compare_string_with_number;
 use crate::views::view::View;
 use crate::{
     models::data_structure::{application_context::ApplicationContext, job::Job},
@@ -662,7 +661,7 @@ fn paint_aggregated_jobs_level_2(
 
         if !*is_collapsed_level_1 {
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
-            sorted_level_2.sort_by(|a, b| compare_string_with_number(&a, &b));
+            sorted_level_2.sort();
 
             for level_2 in sorted_level_2 {
                 if let Some(job_list) = level_2_map.get(level_2) {
@@ -860,9 +859,9 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
     let mut shapes = vec![];
     let theme_colors = get_theme_colors(&info.ctx.style());
 
-    // if options.canvas_width_s <= 0.0 {
-    //     return shapes;
-    // }
+    if options.canvas_width_s <= 0.0 {
+        return shapes;
+    }
 
     let alpha_multiplier = if info.ctx.style().visuals.dark_mode {
         0.3 // make it subtle for dark mode
@@ -928,15 +927,23 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                     Color32::from(Rgba::from_black_alpha((text_alpha * 2.0).min(1.0)))
                 };
 
-                // Position of the top of the gantt
-                // Adjusted to be a bit below the top of the gantt
-                let fixed_timeline_y = canvas.min.y;
-
                 info.painter.fonts(|f| {
-                    // Text at top with fixed position:
+                    // Text at top:
                     shapes.push(egui::Shape::text(
                         f,
-                        pos2(text_x, fixed_timeline_y),
+                        pos2(text_x, canvas.min.y),
+                        Align2::LEFT_TOP,
+                        &text,
+                        info.font_id.clone(),
+                        text_color
+                    ));
+                });
+
+                info.painter.fonts(|f| {
+                    // Text at bottom:
+                    shapes.push(egui::Shape::text(
+                        f,
+                        pos2(text_x, canvas.max.y - info.text_height),
                         Align2::LEFT_TOP,
                         &text,
                         info.font_id.clone(),

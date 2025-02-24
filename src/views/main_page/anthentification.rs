@@ -57,7 +57,7 @@ impl View for Authentification {
                     // Connect button
                     if ui.button("Se connecter").clicked() || password_edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                         if self.username == "admin" && self.password == "admin" {
-                            app.login(&self.username.clone());
+                            app.login();
                         } else {
                             self.error_message = Some("Identifiants incorrects".to_string());
                         }
