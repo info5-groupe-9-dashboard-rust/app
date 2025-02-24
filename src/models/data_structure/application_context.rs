@@ -16,9 +16,11 @@ use crate::models::job::mock_jobs;
 
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>,
+    pub swap_all_jobs: Vec<Job>, // Used to store all jobs when refreshing (and swapped with all_jobs when refreshing is done)
     pub filtered_jobs: Vec<Job>,
 
     pub all_clusters: Vec<Cluster>,
+    pub swap_all_clusters: Vec<Cluster>, // Used to store all clusters when refreshing (and swapped with all_clusters when refreshing is done)
 
     pub start_date: Arc<Mutex<DateTime<Local>>>,
     pub end_date: Arc<Mutex<DateTime<Local>>>,
@@ -38,10 +40,9 @@ pub struct ApplicationContext {
 impl ApplicationContext {
     pub fn check_job_update(&mut self) {
         if let Ok(new_jobs) = self.jobs_receiver.try_recv() {
-            self.all_jobs = new_jobs;
+            self.swap_all_jobs = new_jobs;
             self.is_loading = false;
         }
-        self.filter_jobs();
     }
 
     pub fn check_ressource_update(&mut self) {
@@ -53,7 +54,7 @@ impl ApplicationContext {
                     continue;
                 }
                 if !self
-                    .all_clusters
+                    .swap_all_clusters
                     .iter()
                     .any(|cluster| cluster.name == cluster_name)
                 {
@@ -104,11 +105,11 @@ impl ApplicationContext {
                     };
 
                     // Add the cluster to all_clusters
-                    self.all_clusters.push(new_cluster);
+                    self.swap_all_clusters.push(new_cluster);
                 } else {
                     // if the cluster already exists, check if the host exists and add the host if it doesn't
                     let cluster = self
-                        .all_clusters
+                        .swap_all_clusters
                         .iter_mut()
                         .find(|cluster| cluster.name == cluster_name)
                         .unwrap();
@@ -243,9 +244,9 @@ impl ApplicationContext {
                     }
                 }
             }
-            for job in self.all_jobs.iter_mut() {
-                job.clusters = get_clusters_for_job(job, &self.all_clusters);
-                job.hosts = get_hosts_for_job(job, &self.all_clusters);
+            for job in self.swap_all_jobs.iter_mut() {
+                job.clusters = get_clusters_for_job(job, &self.swap_all_clusters);
+                job.hosts = get_hosts_for_job(job, &self.swap_all_clusters);
             }
         }
     }
@@ -253,6 +254,12 @@ impl ApplicationContext {
     pub fn check_data_update(&mut self) {
         self.check_job_update();
         self.check_ressource_update();
+
+        // Swap all_jobs and all_clusters with swap_all_jobs and swap_all_clusters
+        self.all_jobs = self.swap_all_jobs.clone();
+        self.all_clusters = self.swap_all_clusters.clone();
+
+        self.filter_jobs();
     }
 
     pub fn logout(&mut self) {
@@ -327,6 +334,9 @@ impl Default for ApplicationContext {
         let mut context = Self {
             all_jobs: Vec::new(),
             all_clusters: Vec::new(),
+
+            swap_all_jobs: Vec::new(),
+            swap_all_clusters: Vec::new(),
 
             jobs_receiver: jobs_receiver,
             jobs_sender: jobs_sender,
