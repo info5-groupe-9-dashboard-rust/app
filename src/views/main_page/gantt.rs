@@ -1,3 +1,4 @@
+use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::date_converter::format_timestamp;
 use crate::models::utils::utils::compare_string_with_number;
 use crate::views::view::View;
@@ -576,7 +577,6 @@ fn paint_aggregated_jobs_level_1(
     details_window: &mut Vec<JobDetailsWindow>,
     collapsed_jobs: &mut BTreeMap<String, bool>,
 ) -> f32 {
-
     let theme_colors = get_theme_colors(&info.ctx.style());
 
     let spacing_between_level_1 = 20.0;
@@ -630,7 +630,6 @@ fn paint_aggregated_jobs_level_2(
     collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
     collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
 ) -> f32 {
-
     let theme_colors = get_theme_colors(&info.ctx.style());
 
     let spacing_between_level_1 = 20.0;
@@ -791,6 +790,41 @@ fn paint_job(
 
     info.painter.rect_filled(rect, options.rounding, fill_color);
 
+    let majority_state = job.main_resource_state.clone();
+
+    //even or odd just to test
+    // let majority_state = if job.id % 2 == 0 {
+    //     ResourceState::Dead
+    // } else {
+    //     ResourceState::Absent
+    // };
+
+    // paint hatch
+    if majority_state == ResourceState::Dead || majority_state == ResourceState::Absent {
+        let hachure_color = match majority_state {
+            ResourceState::Dead => Color32::from_rgba_premultiplied(255, 0, 0, 100),
+            ResourceState::Absent => Color32::from_rgba_premultiplied(255, 255, 0, 100),
+            _ => Color32::TRANSPARENT,
+        };
+
+        let hachure_spacing = 10.0;
+        let mut shapes = Vec::new();
+        let mut x = info.canvas.min.x;
+        let current_time_x = info.point_from_s(options, chrono::Utc::now().timestamp());
+
+        while x < info.canvas.max.x {
+            if majority_state == ResourceState::Absent && x >= current_time_x {
+                break;
+            }
+            shapes.push(Shape::line_segment(
+                [pos2(x, top_y), pos2(x + hachure_spacing, top_y + height)],
+                Stroke::new(1.0, hachure_color),
+            ));
+            x += hachure_spacing;
+        }
+        info.painter.extend(shapes);
+    }
+
     if width > 20.0 {
         let text = format!("{} ({})", job.owner, job.id);
         info.painter.text(
@@ -841,7 +875,8 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
         theme_colors.text_dim
     };
 
-    info.painter.rect_filled(rect.expand(2.0), 0.0, theme_colors.background);
+    info.painter
+        .rect_filled(rect.expand(2.0), 0.0, theme_colors.background);
     info.painter.galley(rect.min, galley, text_color);
 
     if is_hovered && info.response.clicked() {
@@ -908,7 +943,12 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 
             shapes.push(egui::Shape::line_segment(
                 [pos2(line_x, canvas.min.y), pos2(line_x, canvas.max.y)],
-                Stroke::new(1.0, theme_colors.line.linear_multiply(line_alpha * alpha_multiplier)),
+                Stroke::new(
+                    1.0,
+                    theme_colors
+                        .line
+                        .linear_multiply(line_alpha * alpha_multiplier),
+                ),
             ));
 
             let text_alpha = if big_line {
@@ -930,6 +970,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 
                 // Position of the top of the gantt
                 // Adjusted to be a bit below the top of the gantt
+                // TODO FIX THIS TO CALCULATE THE POSITION BASED ON THE HEIGHT OF THE GANTT
                 let fixed_timeline_y = 101.;
 
                 info.painter.fonts(|f| {
@@ -940,7 +981,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                         Align2::LEFT_TOP,
                         &text,
                         info.font_id.clone(),
-                        text_color
+                        text_color,
                     ));
                 });
             }
@@ -958,7 +999,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 fn paint_current_time_line(info: &Info, options: &Options, canvas: Rect) -> egui::Shape {
     let current_time = chrono::Utc::now().timestamp();
     let line_x = info.point_from_s(options, current_time);
-    
+
     egui::Shape::line_segment(
         [pos2(line_x, canvas.min.y), pos2(line_x, canvas.max.y)],
         Stroke::new(2.0, Color32::RED), // Keep red for both themes for better visibility

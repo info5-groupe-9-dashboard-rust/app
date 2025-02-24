@@ -1,9 +1,12 @@
+use crate::models::data_structure::resource::ResourceState;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use strum_macros::EnumIter;
 
 #[cfg(target_arch = "wasm32")]
 use chrono::{DateTime, Local};
+
+use super::cluster;
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq, PartialOrd, Ord, Hash)]
 pub enum JobState {
@@ -138,6 +141,7 @@ pub struct Job {
     pub gantt_color: egui::Color32,
     pub clusters: Vec<String>,
     pub hosts: Vec<String>,
+    pub main_resource_state: ResourceState,
 }
 
 impl Job {
@@ -179,6 +183,39 @@ impl Job {
             egui::Color32::from_rgb(r as u8, g as u8, b as u8),
             egui::Color32::from_rgb(darker(r), darker(g), darker(b)),
         )
+    }
+
+    pub fn update_majority_resource_state(&mut self, clusters: &Vec<cluster::Cluster>) {
+        let mut dead_count = 0;
+        let mut alive_count = 0;
+        let mut absent_count = 0;
+
+        for cluster in clusters {
+            for host in &cluster.hosts {
+                for cpu in &host.cpus {
+                    for resource in &cpu.resources {
+                        if self.assigned_resources.contains(&resource.id) {
+                            match resource.state {
+                                ResourceState::Dead => dead_count += 1,
+                                ResourceState::Alive => alive_count += 1,
+                                ResourceState::Absent => absent_count += 1,
+                                _ => (),
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        self.main_resource_state = if dead_count >= alive_count && dead_count >= absent_count {
+            ResourceState::Dead
+        } else if absent_count >= dead_count && absent_count >= alive_count {
+            ResourceState::Absent
+        } else if alive_count > dead_count && alive_count > absent_count {
+            ResourceState::Alive
+        } else {
+            ResourceState::Unknown
+        };
     }
 }
 
