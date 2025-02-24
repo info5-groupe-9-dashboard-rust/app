@@ -24,15 +24,19 @@ impl MetricChart {
         MetricChart {
             title: title.to_string(),
             chart,
-            color: egui::Color32::from_rgb(70, 100, 150),
+            color: egui::Color32::from_rgb(128, 128, 128),
         }
     }
 
     pub fn ui_with_chart(self, ui: &mut egui::Ui, size: Vec2) -> Response {
         egui::Frame::none()
-            .fill(egui::Color32::from_gray(28))
+            .fill(if ui.ctx().style().visuals.dark_mode {
+                egui::Color32::from_gray(28)
+            } else {
+                egui::Color32::from_gray(255)
+            })
             .rounding(6.0)
-            .stroke(egui::Stroke::new(0.5, self.color))
+            .stroke(egui::Stroke::new(0.7, self.color))
             .show(ui, |ui| {
                 ui.set_min_size(size);
                 ui.vertical_centered(|ui| {
@@ -81,7 +85,7 @@ pub fn create_jobstate_chart(jobs: Vec<Job>) -> MetricChart {
         .map(|(index, (state, count))| {
             Bar::new(index as f64, count as f64)
                 .name(state.get_label())
-                .fill(state.get_color().0)
+                .fill(state.get_color().1)
         })
         .collect();
 
