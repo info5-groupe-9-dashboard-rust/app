@@ -1,5 +1,3 @@
-use crate::app;
-use crate::models::data_structure::cluster::{self, Cluster};
 use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::date_converter::format_timestamp;
 use crate::models::utils::utils::compare_string_with_number;
@@ -298,7 +296,6 @@ fn ui_canvas(
                 cursor_y,
                 details_window,
                 collapsed_jobs_level_1,
-                &app.all_clusters,
             );
         }
 
@@ -325,7 +322,6 @@ fn ui_canvas(
                         jobs_by_host_by_owner,
                         cursor_y,
                         details_window,
-                        &app.all_clusters,
                         collapsed_jobs_level_1,
                         collapsed_jobs_level_2,
                     );
@@ -348,7 +344,6 @@ fn ui_canvas(
                         cursor_y,
                         details_window,
                         collapsed_jobs_level_1,
-                        &app.all_clusters,
                     );
                 }
                 AggregateByLevel2Enum::Host => {
@@ -379,7 +374,6 @@ fn ui_canvas(
                     jobs_by_cluster_by_owner,
                     cursor_y,
                     details_window,
-                    &app.all_clusters,
                     collapsed_jobs_level_1,
                     collapsed_jobs_level_2,
                 );
@@ -402,7 +396,6 @@ fn ui_canvas(
                     cursor_y,
                     details_window,
                     collapsed_jobs_level_1,
-                    &app.all_clusters,
                 );
             }
             AggregateByLevel2Enum::Host => {
@@ -427,7 +420,6 @@ fn ui_canvas(
                     jobs_by_cluster_by_host,
                     cursor_y,
                     details_window,
-                    &app.all_clusters,
                     collapsed_jobs_level_1,
                     collapsed_jobs_level_2,
                 );
@@ -584,9 +576,7 @@ fn paint_aggregated_jobs_level_1(
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
     collapsed_jobs: &mut BTreeMap<String, bool>,
-    clusters: &Vec<Cluster>,
 ) -> f32 {
-
     let theme_colors = get_theme_colors(&info.ctx.style());
 
     let spacing_between_level_1 = 20.0;
@@ -616,7 +606,7 @@ fn paint_aggregated_jobs_level_1(
         if !*is_collapsed {
             for job in job_list {
                 let job_start_y = cursor_y;
-                paint_job(info, options, &job, job_start_y, details_window, clusters);
+                paint_job(info, options, &job, job_start_y, details_window);
                 cursor_y += info.text_height + spacing_between_jobs + options.spacing;
             }
             cursor_y += spacing_between_level_1;
@@ -637,11 +627,9 @@ fn paint_aggregated_jobs_level_2(
     jobs: BTreeMap<String, BTreeMap<String, Vec<Job>>>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
-    clusters: &Vec<Cluster>,
     collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
     collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
 ) -> f32 {
-
     let theme_colors = get_theme_colors(&info.ctx.style());
 
     let spacing_between_level_1 = 20.0;
@@ -702,7 +690,7 @@ fn paint_aggregated_jobs_level_2(
                             let job_start_y = cursor_y; // Ensure vertical alignment
 
                             // Draw the job
-                            paint_job(info, options, &job, job_start_y, details_window, clusters);
+                            paint_job(info, options, &job, job_start_y, details_window);
 
                             cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                         }
@@ -732,7 +720,6 @@ fn paint_job(
     job: &Job,
     top_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
-    clusters: &Vec<Cluster>,
 ) -> PaintResult {
     let theme_colors = get_theme_colors(&info.ctx.style());
     let start_x = info.point_from_s(options, job.scheduled_start);
@@ -888,7 +875,8 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
         theme_colors.text_dim
     };
 
-    info.painter.rect_filled(rect.expand(2.0), 0.0, theme_colors.background);
+    info.painter
+        .rect_filled(rect.expand(2.0), 0.0, theme_colors.background);
     info.painter.galley(rect.min, galley, text_color);
 
     if is_hovered && info.response.clicked() {
@@ -955,7 +943,12 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 
             shapes.push(egui::Shape::line_segment(
                 [pos2(line_x, canvas.min.y), pos2(line_x, canvas.max.y)],
-                Stroke::new(1.0, theme_colors.line.linear_multiply(line_alpha * alpha_multiplier)),
+                Stroke::new(
+                    1.0,
+                    theme_colors
+                        .line
+                        .linear_multiply(line_alpha * alpha_multiplier),
+                ),
             ));
 
             let text_alpha = if big_line {
@@ -988,7 +981,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                         Align2::LEFT_TOP,
                         &text,
                         info.font_id.clone(),
-                        text_color
+                        text_color,
                     ));
                 });
             }
@@ -1006,7 +999,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 fn paint_current_time_line(info: &Info, options: &Options, canvas: Rect) -> egui::Shape {
     let current_time = chrono::Utc::now().timestamp();
     let line_x = info.point_from_s(options, current_time);
-    
+
     egui::Shape::line_segment(
         [pos2(line_x, canvas.min.y), pos2(line_x, canvas.max.y)],
         Stroke::new(2.0, Color32::RED), // Keep red for both themes for better visibility
