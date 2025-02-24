@@ -823,9 +823,9 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
 fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -> Vec<egui::Shape> {
     let mut shapes = vec![];
 
-    if options.canvas_width_s <= 0.0 {
-        return shapes;
-    }
+    // if options.canvas_width_s <= 0.0 {
+    //     return shapes;
+    // }
 
     let alpha_multiplier = 0.3; // make it subtle
 
@@ -883,23 +883,16 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                 let text_x = line_x + 4.0;
                 let text_color = Rgba::from_white_alpha((text_alpha * 2.0).min(1.0)).into();
 
+                // Position of the top of the gantt
+                // Adjusted to be a bit below the top of the gantt
+                // TODO FIX THIS TO CALCULATE THE POSITION BASED ON THE HEIGHT OF THE GANTT
+                let fixed_timeline_y = 101.;
+                
                 info.painter.fonts(|f| {
-                    // Text at top:
+                    // Text at top with fixed position:
                     shapes.push(egui::Shape::text(
                         f,
-                        pos2(text_x, canvas.min.y),
-                        Align2::LEFT_TOP,
-                        &text,
-                        info.font_id.clone(),
-                        text_color,
-                    ));
-                });
-
-                info.painter.fonts(|f| {
-                    // Text at bottom:
-                    shapes.push(egui::Shape::text(
-                        f,
-                        pos2(text_x, canvas.max.y - info.text_height),
+                        pos2(text_x, fixed_timeline_y),
                         Align2::LEFT_TOP,
                         &text,
                         info.font_id.clone(),
