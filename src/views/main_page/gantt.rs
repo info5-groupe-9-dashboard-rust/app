@@ -26,8 +26,16 @@ use std::collections::BTreeMap;
 pub struct GanttChart {
     options: Options,                               // options for the GanttChart
     job_details_windows: Vec<JobDetailsWindow>,     // job details windows
-    collapsed_jobs_level_1: BTreeMap<String, bool>, // collapsed jobs level_1
-    collapsed_jobs_level_2: BTreeMap<(String, String), bool>, // collapsed jobs level_2
+
+    // Tracks which top-level categories (e.g., owners, hosts, or clusters) are collapsed in the Gantt view
+    // Key: The category name (e.g., "user1" for owner, "host1" for host)
+    // Value: true if collapsed (hidden), false if expanded (visible)
+    collapsed_jobs_level_1: BTreeMap<String, bool>,
+
+    // Tracks which second-level subcategories are collapsed within their parent categories
+    // Key: Tuple of (parent_category, subcategory) - e.g., ("cluster1", "host1")
+    // Value: true if collapsed (hidden), false if expanded (visible)
+    collapsed_jobs_level_2: BTreeMap<(String, String), bool>
 }
 
 /**
@@ -585,7 +593,10 @@ fn paint_aggregated_jobs_level_1(
 
     cursor_y += spacing_between_level_1;
 
+    // Display jobs
     for (level_1, job_list) in jobs {
+
+        // Draw a line to separate
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, cursor_y),
@@ -597,7 +608,11 @@ fn paint_aggregated_jobs_level_1(
         cursor_y += offset_level_1;
 
         let text_pos = pos2(info.canvas.min.x, cursor_y);
+
+        // Check if the section is collapsed
         let is_collapsed = collapsed_jobs.entry(level_1.clone()).or_insert(false);
+
+        // Paint the job info
         paint_job_info(info, level_1, text_pos, is_collapsed, 1);
 
         cursor_y += spacing_between_level_1; // Spacing after the owner
@@ -606,7 +621,11 @@ fn paint_aggregated_jobs_level_1(
         if !*is_collapsed {
             for job in job_list {
                 let job_start_y = cursor_y;
+                
+                // Draw the job
                 paint_job(info, options, &job, job_start_y, details_window);
+
+                // Add spacing between jobs
                 cursor_y += info.text_height + spacing_between_jobs + options.spacing;
             }
             cursor_y += spacing_between_level_1;
@@ -641,6 +660,8 @@ fn paint_aggregated_jobs_level_2(
 
     for (level_1, level_2_map) in jobs {
         let level_1_key = level_1.clone();
+
+        // Draw a line to separate
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, cursor_y),
@@ -652,17 +673,25 @@ fn paint_aggregated_jobs_level_2(
         cursor_y += offset_level_1;
 
         let text_pos = pos2(info.canvas.min.x, cursor_y);
+
+        // Check if the level 1 is collapsed
         let is_collapsed_level_1 = collapsed_jobs_level_1
             .entry(level_1.clone())
             .or_insert(false);
+
+        // Paint the job info
         paint_job_info(info, level_1, text_pos, is_collapsed_level_1, 1);
 
         cursor_y += spacing_between_level_1;
 
+        // Only show jobs if section is not collapsed
         if !*is_collapsed_level_1 {
+
+            // Sort the level 2 keys
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
             sorted_level_2.sort_by(|a, b| compare_string_with_number(&a, &b));
 
+            // Display level 2
             for level_2 in sorted_level_2 {
                 if let Some(job_list) = level_2_map.get(level_2) {
                     // Draw a line to separate
@@ -677,13 +706,18 @@ fn paint_aggregated_jobs_level_2(
                     cursor_y += spacing_between_level_2;
 
                     let text_pos = pos2(info.canvas.min.x + 20.0, cursor_y);
+
+                    // Check if the level 2 is collapsed
                     let is_collapsed_level_2 = collapsed_jobs_level_2
                         .entry((level_1_key.to_string(), level_2.to_string()))
                         .or_insert(false);
+
+                    // Paint the job info
                     paint_job_info(info, level_2.to_string(), text_pos, is_collapsed_level_2, 2);
 
                     cursor_y += spacing_between_level_2;
 
+                    // Only show jobs if section is not collapsed
                     if !*is_collapsed_level_2 {
                         // Display jobs
                         for job in job_list {
@@ -695,6 +729,7 @@ fn paint_aggregated_jobs_level_2(
                             cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                         }
                     }
+                    cursor_y += spacing_between_level_2;
                 }
             }
         }
