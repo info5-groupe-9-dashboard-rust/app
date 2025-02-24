@@ -1,11 +1,13 @@
-use std::collections::BTreeMap;
+use crate::app;
+use crate::models::data_structure::cluster::{self, Cluster};
+use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::date_converter::format_timestamp;
 use crate::views::view::View;
 use crate::{
     models::data_structure::{application_context::ApplicationContext, job::Job},
     views::components::{
-        gantt_grid_spacing::GridSpacing,
         gantt_aggregate_by::{AggregateBy, AggregateByLevel1Enum, AggregateByLevel2Enum},
+        gantt_grid_spacing::GridSpacing,
         gantt_job_color::JobColor,
         gantt_sorting::Sorting,
         job_details::JobDetailsWindow,
@@ -17,6 +19,7 @@ use egui::{
     lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response,
     Rgba, RichText, ScrollArea, Sense, Shape, Stroke, TextStyle,
 };
+use std::collections::BTreeMap;
 
 /**
  * GanttChart struct
@@ -35,7 +38,7 @@ impl Default for GanttChart {
         GanttChart {
             options: Default::default(),
             job_details_windows: Vec::new(),
-            collapsed_jobs: BTreeMap::new()
+            collapsed_jobs: BTreeMap::new(),
         }
     }
 }
@@ -142,7 +145,7 @@ impl View for GanttChart {
                     &info,
                     (min_s, max_s),
                     &mut self.job_details_windows,
-                    &mut self.collapsed_jobs
+                    &mut self.collapsed_jobs,
                 );
 
                 let mut used_rect = canvas;
@@ -273,7 +276,6 @@ fn ui_canvas(
     let jobs = options.sorting.sort(app.filtered_jobs.clone());
 
     match options.aggregate_by.level_1 {
-
         // Aggregate by owner only
         AggregateByLevel1Enum::Owner => {
             let mut jobs_by_owner: BTreeMap<String, Vec<Job>> = BTreeMap::new();
@@ -290,136 +292,139 @@ fn ui_canvas(
                 jobs_by_owner,
                 cursor_y,
                 details_window,
-                collapsed_jobs
+                collapsed_jobs,
+                &app.all_clusters,
             );
-        },
+        }
 
         // Aggregate by host
         AggregateByLevel1Enum::Host => {
             match options.aggregate_by.level_2 {
                 AggregateByLevel2Enum::Owner => {
-                                let mut jobs_by_host_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
-                                    BTreeMap::new();
-                                for job in jobs {
-                                    for host in job.hosts.iter() {
-                                        jobs_by_host_by_owner
-                                            .entry(host.clone())
-                                            .or_insert_with(BTreeMap::new)
-                                            .entry(job.owner.clone())
-                                            .or_insert_with(Vec::new)
-                                            .push(job.clone());
-                                    }
-                                }
-
-                                cursor_y = paint_aggregated_jobs_level_2(
-                                    info,
-                                    options,
-                                    jobs_by_host_by_owner,
-                                    cursor_y,
-                                    details_window,
-                                    collapsed_jobs
-                                );
-                            },
-                AggregateByLevel2Enum::None => {
-                                let mut jobs_by_host: BTreeMap<String, Vec<Job>> = BTreeMap::new();
-                                for job in jobs {
-                                    for host in job.hosts.iter() {
-                                        jobs_by_host
-                                            .entry(host.clone())
-                                            .or_insert_with(Vec::new)
-                                            .push(job.clone());
-                                    }
-                                }
-
-                                cursor_y = paint_aggregated_jobs_level_1(
-                                    info,
-                                    options,
-                                    jobs_by_host,
-                                    cursor_y,
-                                    details_window,
-                                    collapsed_jobs
-                                );
-                            }
-                AggregateByLevel2Enum::Host => {
-                        // nothing to do here
-                    },
-            }
-        },
-
-        // Aggregate by cluster
-        AggregateByLevel1Enum::Cluster => {
-
-            match options.aggregate_by.level_2 {
-                AggregateByLevel2Enum::Owner => {
-                                let mut jobs_by_cluster_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
-                                    BTreeMap::new();
-                                for job in jobs {
-                                    for cluster in job.clusters.iter() {
-                                        jobs_by_cluster_by_owner
-                                            .entry(cluster.clone())
-                                            .or_insert_with(BTreeMap::new)
-                                            .entry(job.owner.clone())
-                                            .or_insert_with(Vec::new)
-                                            .push(job.clone());
-                                    }
-                                }
-
-                                cursor_y = paint_aggregated_jobs_level_2(
-                                    info,
-                                    options,
-                                    jobs_by_cluster_by_owner,
-                                    cursor_y,
-                                    details_window,
-                                    collapsed_jobs
-                                );
-                            },
-                AggregateByLevel2Enum::None => {
-                                let mut jobs_by_cluster: BTreeMap<String, Vec<Job>> = BTreeMap::new();
-                                for job in jobs {
-                                    for cluster in job.clusters.iter() {
-                                        jobs_by_cluster
-                                            .entry(cluster.clone())
-                                            .or_insert_with(Vec::new)
-                                            .push(job.clone());
-                                    }
-                                }
-
-                                cursor_y = paint_aggregated_jobs_level_1(
-                                    info,
-                                    options,
-                                    jobs_by_cluster,
-                                    cursor_y,
-                                    details_window,
-                                    collapsed_jobs
-                                );
-                            }
-                AggregateByLevel2Enum::Host => {
-                        let mut jobs_by_cluster_by_host: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
-                            BTreeMap::new();
-                        for job in jobs {
-                            for cluster in job.clusters.iter() {
-                                for host in job.hosts.iter() {
-                                    jobs_by_cluster_by_host
-                                        .entry(cluster.clone())
-                                        .or_insert_with(BTreeMap::new)
-                                        .entry(host.clone())
-                                        .or_insert_with(Vec::new)
-                                        .push(job.clone());
-                                }
-                            }
+                    let mut jobs_by_host_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
+                        BTreeMap::new();
+                    for job in jobs {
+                        for host in job.hosts.iter() {
+                            jobs_by_host_by_owner
+                                .entry(host.clone())
+                                .or_insert_with(BTreeMap::new)
+                                .entry(job.owner.clone())
+                                .or_insert_with(Vec::new)
+                                .push(job.clone());
                         }
+                    }
 
-                        cursor_y = paint_aggregated_jobs_level_2(
-                            info,
-                            options,
-                            jobs_by_cluster_by_host,
-                            cursor_y,
-                            details_window,
-                            collapsed_jobs
-                        );
-                    },
+                    cursor_y = paint_aggregated_jobs_level_2(
+                        info,
+                        options,
+                        jobs_by_host_by_owner,
+                        cursor_y,
+                        details_window,
+                        collapsed_jobs,
+                        &app.all_clusters,
+                    );
+                }
+                AggregateByLevel2Enum::None => {
+                    let mut jobs_by_host: BTreeMap<String, Vec<Job>> = BTreeMap::new();
+                    for job in jobs {
+                        for host in job.hosts.iter() {
+                            jobs_by_host
+                                .entry(host.clone())
+                                .or_insert_with(Vec::new)
+                                .push(job.clone());
+                        }
+                    }
+
+                    cursor_y = paint_aggregated_jobs_level_1(
+                        info,
+                        options,
+                        jobs_by_host,
+                        cursor_y,
+                        details_window,
+                        collapsed_jobs,
+                        &app.all_clusters,
+                    );
+                }
+                AggregateByLevel2Enum::Host => {
+                    // nothing to do here
+                }
             }
         }
+
+        // Aggregate by cluster
+        AggregateByLevel1Enum::Cluster => match options.aggregate_by.level_2 {
+            AggregateByLevel2Enum::Owner => {
+                let mut jobs_by_cluster_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
+                    BTreeMap::new();
+                for job in jobs {
+                    for cluster in job.clusters.iter() {
+                        jobs_by_cluster_by_owner
+                            .entry(cluster.clone())
+                            .or_insert_with(BTreeMap::new)
+                            .entry(job.owner.clone())
+                            .or_insert_with(Vec::new)
+                            .push(job.clone());
+                    }
+                }
+
+                cursor_y = paint_aggregated_jobs_level_2(
+                    info,
+                    options,
+                    jobs_by_cluster_by_owner,
+                    cursor_y,
+                    details_window,
+                    collapsed_jobs,
+                    &app.all_clusters,
+                );
+            }
+            AggregateByLevel2Enum::None => {
+                let mut jobs_by_cluster: BTreeMap<String, Vec<Job>> = BTreeMap::new();
+                for job in jobs {
+                    for cluster in job.clusters.iter() {
+                        jobs_by_cluster
+                            .entry(cluster.clone())
+                            .or_insert_with(Vec::new)
+                            .push(job.clone());
+                    }
+                }
+
+                cursor_y = paint_aggregated_jobs_level_1(
+                    info,
+                    options,
+                    jobs_by_cluster,
+                    cursor_y,
+                    details_window,
+                    collapsed_jobs,
+                    &app.all_clusters,
+                );
+            }
+            AggregateByLevel2Enum::Host => {
+                let mut jobs_by_cluster_by_host: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
+                    BTreeMap::new();
+                for job in jobs {
+                    for cluster in job.clusters.iter() {
+                        for host in job.hosts.iter() {
+                            jobs_by_cluster_by_host
+                                .entry(cluster.clone())
+                                .or_insert_with(BTreeMap::new)
+                                .entry(host.clone())
+                                .or_insert_with(Vec::new)
+                                .push(job.clone());
+                        }
+                    }
+                }
+
+                cursor_y = paint_aggregated_jobs_level_2(
+                    info,
+                    options,
+                    jobs_by_cluster_by_host,
+                    cursor_y,
+                    details_window,
+                    collapsed_jobs,
+                    &app.all_clusters,
+                );
+            }
+        },
     }
 
     // Paint tooltip for hovered job if there is one
@@ -537,6 +542,7 @@ fn paint_aggregated_jobs_level_1(
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
     collapsed_jobs: &mut BTreeMap<String, bool>,
+    clusters: &Vec<Cluster>,
 ) -> f32 {
     let spacing_between_level_1 = 20.0;
     let spacing_between_jobs = 5.0;
@@ -556,9 +562,7 @@ fn paint_aggregated_jobs_level_1(
         cursor_y += offset_level_1;
 
         let text_pos = pos2(info.canvas.min.x, cursor_y);
-        let is_collapsed = collapsed_jobs
-            .entry(level_1.clone())
-            .or_insert(false);
+        let is_collapsed = collapsed_jobs.entry(level_1.clone()).or_insert(false);
         paint_job_info(info, level_1, text_pos, is_collapsed, 1);
 
         cursor_y += spacing_between_level_1; // Spacing after the owner
@@ -567,7 +571,7 @@ fn paint_aggregated_jobs_level_1(
         if !*is_collapsed {
             for job in job_list {
                 let job_start_y = cursor_y;
-                paint_job(info, options, &job, job_start_y, details_window);
+                paint_job(info, options, &job, job_start_y, details_window, clusters);
                 cursor_y += info.text_height + spacing_between_jobs + options.spacing;
             }
             cursor_y += spacing_between_level_1;
@@ -588,7 +592,8 @@ fn paint_aggregated_jobs_level_2(
     jobs: BTreeMap<String, BTreeMap<String, Vec<Job>>>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
-    collapsed_jobs: &mut BTreeMap<String, bool>
+    collapsed_jobs: &mut BTreeMap<String, bool>,
+    clusters: &Vec<Cluster>,
 ) -> f32 {
     let spacing_between_level_1 = 20.0;
     let spacing_between_level_2 = 15.0;
@@ -598,7 +603,6 @@ fn paint_aggregated_jobs_level_2(
     cursor_y += spacing_between_level_1;
 
     for (level_1, level_2_map) in jobs {
-
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, cursor_y),
@@ -610,15 +614,12 @@ fn paint_aggregated_jobs_level_2(
         cursor_y += offset_level_1;
 
         let text_pos = pos2(info.canvas.min.x, cursor_y);
-        let is_collapsed = collapsed_jobs
-            .entry(level_1.clone())
-            .or_insert(false);
+        let is_collapsed = collapsed_jobs.entry(level_1.clone()).or_insert(false);
         paint_job_info(info, level_1, text_pos, is_collapsed, 1);
 
         cursor_y += spacing_between_level_1;
 
         if !*is_collapsed {
-
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
             sorted_level_2.sort();
 
@@ -641,7 +642,7 @@ fn paint_aggregated_jobs_level_2(
                         let job_start_y = cursor_y; // Ensure vertical alignment
 
                         // Draw the job (background)
-                        paint_job(info, options, &job, job_start_y, details_window);
+                        paint_job(info, options, &job, job_start_y, details_window, clusters);
 
                         // Then, draw job_info (above)
                         if !once {
@@ -677,6 +678,7 @@ fn paint_job(
     job: &Job,
     top_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
+    clusters: &Vec<Cluster>,
 ) -> PaintResult {
     let start_x = info.point_from_s(options, job.scheduled_start);
     let stop_time = if (job.scheduled_start + job.walltime) > info.stop_s {
@@ -743,6 +745,41 @@ fn paint_job(
 
     info.painter.rect_filled(rect, options.rounding, fill_color);
 
+    let majority_state = job.get_majority_resource_state(clusters);
+
+    //even or odd just to test
+    // let majority_state = if job.id % 2 == 0 {
+    //     ResourceState::Dead
+    // } else {
+    //     ResourceState::Absent
+    // };
+
+    // paint hatch
+    if majority_state == ResourceState::Dead || majority_state == ResourceState::Absent {
+        let hachure_color = match majority_state {
+            ResourceState::Dead => Color32::from_rgba_premultiplied(255, 0, 0, 100),
+            ResourceState::Absent => Color32::from_rgba_premultiplied(255, 255, 0, 100),
+            _ => Color32::TRANSPARENT,
+        };
+
+        let hachure_spacing = 10.0;
+        let mut shapes = Vec::new();
+        let mut x = info.canvas.min.x;
+        let current_time_x = info.point_from_s(options, chrono::Utc::now().timestamp());
+
+        while x < info.canvas.max.x {
+            if majority_state == ResourceState::Absent && x >= current_time_x {
+                break;
+            }
+            shapes.push(Shape::line_segment(
+                [pos2(x, top_y), pos2(x + hachure_spacing, top_y + height)],
+                Stroke::new(1.0, hachure_color),
+            ));
+            x += hachure_spacing;
+        }
+        info.painter.extend(shapes);
+    }
+
     if width > 20.0 {
         let text = format!("{} ({})", job.owner, job.id);
         info.painter.text(
@@ -776,9 +813,9 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
         info_label
     };
 
-    let galley = info.ctx.fonts(|f| {
-        f.layout_no_wrap(label, info.font_id.clone(), egui::Color32::PLACEHOLDER)
-    });
+    let galley = info
+        .ctx
+        .fonts(|f| f.layout_no_wrap(label, info.font_id.clone(), egui::Color32::PLACEHOLDER));
 
     let offset_x = if level == 1 { 0.0 } else { 50.0 };
     let rect = Rect::from_min_size(pos2(pos.x + offset_x, pos.y), galley.size());
@@ -933,9 +970,9 @@ fn grid_text(ts: i64) -> String {
         "N/A".to_string()
     } else {
         if let Some(dt) = DateTime::from_timestamp(ts, 0) {
-
             dt.with_timezone(&Local)
-            .format("%Y-%m-%d %H:%M:%S").to_string()
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string()
         } else {
             "Invalid timestamp".to_string()
         }
