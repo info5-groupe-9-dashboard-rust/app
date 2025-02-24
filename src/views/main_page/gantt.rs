@@ -25,9 +25,10 @@ use std::collections::BTreeMap;
  * GanttChart struct
  */
 pub struct GanttChart {
-    options: Options,                           // options for the GanttChart
-    job_details_windows: Vec<JobDetailsWindow>, // job details windows
-    collapsed_jobs: BTreeMap<String, bool>,     // collapsed jobs
+    options: Options,                               // options for the GanttChart
+    job_details_windows: Vec<JobDetailsWindow>,     // job details windows
+    collapsed_jobs_level_1: BTreeMap<String, bool>, // collapsed jobs level_1
+    collapsed_jobs_level_2: BTreeMap<(String, String), bool>, // collapsed jobs level_2
 }
 
 /**
@@ -38,7 +39,8 @@ impl Default for GanttChart {
         GanttChart {
             options: Default::default(),
             job_details_windows: Vec::new(),
-            collapsed_jobs: BTreeMap::new(),
+            collapsed_jobs_level_1: BTreeMap::new(),
+            collapsed_jobs_level_2: BTreeMap::new(),
         }
     }
 }
@@ -145,7 +147,8 @@ impl View for GanttChart {
                     &info,
                     (min_s, max_s),
                     &mut self.job_details_windows,
-                    &mut self.collapsed_jobs,
+                    &mut self.collapsed_jobs_level_1,
+                    &mut self.collapsed_jobs_level_2,
                 );
 
                 let mut used_rect = canvas;
@@ -262,7 +265,8 @@ fn ui_canvas(
     info: &Info,
     (min_ns, max_ns): (i64, i64),
     details_window: &mut Vec<JobDetailsWindow>,
-    collapsed_jobs: &mut BTreeMap<String, bool>,
+    collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
+    collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
 ) -> f32 {
     if options.canvas_width_s <= 0.0 {
         options.canvas_width_s = (max_ns - min_ns) as f32;
@@ -292,7 +296,7 @@ fn ui_canvas(
                 jobs_by_owner,
                 cursor_y,
                 details_window,
-                collapsed_jobs,
+                collapsed_jobs_level_1,
                 &app.all_clusters,
             );
         }
@@ -320,8 +324,9 @@ fn ui_canvas(
                         jobs_by_host_by_owner,
                         cursor_y,
                         details_window,
-                        collapsed_jobs,
                         &app.all_clusters,
+                        collapsed_jobs_level_1,
+                        collapsed_jobs_level_2,
                     );
                 }
                 AggregateByLevel2Enum::None => {
@@ -341,7 +346,7 @@ fn ui_canvas(
                         jobs_by_host,
                         cursor_y,
                         details_window,
-                        collapsed_jobs,
+                        collapsed_jobs_level_1,
                         &app.all_clusters,
                     );
                 }
@@ -373,8 +378,9 @@ fn ui_canvas(
                     jobs_by_cluster_by_owner,
                     cursor_y,
                     details_window,
-                    collapsed_jobs,
                     &app.all_clusters,
+                    collapsed_jobs_level_1,
+                    collapsed_jobs_level_2,
                 );
             }
             AggregateByLevel2Enum::None => {
@@ -394,7 +400,7 @@ fn ui_canvas(
                     jobs_by_cluster,
                     cursor_y,
                     details_window,
-                    collapsed_jobs,
+                    collapsed_jobs_level_1,
                     &app.all_clusters,
                 );
             }
@@ -420,8 +426,9 @@ fn ui_canvas(
                     jobs_by_cluster_by_host,
                     cursor_y,
                     details_window,
-                    collapsed_jobs,
                     &app.all_clusters,
+                    collapsed_jobs_level_1,
+                    collapsed_jobs_level_2,
                 );
             }
         },
@@ -592,8 +599,9 @@ fn paint_aggregated_jobs_level_2(
     jobs: BTreeMap<String, BTreeMap<String, Vec<Job>>>,
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
-    collapsed_jobs: &mut BTreeMap<String, bool>,
     clusters: &Vec<Cluster>,
+    collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
+    collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
 ) -> f32 {
     let spacing_between_level_1 = 20.0;
     let spacing_between_level_2 = 15.0;
@@ -603,6 +611,7 @@ fn paint_aggregated_jobs_level_2(
     cursor_y += spacing_between_level_1;
 
     for (level_1, level_2_map) in jobs {
+        let level_1_key = level_1.clone();
         info.painter.line_segment(
             [
                 pos2(info.canvas.min.x, cursor_y),
@@ -614,12 +623,14 @@ fn paint_aggregated_jobs_level_2(
         cursor_y += offset_level_1;
 
         let text_pos = pos2(info.canvas.min.x, cursor_y);
-        let is_collapsed = collapsed_jobs.entry(level_1.clone()).or_insert(false);
-        paint_job_info(info, level_1, text_pos, is_collapsed, 1);
+        let is_collapsed_level_1 = collapsed_jobs_level_1
+            .entry(level_1.clone())
+            .or_insert(false);
+        paint_job_info(info, level_1, text_pos, is_collapsed_level_1, 1);
 
         cursor_y += spacing_between_level_1;
 
-        if !*is_collapsed {
+        if !*is_collapsed_level_1 {
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
             sorted_level_2.sort();
 
@@ -636,22 +647,24 @@ fn paint_aggregated_jobs_level_2(
 
                     cursor_y += spacing_between_level_2;
 
-                    let mut once = false;
-                    // Display jobs
-                    for job in job_list {
-                        let job_start_y = cursor_y; // Ensure vertical alignment
+                    let text_pos = pos2(info.canvas.min.x + 20.0, cursor_y);
+                    let is_collapsed_level_2 = collapsed_jobs_level_2
+                        .entry((level_1_key.to_string(), level_2.to_string()))
+                        .or_insert(false);
+                    paint_job_info(info, level_2.to_string(), text_pos, is_collapsed_level_2, 2);
 
-                        // Draw the job (background)
-                        paint_job(info, options, &job, job_start_y, details_window, clusters);
+                    cursor_y += spacing_between_level_2;
 
-                        // Then, draw job_info (above)
-                        if !once {
-                            let job_text_pos = pos2(info.canvas.min.x, job_start_y);
-                            paint_job_info(info, level_2.to_string(), job_text_pos, &mut false, 2);
-                            once = true;
+                    if !*is_collapsed_level_2 {
+                        // Display jobs
+                        for job in job_list {
+                            let job_start_y = cursor_y; // Ensure vertical alignment
+
+                            // Draw the job
+                            paint_job(info, options, &job, job_start_y, details_window, clusters);
+
+                            cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                         }
-
-                        cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                     }
                 }
             }
@@ -713,7 +726,10 @@ fn paint_job(
     // Add click detection for the job
     if is_hovered && info.response.secondary_clicked() {
         let window = JobDetailsWindow::new(job.clone(), vec![]);
-        details_window.push(window);
+        // Check if a window for this job already exists, if so, don't open a new one
+        if !details_window.iter().any(|w| w.job.id == job.id) {
+            details_window.push(window);
+        }
     }
 
     // Zoom to job if clicked
@@ -807,11 +823,7 @@ fn paint_job(
  */
 fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bool, level: u8) {
     let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
-    let label = if level == 1 {
-        format!("{} {}", collapsed_symbol, info_label)
-    } else {
-        info_label
-    };
+    let label = format!("{} {}", collapsed_symbol, info_label);
 
     let galley = info
         .ctx
@@ -858,9 +870,9 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
 fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -> Vec<egui::Shape> {
     let mut shapes = vec![];
 
-    if options.canvas_width_s <= 0.0 {
-        return shapes;
-    }
+    // if options.canvas_width_s <= 0.0 {
+    //     return shapes;
+    // }
 
     let alpha_multiplier = 0.3; // make it subtle
 
@@ -918,23 +930,16 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                 let text_x = line_x + 4.0;
                 let text_color = Rgba::from_white_alpha((text_alpha * 2.0).min(1.0)).into();
 
-                info.painter.fonts(|f| {
-                    // Text at top:
-                    shapes.push(egui::Shape::text(
-                        f,
-                        pos2(text_x, canvas.min.y),
-                        Align2::LEFT_TOP,
-                        &text,
-                        info.font_id.clone(),
-                        text_color,
-                    ));
-                });
+                // Position of the top of the gantt
+                // Adjusted to be a bit below the top of the gantt
+                // TODO FIX THIS TO CALCULATE THE POSITION BASED ON THE HEIGHT OF THE GANTT
+                let fixed_timeline_y = 101.;
 
                 info.painter.fonts(|f| {
-                    // Text at bottom:
+                    // Text at top with fixed position:
                     shapes.push(egui::Shape::text(
                         f,
-                        pos2(text_x, canvas.max.y - info.text_height),
+                        pos2(text_x, fixed_timeline_y),
                         Align2::LEFT_TOP,
                         &text,
                         info.font_id.clone(),

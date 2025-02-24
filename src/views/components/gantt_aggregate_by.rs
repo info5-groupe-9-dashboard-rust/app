@@ -32,11 +32,27 @@ impl AggregateBy {
         egui::Grid::new("aggregate_by_grid").num_columns(3).show(ui, |ui| {
             ui.label("Aggregate by:");
             ui.label("Level 1:");
-            ui.radio_value(&mut self.level_1, AggregateByLevel1Enum::Cluster, "Cluster");
-            ui.radio_value(&mut self.level_1, AggregateByLevel1Enum::Host, "Host");
-            ui.radio_value(&mut self.level_1, AggregateByLevel1Enum::Owner, "Owner");
+            let mut on_change_level_1 = false;
+            on_change_level_1 |= ui.radio_value(&mut self.level_1, AggregateByLevel1Enum::Cluster, "Cluster").clicked();
+            on_change_level_1 |= ui.radio_value(&mut self.level_1, AggregateByLevel1Enum::Host, "Host").clicked();
+            on_change_level_1 |= ui.radio_value(&mut self.level_1, AggregateByLevel1Enum::Owner, "Owner").clicked();
             ui.end_row();
     
+            if on_change_level_1 {
+                self.level_2 = match self.level_1 {
+
+                    AggregateByLevel1Enum::Cluster => {
+                        AggregateByLevel2Enum::Host
+                    },
+                    AggregateByLevel1Enum::Host => {
+                        AggregateByLevel2Enum::Owner
+                    },
+                    AggregateByLevel1Enum::Owner => {
+                        AggregateByLevel2Enum::None
+                    }
+                }
+            }
+
             ui.label("");
             match self.level_1 {
                 AggregateByLevel1Enum::Cluster => {

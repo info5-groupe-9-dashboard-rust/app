@@ -26,10 +26,8 @@ pub fn get_clusters_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
 
     for resource in &job.assigned_resources {
         for cluster in clusters {
-            if cluster.resource_ids.contains(&resource) {
-                if !result.contains(&cluster.name) {
-                    result.push(cluster.name.clone());
-                }
+            if !result.contains(&cluster.name) && cluster.resource_ids.contains(&resource) {
+                result.push(cluster.name.clone());
             }
         }
     }
@@ -44,10 +42,8 @@ pub fn get_hosts_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
         for cluster in clusters {
             if cluster.resource_ids.contains(&resource) {
                 for host in &cluster.hosts {
-                    if host.resource_ids.contains(&resource) {
-                        if !result.contains(&host.name) {
-                            result.push(host.name.clone());
-                        }
+                    if !result.contains(&host.name) && host.resource_ids.contains(&resource) {
+                        result.push(host.name.clone());
                     }
                 }
             }
@@ -214,6 +210,5 @@ pub fn get_tree_structure_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<Clu
             }
         }
     }
-
     result
 }
