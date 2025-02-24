@@ -138,10 +138,6 @@ impl Secret {
                 });
         }
     }
-
-    pub fn is_konami_active(&self) -> bool {
-        self.is_konami_active
-    }
 }
 
 struct SnakeGame {
