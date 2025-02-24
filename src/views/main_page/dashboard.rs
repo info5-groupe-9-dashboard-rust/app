@@ -52,7 +52,7 @@ impl View for Dashboard {
                     grid.add_metric(MetricBox::new(
                         t!("app.dashboard.total_jobs").to_string(),
                         app.filtered_jobs.len().to_string(),
-                        egui::Color32::from_rgb(70, 100, 150),
+                        egui::Color32::from_rgb(128, 128, 128),
                     ));
 
                     // Add the job state metrics
@@ -69,7 +69,7 @@ impl View for Dashboard {
                             grid.add_metric(MetricBox::new(
                                 t!(&translation_key).to_string(),
                                 count.to_string(),
-                                state.get_color().0,
+                                state.get_color().1,
                             ));
                         }
                     }
