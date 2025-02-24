@@ -38,7 +38,8 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.secret.random_secret(ctx);
+        self.secret.update(ctx);
+        self.secret.draw_snake_game(ctx);
 
         TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             self.menu.render(ui, &mut self.application_context);
@@ -48,7 +49,6 @@ impl eframe::App for App {
         self.application_context.check_data_update();
 
         CentralPanel::default().show(ctx, |_ui| {
-            
             TopBottomPanel::top("tool_bar").show(ctx, |ui| {
                 self.tools.render(ui, &mut self.application_context);
             });
