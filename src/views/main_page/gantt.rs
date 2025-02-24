@@ -2,6 +2,7 @@ use crate::app;
 use crate::models::data_structure::cluster::{self, Cluster};
 use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::date_converter::format_timestamp;
+use crate::models::utils::utils::compare_string_with_number;
 use crate::views::view::View;
 use crate::{
     models::data_structure::{application_context::ApplicationContext, job::Job},
@@ -632,7 +633,7 @@ fn paint_aggregated_jobs_level_2(
 
         if !*is_collapsed_level_1 {
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
-            sorted_level_2.sort();
+            sorted_level_2.sort_by(|a, b| compare_string_with_number(&a, &b));
 
             for level_2 in sorted_level_2 {
                 if let Some(job_list) = level_2_map.get(level_2) {
@@ -932,7 +933,6 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 
                 // Position of the top of the gantt
                 // Adjusted to be a bit below the top of the gantt
-                // TODO FIX THIS TO CALCULATE THE POSITION BASED ON THE HEIGHT OF THE GANTT
                 let fixed_timeline_y = 101.;
 
                 info.painter.fonts(|f| {
