@@ -5,6 +5,8 @@ app:
     file: 'Fichier'
     options: 'Options'
     quit: 'Quitter'
+    login: 'Se connecter'
+    connected_as: 'Connecté en tant que : %{user}'
     logout: 'Se déconnecter'
     view: 'Vue'
     dashboard: 'Tableau de bord'

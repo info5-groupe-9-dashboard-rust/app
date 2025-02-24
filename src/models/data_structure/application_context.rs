@@ -26,7 +26,7 @@ pub struct ApplicationContext {
     pub end_date: Arc<Mutex<DateTime<Local>>>,
     pub view_type: ViewType,
     pub is_loading: bool,
-    pub is_connected: bool,
+    pub user_connected: Option<String>,
     pub is_refreshing: Arc<Mutex<bool>>,
     pub refresh_rate: Arc<Mutex<u64>>,
     pub filters: JobFilters,
@@ -263,13 +263,13 @@ impl ApplicationContext {
     }
 
     pub fn logout(&mut self) {
-        self.is_connected = false;
+        self.user_connected = None;
         self.view_type = ViewType::Authentification;
     }
 
-    pub fn login(&mut self) {
-        self.is_connected = true;
-        self.view_type = ViewType::Gantt;
+    pub fn login(&mut self, username: &str) {
+        self.user_connected = Some(username.to_string());
+        self.view_type = ViewType::Dashboard;
     }
 
     //gather all unique owners (for completion in filters)
@@ -342,13 +342,13 @@ impl Default for ApplicationContext {
             jobs_sender: jobs_sender,
             resources_receiver: resources_receiver,
             resources_sender: resources_sender,
-            is_connected: false,
+            user_connected: None,
 
             filtered_jobs: Vec::new(),
             filters: JobFilters::default(),
             start_date: Arc::new(Mutex::new(now - chrono::Duration::hours(1))),
             end_date: Arc::new(Mutex::new(now + chrono::Duration::hours(1))),
-            view_type: ViewType::Authentification,
+            view_type: ViewType::Dashboard,
             is_loading: false,
             is_refreshing: Arc::new(Mutex::new(false)),
             refresh_rate: Arc::new(Mutex::new(30)),
