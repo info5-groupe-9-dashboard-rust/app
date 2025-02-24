@@ -141,6 +141,7 @@ pub struct Job {
     pub gantt_color: egui::Color32,
     pub clusters: Vec<String>,
     pub hosts: Vec<String>,
+    pub main_resource_state: ResourceState,
 }
 
 impl Job {
@@ -184,7 +185,7 @@ impl Job {
         )
     }
 
-    pub fn get_majority_resource_state(&self, clusters: &Vec<cluster::Cluster>) -> ResourceState {
+    pub fn update_majority_resource_state(&mut self, clusters: &Vec<cluster::Cluster>) {
         let mut dead_count = 0;
         let mut alive_count = 0;
         let mut absent_count = 0;
@@ -206,7 +207,7 @@ impl Job {
             }
         }
 
-        if dead_count >= alive_count && dead_count >= absent_count {
+        self.main_resource_state = if dead_count >= alive_count && dead_count >= absent_count {
             ResourceState::Dead
         } else if absent_count >= dead_count && absent_count >= alive_count {
             ResourceState::Absent
@@ -214,7 +215,7 @@ impl Job {
             ResourceState::Alive
         } else {
             ResourceState::Unknown
-        }
+        };
     }
 }
 

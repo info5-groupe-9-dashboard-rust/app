@@ -761,7 +761,7 @@ fn paint_job(
 
     info.painter.rect_filled(rect, options.rounding, fill_color);
 
-    let majority_state = job.get_majority_resource_state(clusters);
+    let majority_state = job.main_resource_state.clone();
 
     //even or odd just to test
     // let majority_state = if job.id % 2 == 0 {

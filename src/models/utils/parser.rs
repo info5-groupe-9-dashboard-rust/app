@@ -1,4 +1,5 @@
 use crate::models::data_structure::job::{Job, JobState};
+use crate::models::data_structure::resource::ResourceState;
 use crate::models::data_structure::strata::Strata;
 use crate::models::utils::utils::convert_id_to_color;
 use chrono::{DateTime, Local};
@@ -179,5 +180,6 @@ fn from_json_value(json: &Value) -> Job {
         ),
         clusters: Vec::new(),
         hosts: Vec::new(),
+        main_resource_state: ResourceState::Unknown,
     }
 }

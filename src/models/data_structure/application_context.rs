@@ -251,6 +251,7 @@ impl ApplicationContext {
             for job in self.swap_all_jobs.iter_mut() {
                 job.clusters = get_clusters_for_job(job, &self.swap_all_clusters);
                 job.hosts = get_hosts_for_job(job, &self.swap_all_clusters);
+                job.update_majority_resource_state(&self.swap_all_clusters);
             }
 
             // For each host set is state to the state the most resources have
