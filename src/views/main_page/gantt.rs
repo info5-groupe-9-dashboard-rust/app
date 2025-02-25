@@ -67,10 +67,8 @@ impl View for GanttChart {
 
         // Initialize initial timestamps if not already done
         if self.initial_start_s.is_none() {
-            if !app.all_jobs.is_empty() {
-                self.initial_start_s = Some(app.get_start_date().timestamp());
-                self.initial_end_s = Some(app.get_end_date().timestamp());
-            }
+            self.initial_start_s = Some(app.get_start_date().timestamp());
+            self.initial_end_s = Some(app.get_end_date().timestamp());
         }
 
         // Settings menu
