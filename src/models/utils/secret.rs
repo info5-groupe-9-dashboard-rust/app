@@ -33,8 +33,8 @@ const KONAMI_CODE: [egui::Key; 10] = [
     egui::Key::ArrowRight,
     egui::Key::ArrowLeft,
     egui::Key::ArrowRight,
-    egui::Key::A,
     egui::Key::B,
+    egui::Key::A,
 ];
 
 impl Secret {
@@ -71,7 +71,7 @@ impl Secret {
                         self.snake_game = Some(SnakeGame::new());
                         self.konami_start_time = Some(Instant::now());
                         self.show_game = true;
-                        println!("Konami code activated!");
+                        //println!("Konami code activated!");
                     }
                 }
             }
