@@ -107,6 +107,9 @@ impl View for GanttChart {
         Frame::canvas(ui.style()).show(ui, |ui| {
             ui.visuals_mut().clip_rect_margin = 0.0;
 
+            // Calculate the y-coordinate of the fixed timeline
+            let fixed_timeline_y = ui.min_rect().top();
+
             let available_height = ui.max_rect().bottom() - ui.min_rect().bottom();
             ScrollArea::vertical().show(ui, |ui| {
                 let mut canvas = ui.available_rect_before_wrap();
@@ -159,7 +162,7 @@ impl View for GanttChart {
                 // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
 
-                let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
+                let timeline = paint_timeline(&info, used_rect, &self.options, min_s,fixed_timeline_y);
                 info.painter
                     .set(where_to_put_timeline, Shape::Vec(timeline));
 
@@ -936,7 +939,7 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
 /**
  * Paints the timeline
  */
-fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -> Vec<egui::Shape> {
+fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64, fixed_timeline_y : f32) -> Vec<egui::Shape> {
     let mut shapes = vec![];
     let theme_colors = get_theme_colors(&info.ctx.style());
 
@@ -1012,11 +1015,6 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                 } else {
                     Color32::from(Rgba::from_black_alpha((text_alpha * 2.0).min(1.0)))
                 };
-
-                // Position of the top of the gantt
-                // Adjusted to be a bit below the top of the gantt
-                // TODO FIX THIS TO CALCULATE THE POSITION BASED ON THE HEIGHT OF THE GANTT
-                let fixed_timeline_y = 101.;
 
                 info.painter.fonts(|f| {
                     // Text at top with fixed position:
