@@ -14,7 +14,7 @@ pub struct JobTable {
     end_idx: usize,
     displayed_jobs_per_page: Vec<Job>,
     sort_key: SortKey,
-    sort_ascending: bool,
+    sort_ascending: bool
 }
 
 impl Default for JobTable {
@@ -27,7 +27,7 @@ impl Default for JobTable {
             end_idx: 0,
             displayed_jobs_per_page: Vec::new(),
             sort_key: SortKey::Id,
-            sort_ascending: true,
+            sort_ascending: true
         }
     }
 }
@@ -159,27 +159,24 @@ impl JobTable {
             .body(|mut body| {
                 for job in self.displayed_jobs_per_page[self.start_idx..self.end_idx].iter() {
                     body.row(20.0, |mut row| {
+                    
+                        // Row index
                         let row_index = self.start_idx + row.index() + 1;
                         row.col(|ui| {
                             ui.label(row_index.to_string());
                         });
+
+                        // Job ID
                         row.col(|ui| {
-                            if ui.button(job.id.to_string()).clicked() {
-                                // check if a window for this job is already open
-                                for window in self.details_window.iter_mut() {
-                                    if window.job.id == job.id {
-                                        return;
-                                    }
-                                }
-                                self.details_window.push(JobDetailsWindow::new(
-                                    job.clone(),
-                                    get_tree_structure_for_job(job, &app.all_clusters),
-                                ));
-                            }
+                            ui.label(job.id.to_string());
                         });
+
+                        // Owner
                         row.col(|ui| {
                             ui.label(job.owner.to_string());
                         });
+
+                        // State
                         row.col(|ui| {
                             let state_text = job.state.get_label();
                             let (state_color, bg_color) = job.state.get_color();
@@ -190,18 +187,36 @@ impl JobTable {
                                     .strong(),
                             );
                         });
+
+                        // Start time
                         row.col(|ui| {
                             ui.label(format_timestamp(job.start_time));
                         });
+
+                        // Walltime
                         row.col(|ui| {
                             ui.label(format_timestamp(job.start_time + job.walltime));
                         });
+
+                        // Clickable row
+                        let response = row.response().interact(Sense::click());
+                        if response.clicked() {
+                            for window in self.details_window.iter_mut() {
+                                if window.job.id == job.id {
+                                    window.open = true;
+                                    return;
+                                }
+                            }
+                            self.details_window.push(JobDetailsWindow::new(
+                                job.clone(),
+                                get_tree_structure_for_job(job, &app.all_clusters),
+                            ));
+                        }
+
                     });
                 }
             });
         ui.add_space(10.0);
-
-        self.details_window.retain(|w| w.is_open());
 
         for window in self.details_window.iter_mut() {
             window.ui(ui);
