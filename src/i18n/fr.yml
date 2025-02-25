@@ -39,6 +39,8 @@ app:
       choose: 'Choisir une taille de police'
   dashboard:
     title: 'Tableau de bord'
+    start_time: 'Heure de début'
+    end_time: 'Heure de fin'
     total_jobs: 'Total des Jobs'
   gantt:
     title: 'Diagramme de Gantt - Jobs OAR'

@@ -38,6 +38,8 @@ app:
       choose: 'Choose a font size'
   dashboard:
     title: 'Dashboard'
+    start_time: 'Start Time'
+    end_time: 'End Time'
     total_jobs: 'Total Jobs'
   gantt:
     title: 'Gantt Chart - OAR Jobs'

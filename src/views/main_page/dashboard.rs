@@ -73,6 +73,21 @@ impl View for Dashboard {
                             ));
                         }
                     }
+                    let start_time = app.get_start_date();
+                    let end_time = app.get_end_date();
+
+                    // Add time range metrics
+                    grid.add_metric(MetricBox::new(
+                        t!("app.dashboard.start_time").to_string(),
+                        start_time.format("%Y-%m-%d %H:%M").to_string(),
+                        egui::Color32::from_rgb(70, 130, 180),
+                    ));
+
+                    grid.add_metric(MetricBox::new(
+                        t!("app.dashboard.end_time").to_string(), 
+                        end_time.format("%Y-%m-%d %H:%M").to_string(),
+                        egui::Color32::from_rgb(70, 130, 180),
+                    ));
                 }
             });
 

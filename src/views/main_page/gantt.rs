@@ -12,7 +12,7 @@ use crate::{
         job_details::JobDetailsWindow,
     },
 };
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, TimeZone};
 use eframe::egui;
 use egui::{
     lerp, pos2, remap_clamp, Align2, Color32, FontId, Frame, PointerButton, Pos2, Rect, Response,
@@ -173,6 +173,25 @@ impl View for GanttChart {
                 info.painter.add(current_time_line);
 
                 ui.allocate_rect(used_rect, Sense::hover());
+
+                {
+                    
+                    // Calculate the visible time range from the canvas parameters
+                    let visible_start_s = info.start_s + ((-self.options.sideways_pan_in_points / info.canvas.width()) * self.options.canvas_width_s) as i64;
+                    let visible_end_s = visible_start_s + self.options.canvas_width_s as i64;
+                    
+                    let start = Local.timestamp_opt(visible_start_s, 0).unwrap();
+                    let end = Local.timestamp_opt(visible_end_s, 0).unwrap();
+
+                    app.set_localdate(start, end);
+                    // print!(
+                    //     "Showing {} jobs from {} to {} \n\n",
+                    //     app.filtered_jobs.len(),
+                    //     start.format("%Y-%m-%d %H:%M:%S"),
+                    //     end.format("%Y-%m-%d %H:%M:%S")
+                    // );
+                }
+
             });
         });
 

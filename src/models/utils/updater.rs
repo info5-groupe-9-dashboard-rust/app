@@ -42,6 +42,13 @@ impl ApplicationContext {
         *self.end_date.lock().unwrap()
     }
 
+    pub fn set_localdate(&mut self, start: DateTime<Local>, end: DateTime<Local>) {
+        let mut start_date = self.start_date.lock().unwrap();  // Lock acquired
+        let mut end_date = self.end_date.lock().unwrap();      // Lock acquired
+        *start_date = start;    // Modify data
+        *end_date = end;        // Modify data
+    }   // Both locks are automatically released when MutexGuards go out of scope
+
     pub fn instant_update(&mut self) {
         let is_refreshing = self.is_refreshing.clone();
 
