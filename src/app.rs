@@ -1,3 +1,4 @@
+use crate::models::utils::secret::Secret;
 use crate::views::main_page::dashboard::Dashboard;
 use crate::views::main_page::gantt::GanttChart;
 use crate::views::menu::menu::Menu;
@@ -14,6 +15,7 @@ pub struct App {
     pub gantt_view: GanttChart,
     pub authentification_view: Authentification,
     pub menu: Menu,
+    pub secret: Secret,
     pub tools: Tools,
     pub application_context: ApplicationContext,
 }
@@ -21,6 +23,7 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         let app = App {
+            secret: Secret::default(),
             dashboard_view: Dashboard::default(),
             gantt_view: GanttChart::default(),
             authentification_view: Authentification::default(),
@@ -35,6 +38,9 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.secret.update(ctx);
+        self.secret.draw_snake_game(ctx);
+
         TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             self.menu.render(ui, &mut self.application_context);
         });
@@ -43,7 +49,6 @@ impl eframe::App for App {
         self.application_context.check_data_update();
 
         CentralPanel::default().show(ctx, |_ui| {
-            
             TopBottomPanel::top("tool_bar").show(ctx, |ui| {
                 self.tools.render(ui, &mut self.application_context);
             });
