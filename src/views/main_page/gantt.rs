@@ -846,8 +846,8 @@ fn paint_job(
     // paint hatch
     if majority_state == ResourceState::Dead || majority_state == ResourceState::Absent {
         let hachure_color = match majority_state {
-            ResourceState::Dead => Color32::from_rgba_premultiplied(255, 0, 0, 100),
-            ResourceState::Absent => Color32::from_rgba_premultiplied(255, 255, 0, 100),
+            ResourceState::Dead => Color32::from_rgba_premultiplied(255, 0, 0, 150),
+            ResourceState::Absent => Color32::from_rgba_premultiplied(0, 150, 150, 150),
             _ => Color32::TRANSPARENT,
         };
 
@@ -862,7 +862,7 @@ fn paint_job(
             }
             shapes.push(Shape::line_segment(
                 [pos2(x, top_y), pos2(x + hachure_spacing, top_y + height)],
-                Stroke::new(1.0, hachure_color),
+                Stroke::new(4.0, hachure_color),
             ));
             x += hachure_spacing;
         }
