@@ -35,6 +35,9 @@ pub struct GanttChart {
     // Key: Tuple of (parent_category, subcategory) - e.g., ("cluster1", "host1")
     // Value: true if collapsed (hidden), false if expanded (visible)
     collapsed_jobs_level_2: BTreeMap<(String, String), bool>,
+
+    initial_start_s: Option<i64>,
+    initial_end_s: Option<i64>,
 }
 
 /**
@@ -47,6 +50,8 @@ impl Default for GanttChart {
             job_details_windows: Vec::new(),
             collapsed_jobs_level_1: BTreeMap::new(),
             collapsed_jobs_level_2: BTreeMap::new(),
+            initial_start_s: None,
+            initial_end_s: None,
         }
     }
 }
@@ -58,23 +63,15 @@ impl View for GanttChart {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.heading(RichText::new(t!("app.gantt.title")).strong());
 
-        // Calculate the min start of the filtered jobs
-        let min_start = app
-            .filtered_jobs
-            .iter()
-            .map(|job| job.scheduled_start)
-            .min()
-            .unwrap_or(0);
-
-        // Calculate the max end of the filtered jobs
-        let max_end = app
-            .filtered_jobs
-            .iter()
-            .map(|job| job.scheduled_start + job.walltime)
-            .max()
-            .unwrap_or(0);
-
         let reset_view = false;
+
+            // Initialize initial timestamps if not already done
+            if self.initial_start_s.is_none() {
+                if !app.all_jobs.is_empty() {
+                    self.initial_start_s = Some(app.get_start_date().timestamp());
+                    self.initial_end_s = Some(app.get_end_date().timestamp());
+                }
+            }
 
         // Settings menu
         ui.horizontal(|ui| {
@@ -113,8 +110,8 @@ impl View for GanttChart {
                 canvas.max.y = f32::INFINITY;
                 let response = ui.interact(canvas, ui.id().with("canvas"), Sense::click_and_drag());
 
-                let min_s = min_start;
-                let max_s = max_end;
+                let min_s = self.initial_start_s.unwrap();
+                let max_s = self.initial_end_s.unwrap();
 
                 // Initialize canvas info
                 let info = Info {
@@ -287,6 +284,7 @@ fn ui_canvas(
     collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
     collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
 ) -> f32 {
+
     if options.canvas_width_s <= 0.0 {
         options.canvas_width_s = (max_ns - min_ns) as f32;
         options.zoom_to_relative_s_range = None;
