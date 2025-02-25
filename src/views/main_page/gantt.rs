@@ -145,6 +145,7 @@ impl View for GanttChart {
                     &mut self.options,
                     app,
                     &info,
+                    fixed_timeline_y,
                     (min_s, max_s),
                     &mut self.job_details_windows,
                     &mut self.collapsed_jobs_level_1,
@@ -158,7 +159,7 @@ impl View for GanttChart {
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
 
                 let timeline =
-                    paint_timeline(&info, used_rect, &self.options, min_s, fixed_timeline_y);
+                    paint_timeline(&info, used_rect, &self.options, min_s);
                 info.painter
                     .set(where_to_put_timeline, Shape::Vec(timeline));
 
@@ -281,6 +282,7 @@ fn ui_canvas(
     options: &mut Options,
     app: &ApplicationContext,
     info: &Info,
+    fixed_timeline_y: f32,
     (min_ns, max_ns): (i64, i64),
     details_window: &mut Vec<JobDetailsWindow>,
     collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
@@ -449,6 +451,9 @@ fn ui_canvas(
     // Paint tooltip for hovered job if there is one
     paint_job_tooltip(info, options);
 
+    // Paint the timeline text on top of everything
+    paint_timeline_text_on_top(info, options, fixed_timeline_y);
+
     cursor_y
 }
 
@@ -526,6 +531,7 @@ struct ThemeColors {
     aggregated_line_level_1: Rgba,
     aggregated_line_level_2: Rgba,
     background: Color32,
+    background_timeline: Color32
 }
 
 /**
@@ -540,6 +546,7 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
             aggregated_line_level_1: Rgba::from_white_alpha(0.4),
             aggregated_line_level_2: Rgba::from_white_alpha(0.5),
             background: Color32::from_black_alpha(100),
+            background_timeline: Color32::from_black_alpha(150)
         }
     } else {
         ThemeColors {
@@ -549,6 +556,7 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
             aggregated_line_level_1: Rgba::from_black_alpha(0.5),
             aggregated_line_level_2: Rgba::from_black_alpha(0.7),
             background: Color32::from_black_alpha(50),
+            background_timeline: Color32::from_black_alpha(20)
         }
     }
 }
@@ -933,44 +941,20 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
 /****************************************************************************************************************************/
 
 /**
- * Paints the timeline
+ * Paints the timeline text labels
  */
-fn paint_timeline(
+fn paint_timeline_text(
     info: &Info,
     canvas: Rect,
     options: &Options,
-    _start_s: i64,
+    grid_spacing_minutes: i64,
     fixed_timeline_y: f32,
+    alpha_multiplier: f32,
+    zoom_factor: f32,
 ) -> Vec<egui::Shape> {
     let mut shapes = vec![];
-    let theme_colors = get_theme_colors(&info.ctx.style());
-
-    // if options.canvas_width_s <= 0.0 {
-    //     return shapes;
-    // }
-
-    let alpha_multiplier = if info.ctx.style().visuals.dark_mode {
-        0.3 // make it subtle for dark mode
-    } else {
-        0.8 // more visible for light mode
-    };
-
-    // We show all measurements relative to start_s
-
-    let max_lines = canvas.width() / 4.0;
-    let mut grid_spacing_minutes = 180; // 30 minutes / 10 blocks between 2 vertical lines * 60
-    while options.canvas_width_s / (grid_spacing_minutes as f32) > max_lines {
-        grid_spacing_minutes *= 10;
-    }
-
-    // We fade in lines as we zoom in:
-    let num_tiny_lines = options.canvas_width_s / (grid_spacing_minutes as f32);
-    let zoom_factor = remap_clamp(num_tiny_lines, (0.1 * max_lines)..=max_lines, 1.0..=0.0);
-    let zoom_factor = zoom_factor * zoom_factor;
     let big_alpha = remap_clamp(zoom_factor, 0.0..=1.0, 0.5..=1.0);
     let medium_alpha = remap_clamp(zoom_factor, 0.0..=1.0, 0.1..=0.5);
-    let tiny_alpha = remap_clamp(zoom_factor, 0.0..=1.0, 0.0..=0.1);
-
     let mut grid_s = 0;
 
     loop {
@@ -980,8 +964,134 @@ fn paint_timeline(
         }
 
         if canvas.min.x <= line_x {
-            let big_line = grid_s % (grid_spacing_minutes * 20) == 0; // big line every 20 grid_spacing_minutes
-            let medium_line = grid_s % (grid_spacing_minutes * 10) == 0; // medium line every 10 grid_spacing_minutes
+            let big_line = grid_s % (grid_spacing_minutes * 20) == 0;
+            let medium_line = grid_s % (grid_spacing_minutes * 10) == 0;
+
+            let text_alpha = if big_line {
+                big_alpha
+            } else if medium_line {
+                medium_alpha
+            } else {
+                0.0
+            };
+
+            if text_alpha > 0.0 {
+                let text = grid_text(grid_s);
+                let text_x = line_x + 4.0;
+                let text_color = if info.ctx.style().visuals.dark_mode {
+                    Color32::from(Rgba::from_white_alpha(
+                        (text_alpha * alpha_multiplier * 2.0).min(1.0),
+                    ))
+                } else {
+                    Color32::from(Rgba::from_black_alpha(
+                        (text_alpha * alpha_multiplier * 2.0).min(1.0),
+                    ))
+                };
+
+                info.painter.fonts(|f| {
+                    shapes.push(egui::Shape::text(
+                        f,
+                        pos2(text_x, fixed_timeline_y),
+                        Align2::LEFT_TOP,
+                        &text,
+                        info.font_id.clone(),
+                        text_color,
+                    ));
+                });
+            }
+        }
+
+        grid_s += grid_spacing_minutes;
+    }
+
+    shapes
+}
+
+fn paint_timeline_text_on_top(info: &Info, options: &Options, fixed_timeline_y: f32) {
+    let max_lines = info.canvas.width() / 4.0;
+    let mut grid_spacing_minutes = 180;
+    while options.canvas_width_s / (grid_spacing_minutes as f32) > max_lines {
+        grid_spacing_minutes *= 10;
+    }
+
+    let theme_colors = get_theme_colors(&info.ctx.style());
+
+    let alpha_multiplier = if info.ctx.style().visuals.dark_mode {
+        0.3 
+    } else {
+        0.8 
+    };
+
+    let num_tiny_lines = options.canvas_width_s / (grid_spacing_minutes as f32);
+    let zoom_factor = remap_clamp(num_tiny_lines, (0.1 * max_lines)..=max_lines, 1.0..=0.0);
+
+    // Paint background rect first
+    let bg_rect = Rect::from_min_size(
+        pos2(info.canvas.min.x, fixed_timeline_y),
+        egui::vec2(info.canvas.width(), info.text_height+5.0),
+    );
+    info.painter.rect_filled(bg_rect, 0.0, theme_colors.background_timeline);
+
+    // Paint timeline text on top of background
+    let timeline_text = paint_timeline_text(
+        info,
+        info.canvas,
+        options,
+        grid_spacing_minutes,
+        fixed_timeline_y,
+        alpha_multiplier,
+        zoom_factor,
+    );
+
+    for shape in timeline_text {
+        info.painter.add(shape);
+    }
+}
+
+
+/**
+ * Paints the timeline
+ */
+fn paint_timeline(
+    info: &Info,
+    canvas: Rect,
+    options: &Options,
+    _start_s: i64
+) -> Vec<egui::Shape> {
+    let mut shapes = vec![];
+    let theme_colors = get_theme_colors(&info.ctx.style());
+
+    let alpha_multiplier = if info.ctx.style().visuals.dark_mode {
+        0.3 
+    } else {
+        0.8 
+    };
+
+    let max_lines = canvas.width() / 4.0;
+    let mut grid_spacing_minutes = 180;
+    while options.canvas_width_s / (grid_spacing_minutes as f32) > max_lines {
+        grid_spacing_minutes *= 10;
+    }
+
+    let num_tiny_lines = options.canvas_width_s / (grid_spacing_minutes as f32);
+    let zoom_factor = remap_clamp(num_tiny_lines, (0.1 * max_lines)..=max_lines, 1.0..=0.0);
+    let zoom_factor = zoom_factor * zoom_factor;
+    let big_alpha = remap_clamp(zoom_factor, 0.0..=1.0, 0.5..=1.0);
+    let medium_alpha = remap_clamp(zoom_factor, 0.0..=1.0, 0.1..=0.5);
+    let tiny_alpha = remap_clamp(zoom_factor, 0.0..=1.0, 0.0..=0.1);
+
+    let mut grid_s = 0;
+
+    // Paint ONLY grid lines first
+    loop {
+        let line_x = info.point_from_s(options, grid_s);
+        if line_x > canvas.max.x {
+            break;
+        }
+
+        if canvas.min.x <= line_x {
+            let big_line = grid_s % (grid_spacing_minutes * 20) == 0;
+            let medium_line = grid_s % (grid_spacing_minutes * 10) == 0;
 
             let line_alpha = if big_line {
                 big_alpha
@@ -1000,36 +1110,6 @@ fn paint_timeline(
                         .linear_multiply(line_alpha * alpha_multiplier),
                 ),
             ));
-
-            let text_alpha = if big_line {
-                medium_alpha
-            } else if medium_line {
-                tiny_alpha
-            } else {
-                0.0
-            };
-
-            if text_alpha > 0.0 {
-                let text = grid_text(grid_s);
-                let text_x = line_x + 4.0;
-                let text_color = if info.ctx.style().visuals.dark_mode {
-                    Color32::from(Rgba::from_white_alpha((text_alpha * 2.0).min(1.0)))
-                } else {
-                    Color32::from(Rgba::from_black_alpha((text_alpha * 2.0).min(1.0)))
-                };
-
-                info.painter.fonts(|f| {
-                    // Text at top with fixed position:
-                    shapes.push(egui::Shape::text(
-                        f,
-                        pos2(text_x, fixed_timeline_y),
-                        Align2::LEFT_TOP,
-                        &text,
-                        info.font_id.clone(),
-                        text_color,
-                    ));
-                });
-            }
         }
 
         grid_s += grid_spacing_minutes;
