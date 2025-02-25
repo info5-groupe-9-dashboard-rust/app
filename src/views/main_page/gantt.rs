@@ -958,7 +958,7 @@ fn paint_timeline(
     // We show all measurements relative to start_s
 
     let max_lines = canvas.width() / 4.0;
-    let mut grid_spacing_minutes = 30;
+    let mut grid_spacing_minutes = 180; // 30 minutes / 10 blocks between 2 vertical lines * 60
     while options.canvas_width_s / (grid_spacing_minutes as f32) > max_lines {
         grid_spacing_minutes *= 10;
     }
