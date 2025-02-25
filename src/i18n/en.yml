@@ -78,6 +78,8 @@ app:
     title: "Job List"
     next: "Next"
     previous: "Previous"
+    select_all: "Select all"
+    select_default: "Select default"
     table:
       row: "Row"
       job_id: "Job ID"
@@ -85,6 +87,16 @@ app:
       state: "State"
       start_time: "Start time"
       walltime: "Walltime"
+      columns: "Columns:"
+      queue: "Queue"
+      command: "Command"
+      message: "Message"
+      submission_time: "Submission Time"
+      scheduled_start_time: "Scheduled Start Time"
+      stop_time: "Stop Time"
+      wall_time: "Wall Time"
+      exit_code: "Exit Code"
+      clusters: "Clusters"
   filters:
     title: 'Filters'
     from: 'From'

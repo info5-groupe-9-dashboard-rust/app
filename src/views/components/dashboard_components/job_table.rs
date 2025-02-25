@@ -126,7 +126,7 @@ impl JobTable {
                     if value.selected {
                         header.col(|ui| {
                             if ui
-                                .button(RichText::new(value.name.clone()).strong())
+                                .button(RichText::new(t!(value.name.clone())).strong())
                                 .clicked()
                             {
                                 self.sort_key = value.sort_key;
@@ -171,7 +171,7 @@ impl JobTable {
                                             ui.label(format_timestamp(job.start_time));
                                         }
                                         SortKey::WallTime => {
-                                            ui.label(format_timestamp(job.start_time + job.walltime));
+                                            ui.label(job.walltime.to_string());
                                         }
                                         SortKey::Queue => {
                                             ui.label(&job.queue);
