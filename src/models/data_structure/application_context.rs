@@ -343,10 +343,7 @@ impl ApplicationContext {
             .all_jobs
             .iter()
             .filter(|job| {
-                (self.filters.job_id_range.is_none() || {
-                    let (start_id, end_id) = self.filters.job_id_range.unwrap();
-                    job.id >= start_id && job.id <= end_id
-                }) && (self
+                (self
                     .filters
                     .owners
                     .as_ref()
