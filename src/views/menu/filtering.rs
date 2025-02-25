@@ -3,8 +3,8 @@ use crate::models::utils::utils::compare_string_with_number;
 use crate::models::data_structure::{
     application_context::ApplicationContext, cluster::Cluster, filters::JobFilters, job::JobState,
 };
-use eframe::egui::{self, Grid, RichText};
-use egui::{ScrollArea, TextEdit};
+use eframe::egui::{self, Grid};
+use egui::ScrollArea;
 use strum::IntoEnumIterator;
 
 pub struct Filtering {
@@ -39,10 +39,6 @@ impl Filtering {
                     ui.heading("Filter Options");
 
                     ui.separator(); // Add a separator
-
-                    // Render the job id range
-                    self.render_job_id_range(ui);
-                    ui.add_space(10.0);
 
                     egui::CollapsingHeader::new("Owners")
                         .default_open(false)
@@ -82,43 +78,6 @@ impl Filtering {
 
     pub fn reset_filters(&mut self) {
         self.temp_filters = JobFilters::default();
-    }
-
-    fn render_job_id_range(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            let mut start_id = self
-                .temp_filters
-                .job_id_range
-                .map(|(s, _)| s)
-                .unwrap_or(0)
-                .to_string();
-            let mut end_id = self
-                .temp_filters
-                .job_id_range
-                .map(|(_, e)| e)
-                .unwrap_or(0)
-                .to_string();
-
-            ui.label(RichText::new(t!("app.filters.from")).strong());
-            if ui
-                .add(TextEdit::singleline(&mut start_id).desired_width(50.0))
-                .changed()
-            {
-                if let (Ok(start), Ok(end)) = (start_id.parse(), end_id.parse()) {
-                    self.temp_filters.set_job_id_range(start, end);
-                }
-            }
-
-            ui.label(RichText::new(t!("app.filters.to")).strong());
-            if ui
-                .add(TextEdit::singleline(&mut end_id).desired_width(50.0))
-                .changed()
-            {
-                if let (Ok(start), Ok(end)) = (start_id.parse(), end_id.parse()) {
-                    self.temp_filters.set_job_id_range(start, end);
-                }
-            }
-        });
     }
 
     fn render_owners_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
