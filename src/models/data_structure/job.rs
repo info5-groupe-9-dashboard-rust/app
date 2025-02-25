@@ -122,7 +122,9 @@ impl JobState {
     }
 }
 
-#[derive(Clone)]
+use crate::views::components::dashboard_components::job_table_sorting::JobSortable;
+
+#[derive(Clone, Debug)]
 
 pub struct Job {
     pub id: u32,
@@ -142,6 +144,60 @@ pub struct Job {
     pub clusters: Vec<String>,
     pub hosts: Vec<String>,
     pub main_resource_state: ResourceState,
+}
+
+impl JobSortable for Job {
+    fn get_id(&self) -> &u32 {
+        &self.id
+    }
+
+    fn get_owner(&self) -> &str {
+        &self.owner
+    }
+
+    fn get_state(&self) -> &JobState {
+        &self.state
+    }
+
+    fn get_start_time(&self) -> u64 {
+        self.start_time as u64
+    }
+
+    fn get_walltime(&self) -> u64 {
+        self.walltime as u64
+    }
+
+    fn get_queue(&self) -> &str {
+        &self.queue
+    }
+
+    fn get_command(&self) -> &str {
+        &self.command
+    }
+
+    fn get_message(&self) -> Option<&str> {
+        self.message.as_deref()
+    }
+
+    fn get_submission_time(&self) -> u64 {
+        self.submission_time as u64
+    }
+
+    fn get_scheduled_start(&self) -> u64 {
+        self.scheduled_start as u64
+    }
+
+    fn get_stop_time(&self) -> u64 {
+        self.stop_time as u64
+    }
+
+    fn get_exit_code(&self) -> &Option<i32> {
+        &self.exit_code
+    }
+
+    fn get_clusters(&self) -> &Vec<String> {
+        &self.clusters
+    }
 }
 
 impl Job {

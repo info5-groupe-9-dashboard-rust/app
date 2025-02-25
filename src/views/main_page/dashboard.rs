@@ -25,11 +25,10 @@ impl Default for Dashboard {
 
 impl View for Dashboard {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        egui::TopBottomPanel::top("title").show(ui.ctx(), |ui| {
-            ui.heading(RichText::new(t!("app.dashboard.title")).strong().size(20.0));
-        });
 
         egui::CentralPanel::default().show(ui.ctx(), |ui| {
+            ui.heading(RichText::new(t!("app.dashboard.title")).strong().size(20.0));
+
             // Add a button to toggle between the job chart and the job state metrics
             if ui
                 .button(if self.show_chart {
