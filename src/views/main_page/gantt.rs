@@ -176,7 +176,7 @@ impl View for GanttChart {
 
                 {
                     
-                    // Calculer la plage de temps visible à partir des paramètres du canvas
+                    // Calculate the visible time range from the canvas parameters
                     let visible_start_s = info.start_s + ((-self.options.sideways_pan_in_points / info.canvas.width()) * self.options.canvas_width_s) as i64;
                     let visible_end_s = visible_start_s + self.options.canvas_width_s as i64;
                     
