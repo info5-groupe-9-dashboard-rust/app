@@ -65,13 +65,13 @@ impl View for GanttChart {
 
         let reset_view = false;
 
-            // Initialize initial timestamps if not already done
-            if self.initial_start_s.is_none() {
-                if !app.all_jobs.is_empty() {
-                    self.initial_start_s = Some(app.get_start_date().timestamp());
-                    self.initial_end_s = Some(app.get_end_date().timestamp());
-                }
+        // Initialize initial timestamps if not already done
+        if self.initial_start_s.is_none() {
+            if !app.all_jobs.is_empty() {
+                self.initial_start_s = Some(app.get_start_date().timestamp());
+                self.initial_end_s = Some(app.get_end_date().timestamp());
             }
+        }
 
         // Settings menu
         ui.horizontal(|ui| {
@@ -159,7 +159,8 @@ impl View for GanttChart {
                 // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
 
-                let timeline = paint_timeline(&info, used_rect, &self.options, min_s,fixed_timeline_y);
+                let timeline =
+                    paint_timeline(&info, used_rect, &self.options, min_s, fixed_timeline_y);
                 info.painter
                     .set(where_to_put_timeline, Shape::Vec(timeline));
 
@@ -287,7 +288,6 @@ fn ui_canvas(
     collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
     collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
 ) -> f32 {
-
     if options.canvas_width_s <= 0.0 {
         options.canvas_width_s = (max_ns - min_ns) as f32;
         options.zoom_to_relative_s_range = None;
@@ -937,7 +937,13 @@ fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bo
 /**
  * Paints the timeline
  */
-fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64, fixed_timeline_y : f32) -> Vec<egui::Shape> {
+fn paint_timeline(
+    info: &Info,
+    canvas: Rect,
+    options: &Options,
+    _start_s: i64,
+    fixed_timeline_y: f32,
+) -> Vec<egui::Shape> {
     let mut shapes = vec![];
     let theme_colors = get_theme_colors(&info.ctx.style());
 

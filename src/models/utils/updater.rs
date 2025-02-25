@@ -43,11 +43,11 @@ impl ApplicationContext {
     }
 
     pub fn set_localdate(&mut self, start: DateTime<Local>, end: DateTime<Local>) {
-        let mut start_date = self.start_date.lock().unwrap();  // Lock acquired
-        let mut end_date = self.end_date.lock().unwrap();      // Lock acquired
-        *start_date = start;    // Modify data
-        *end_date = end;        // Modify data
-    }   // Both locks are automatically released when MutexGuards go out of scope
+        let mut start_date = self.start_date.lock().unwrap(); // Lock acquired
+        let mut end_date = self.end_date.lock().unwrap(); // Lock acquired
+        *start_date = start; // Modify data
+        *end_date = end; // Modify data
+    } // Both locks are automatically released when MutexGuards go out of scope
 
     pub fn instant_update(&mut self) {
         let is_refreshing = self.is_refreshing.clone();
@@ -109,9 +109,9 @@ impl ApplicationContext {
         let rate = *self.refresh_rate.lock().unwrap();
         let jobs_sender = self.jobs_sender.clone();
         let resources_sender = self.resources_sender.clone();
-        let start = *self.start_date.lock().unwrap();
-        let end = *self.end_date.lock().unwrap();
         let is_refreshing = self.is_refreshing.clone();
+        let start_date = self.start_date.clone();
+        let end_date = self.end_date.clone();
 
         // Get the data in a different thread
         #[cfg(not(target_arch = "wasm32"))]
@@ -127,6 +127,14 @@ impl ApplicationContext {
 
                     // Set refreshing to true
                     *is_refreshing.lock().unwrap() = true;
+
+                    let start;
+                    let end;
+
+                    {
+                        start = *start_date.lock().unwrap();
+                        end = *end_date.lock().unwrap();
+                    }
 
                     let res = get_current_jobs_for_period(start, end);
                     if res {
