@@ -6,7 +6,6 @@ use crate::{
     models::data_structure::{application_context::ApplicationContext, job::Job},
     views::components::{
         gantt_aggregate_by::{AggregateBy, AggregateByLevel1Enum, AggregateByLevel2Enum},
-        gantt_grid_spacing::GridSpacing,
         gantt_job_color::JobColor,
         gantt_sorting::Sorting,
         job_details::JobDetailsWindow,
@@ -24,8 +23,8 @@ use std::collections::BTreeMap;
  * GanttChart struct
  */
 pub struct GanttChart {
-    options: Options,                               // options for the GanttChart
-    job_details_windows: Vec<JobDetailsWindow>,     // job details windows
+    options: Options,                           // options for the GanttChart
+    job_details_windows: Vec<JobDetailsWindow>, // job details windows
 
     // Tracks which top-level categories (e.g., owners, hosts, or clusters) are collapsed in the Gantt view
     // Key: The category name (e.g., "user1" for owner, "host1" for host)
@@ -35,7 +34,7 @@ pub struct GanttChart {
     // Tracks which second-level subcategories are collapsed within their parent categories
     // Key: Tuple of (parent_category, subcategory) - e.g., ("cluster1", "host1")
     // Value: true if collapsed (hidden), false if expanded (visible)
-    collapsed_jobs_level_2: BTreeMap<(String, String), bool>
+    collapsed_jobs_level_2: BTreeMap<(String, String), bool>,
 }
 
 /**
@@ -84,10 +83,6 @@ impl View for GanttChart {
 
                 // Aggregate by component (levels)
                 self.options.aggregate_by.ui(ui);
-                ui.separator();
-
-                // Grid spacing component (10 min, 30 min, 60 min)
-                self.options.grid_spacing_minutes.ui(ui);
                 ui.separator();
 
                 // Job color component (random, state)
@@ -175,11 +170,12 @@ impl View for GanttChart {
                 ui.allocate_rect(used_rect, Sense::hover());
 
                 {
-                    
                     // Calculate the visible time range from the canvas parameters
-                    let visible_start_s = info.start_s + ((-self.options.sideways_pan_in_points / info.canvas.width()) * self.options.canvas_width_s) as i64;
+                    let visible_start_s = info.start_s
+                        + ((-self.options.sideways_pan_in_points / info.canvas.width())
+                            * self.options.canvas_width_s) as i64;
                     let visible_end_s = visible_start_s + self.options.canvas_width_s as i64;
-                    
+
                     let start = Local.timestamp_opt(visible_start_s, 0).unwrap();
                     let end = Local.timestamp_opt(visible_end_s, 0).unwrap();
 
@@ -191,7 +187,6 @@ impl View for GanttChart {
                     //     end.format("%Y-%m-%d %H:%M:%S")
                     // );
                 }
-
             });
         });
 
@@ -239,18 +234,17 @@ impl Info {
  * Options struct
  */
 pub struct Options {
-    pub canvas_width_s: f32,               // Canvas width
-    pub sideways_pan_in_points: f32,       // Sideways pan in points
-    pub cull_width: f32,                   // Culling width
-    pub min_width: f32,                    // Minimum width of a job
-    pub rect_height: f32,                  // Height of a job
-    pub spacing: f32,                      // Vertical spacing between jobs
-    pub rounding: f32,                     // Rounded corners
-    pub sorting: Sorting,                  // Sorting
-    pub aggregate_by: AggregateBy,         // Aggregate by
-    pub grid_spacing_minutes: GridSpacing, // Grid spacing in minutes
-    pub job_color: JobColor,               // Job color
-    current_hovered_job: Option<Job>,      // Current hovered job
+    pub canvas_width_s: f32,          // Canvas width
+    pub sideways_pan_in_points: f32,  // Sideways pan in points
+    pub cull_width: f32,              // Culling width
+    pub min_width: f32,               // Minimum width of a job
+    pub rect_height: f32,             // Height of a job
+    pub spacing: f32,                 // Vertical spacing between jobs
+    pub rounding: f32,                // Rounded corners
+    pub sorting: Sorting,             // Sorting
+    pub aggregate_by: AggregateBy,    // Aggregate by
+    pub job_color: JobColor,          // Job color
+    current_hovered_job: Option<Job>, // Current hovered job
     #[cfg_attr(feature = "serde", serde(skip))]
     zoom_to_relative_s_range: Option<(f64, (f64, f64))>, // Zoom to relative s range
 }
@@ -261,19 +255,18 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            canvas_width_s: 0.0,                      // no zoom
-            sideways_pan_in_points: 0.0,              // no pan
-            cull_width: 0.0,                          // no culling
-            min_width: 1.0,                           // minimum width of a job
-            rect_height: 16.0,                        // height of a job
-            spacing: 5.0,                             // vertical spacing between jobs
-            rounding: 4.0,                            // rounded corners
-            aggregate_by: Default::default(),         // aggregate by component
-            grid_spacing_minutes: Default::default(), // grid spacing component
-            sorting: Default::default(),              // sorting component
-            job_color: Default::default(),            // job color component
-            zoom_to_relative_s_range: None,           // no zooming by default
-            current_hovered_job: None,                // no hovered job by default
+            canvas_width_s: 0.0,              // no zoom
+            sideways_pan_in_points: 0.0,      // no pan
+            cull_width: 0.0,                  // no culling
+            min_width: 1.0,                   // minimum width of a job
+            rect_height: 16.0,                // height of a job
+            spacing: 5.0,                     // vertical spacing between jobs
+            rounding: 4.0,                    // rounded corners
+            aggregate_by: Default::default(), // aggregate by component
+            sorting: Default::default(),      // sorting component
+            job_color: Default::default(),    // job color component
+            zoom_to_relative_s_range: None,   // no zooming by default
+            current_hovered_job: None,        // no hovered job by default
         }
     }
 }
@@ -614,7 +607,6 @@ fn paint_aggregated_jobs_level_1(
 
     // Display jobs
     for (level_1, job_list) in jobs {
-
         // Draw a line to separate
         info.painter.line_segment(
             [
@@ -640,7 +632,7 @@ fn paint_aggregated_jobs_level_1(
         if !*is_collapsed {
             for job in job_list {
                 let job_start_y = cursor_y;
-                
+
                 // Draw the job
                 paint_job(info, options, &job, job_start_y, details_window);
 
@@ -705,7 +697,6 @@ fn paint_aggregated_jobs_level_2(
 
         // Only show jobs if section is not collapsed
         if !*is_collapsed_level_1 {
-
             // Sort the level 2 keys
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
             sorted_level_2.sort_by(|a, b| compare_string_with_number(&a, &b));
@@ -962,7 +953,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
     // We show all measurements relative to start_s
 
     let max_lines = canvas.width() / 4.0;
-    let mut grid_spacing_minutes = (options.grid_spacing_minutes.value / 10) * 60; // convert grid spacing to seconds
+    let mut grid_spacing_minutes = 30;
     while options.canvas_width_s / (grid_spacing_minutes as f32) > max_lines {
         grid_spacing_minutes *= 10;
     }
