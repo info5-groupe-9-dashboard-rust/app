@@ -95,11 +95,11 @@ impl View for GanttChart {
 
             ui.menu_button("❓", |ui| {
                 ui.label(
-                    "Drag to pan.\n\
-                            Zoom: Ctrl/cmd + scroll, or drag with secondary mouse button.\n\
-                            Click on a scope to zoom to it.\n\
-                            Double-click to reset view.\n\
-                            Press spacebar to pause/resume.",
+                    "Drag to move around.\n\
+                            Zoom: Ctrl/cmd + scroll or vertical drag with right click.\n\
+                            Left click on a job to zoom to it.\n\
+                            Double left click to reset view.\n\
+                            Right click on a job to see details.",
                 );
             });
         });
