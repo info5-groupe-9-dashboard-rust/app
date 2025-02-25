@@ -475,12 +475,18 @@ fn interact_with_canvas(options: &mut Options, response: &Response, info: &Info)
         }
 
         if zoom_factor != 1.0 {
-            options.canvas_width_s /= zoom_factor;
+            let new_width = options.canvas_width_s / zoom_factor;
+            
+            // Apply a limit to the zoom
+            let max_canvas_width = 2 * 24 * 60 * 60; // 2 days in seconds
+            if new_width <= max_canvas_width as f32 {
+                options.canvas_width_s = new_width;
 
-            if let Some(mouse_pos) = response.hover_pos() {
-                let zoom_center = mouse_pos.x - info.canvas.min.x;
-                options.sideways_pan_in_points =
-                    (options.sideways_pan_in_points - zoom_center) * zoom_factor + zoom_center;
+                if let Some(mouse_pos) = response.hover_pos() {
+                    let zoom_center = mouse_pos.x - info.canvas.min.x;
+                    options.sideways_pan_in_points =
+                        (options.sideways_pan_in_points - zoom_center) * zoom_factor + zoom_center;
+                }
             }
             options.zoom_to_relative_s_range = None;
         }
