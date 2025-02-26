@@ -1,9 +1,17 @@
 use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::date_converter::format_timestamp;
+use crate::models::utils::utils::cluster_contain_host;
 use crate::models::utils::utils::compare_string_with_number;
+use crate::models::utils::utils::get_all_clusters;
+use crate::models::utils::utils::get_all_hosts;
+use crate::models::utils::utils::get_all_resources;
+use crate::models::utils::utils::get_cluster_from_name;
 use crate::views::view::View;
 use crate::{
-    models::data_structure::{application_context::ApplicationContext, job::Job},
+    models::data_structure::{
+        application_context::ApplicationContext,
+        job::{Job, JobState},
+    },
     views::components::{
         gantt_aggregate_by::{AggregateBy, AggregateByLevel1Enum, AggregateByLevel2Enum},
         gantt_job_color::JobColor,
@@ -79,6 +87,54 @@ impl View for GanttChart {
                 // Aggregate by component (levels)
                 self.options.aggregate_by.ui(ui);
                 ui.separator();
+
+                // If last aggregation level is set to cluster or host
+                if (self.options.aggregate_by.level_1 != AggregateByLevel1Enum::Owner
+                    && self.options.aggregate_by.level_2 == AggregateByLevel2Enum::None)
+                    || (self.options.aggregate_by.level_1 == AggregateByLevel1Enum::Cluster
+                        && self.options.aggregate_by.level_2 == AggregateByLevel2Enum::Host)
+                {
+                    if !self.options.see_all_res {
+                        if ui.button("Hide all resources").clicked() {
+                            if !self.options.see_all_res {
+                                self.options.see_all_res = true;
+                                app.all_jobs.push(Job {
+                                    id: 0,
+                                    owner: "all_resources".to_string(),
+                                    state: JobState::Unknown,
+                                    scheduled_start: 0,
+                                    walltime: 0,
+                                    hosts: get_all_hosts(&app.all_clusters),
+                                    clusters: get_all_clusters(&app.all_clusters),
+                                    command: String::new(),
+                                    message: None,
+                                    queue: String::new(),
+                                    assigned_resources: get_all_resources(&app.all_clusters),
+                                    submission_time: 0,
+                                    start_time: 0,
+                                    stop_time: 0,
+                                    exit_code: None,
+                                    gantt_color: Color32::TRANSPARENT,
+                                    main_resource_state: ResourceState::Unknown,
+                                });
+                            }
+                        }
+                    } else {
+                        if ui.button("See all resources").clicked() {
+                            if self.options.see_all_res {
+                                self.options.see_all_res = false;
+                                // remove the job with id 0 from the filter_jobs
+                                app.all_jobs.retain(|job| job.id != 0);
+                            }
+                        }
+                    }
+                    ui.separator();
+                } else {
+                    if self.options.see_all_res {
+                        app.all_jobs.retain(|job| job.id != 0);
+                    }
+                    self.options.see_all_res = false;
+                }
 
                 // Job color component (random, state)
                 self.options.job_color.ui(ui);
@@ -158,8 +214,7 @@ impl View for GanttChart {
                 // Fill out space that we don't use so that the `ScrollArea` doesn't collapse in height:
                 used_rect.max.y = used_rect.max.y.max(used_rect.min.y + available_height);
 
-                let timeline =
-                    paint_timeline(&info, used_rect, &self.options, min_s);
+                let timeline = paint_timeline(&info, used_rect, &self.options, min_s);
                 info.painter
                     .set(where_to_put_timeline, Shape::Vec(timeline));
 
@@ -180,12 +235,6 @@ impl View for GanttChart {
                     let end = Local.timestamp_opt(visible_end_s, 0).unwrap();
 
                     app.set_localdate(start, end);
-                    // print!(
-                    //     "Showing {} jobs from {} to {} \n\n",
-                    //     app.filtered_jobs.len(),
-                    //     start.format("%Y-%m-%d %H:%M:%S"),
-                    //     end.format("%Y-%m-%d %H:%M:%S")
-                    // );
                 }
             });
         });
@@ -244,6 +293,7 @@ pub struct Options {
     pub sorting: Sorting,             // Sorting
     pub aggregate_by: AggregateBy,    // Aggregate by
     pub job_color: JobColor,          // Job color
+    pub see_all_res: bool,            // See all resources
     current_hovered_job: Option<Job>, // Current hovered job
     #[cfg_attr(feature = "serde", serde(skip))]
     zoom_to_relative_s_range: Option<(f64, (f64, f64))>, // Zoom to relative s range
@@ -267,6 +317,7 @@ impl Default for Options {
             job_color: Default::default(),    // job color component
             zoom_to_relative_s_range: None,   // no zooming by default
             current_hovered_job: None,        // no hovered job by default
+            see_all_res: false,               // see all resources
         }
     }
 }
@@ -425,12 +476,18 @@ fn ui_canvas(
                 for job in jobs {
                     for cluster in job.clusters.iter() {
                         for host in job.hosts.iter() {
-                            jobs_by_cluster_by_host
-                                .entry(cluster.clone())
-                                .or_insert_with(BTreeMap::new)
-                                .entry(host.clone())
-                                .or_insert_with(Vec::new)
-                                .push(job.clone());
+                            // We don't add the host to the cluster if this host doesn't belong to the cluster
+                            let curr_cluster =
+                                get_cluster_from_name(&app.all_clusters, &cluster).unwrap();
+
+                            if cluster_contain_host(&curr_cluster, &host) {
+                                jobs_by_cluster_by_host
+                                    .entry(cluster.clone())
+                                    .or_insert_with(BTreeMap::new)
+                                    .entry(host.clone())
+                                    .or_insert_with(Vec::new)
+                                    .push(job.clone());
+                            }
                         }
                     }
                 }
@@ -481,7 +538,7 @@ fn interact_with_canvas(options: &mut Options, response: &Response, info: &Info)
 
         if zoom_factor != 1.0 {
             let new_width = options.canvas_width_s / zoom_factor;
-            
+
             // Apply a limit to the zoom
             let max_canvas_width = 2 * 24 * 60 * 60; // 2 days in seconds
             if new_width <= max_canvas_width as f32 {
@@ -537,7 +594,7 @@ struct ThemeColors {
     aggregated_line_level_1: Rgba,
     aggregated_line_level_2: Rgba,
     background: Color32,
-    background_timeline: Color32
+    background_timeline: Color32,
 }
 
 /**
@@ -552,7 +609,7 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
             aggregated_line_level_1: Rgba::from_white_alpha(0.4),
             aggregated_line_level_2: Rgba::from_white_alpha(0.5),
             background: Color32::from_black_alpha(100),
-            background_timeline: Color32::from_black_alpha(150)
+            background_timeline: Color32::from_black_alpha(150),
         }
     } else {
         ThemeColors {
@@ -562,7 +619,7 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
             aggregated_line_level_1: Rgba::from_black_alpha(0.5),
             aggregated_line_level_2: Rgba::from_black_alpha(0.7),
             background: Color32::from_black_alpha(50),
-            background_timeline: Color32::from_black_alpha(20)
+            background_timeline: Color32::from_black_alpha(20),
         }
     }
 }
@@ -1023,9 +1080,9 @@ fn paint_timeline_text_on_top(info: &Info, options: &Options, fixed_timeline_y: 
     let theme_colors = get_theme_colors(&info.ctx.style());
 
     let alpha_multiplier = if info.ctx.style().visuals.dark_mode {
-        0.3 
+        0.3
     } else {
-        0.8 
+        0.8
     };
 
     let num_tiny_lines = options.canvas_width_s / (grid_spacing_minutes as f32);
@@ -1034,9 +1091,10 @@ fn paint_timeline_text_on_top(info: &Info, options: &Options, fixed_timeline_y: 
     // Paint background rect first
     let bg_rect = Rect::from_min_size(
         pos2(info.canvas.min.x, fixed_timeline_y),
-        egui::vec2(info.canvas.width(), info.text_height+5.0),
+        egui::vec2(info.canvas.width(), info.text_height + 5.0),
     );
-    info.painter.rect_filled(bg_rect, 0.0, theme_colors.background_timeline);
+    info.painter
+        .rect_filled(bg_rect, 0.0, theme_colors.background_timeline);
 
     // Paint timeline text on top of background
     let timeline_text = paint_timeline_text(
@@ -1054,23 +1112,17 @@ fn paint_timeline_text_on_top(info: &Info, options: &Options, fixed_timeline_y: 
     }
 }
 
-
 /**
  * Paints the timeline
  */
-fn paint_timeline(
-    info: &Info,
-    canvas: Rect,
-    options: &Options,
-    _start_s: i64
-) -> Vec<egui::Shape> {
+fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -> Vec<egui::Shape> {
     let mut shapes = vec![];
     let theme_colors = get_theme_colors(&info.ctx.style());
 
     let alpha_multiplier = if info.ctx.style().visuals.dark_mode {
-        0.3 
+        0.3
     } else {
-        0.8 
+        0.8
     };
 
     let max_lines = canvas.width() / 4.0;
