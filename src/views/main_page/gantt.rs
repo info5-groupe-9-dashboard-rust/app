@@ -295,6 +295,7 @@ pub struct Options {
     pub job_color: JobColor,          // Job color
     pub see_all_res: bool,            // See all resources
     current_hovered_job: Option<Job>, // Current hovered job
+    current_hovered_resource_state: Option<ResourceState>, // Current hovered resource state
     #[cfg_attr(feature = "serde", serde(skip))]
     zoom_to_relative_s_range: Option<(f64, (f64, f64))>, // Zoom to relative s range
 }
@@ -317,7 +318,8 @@ impl Default for Options {
             job_color: Default::default(),    // job color component
             zoom_to_relative_s_range: None,   // no zooming by default
             current_hovered_job: None,        // no hovered job by default
-            see_all_res: false,               // see all resources
+            see_all_res: false,
+            current_hovered_resource_state: None, // no hovered resource stae by default
         }
     }
 }
@@ -514,6 +516,9 @@ fn ui_canvas(
     // Paint tooltip for hovered job if there is one
     paint_job_tooltip(info, options);
 
+    // Paint tooltip for hovered resource state if there is one
+    paint_resource_state_tooltip(info, options);
+
     // Paint the timeline text on top of everything
     paint_timeline_text_on_top(info, options, fixed_timeline_y);
 
@@ -633,6 +638,27 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
 /****************************************************************************************************************************/
 // JOB PAINTING
 /****************************************************************************************************************************/
+
+/**
+ * Paints a tooltip for a resource state
+ */
+fn paint_resource_state_tooltip(info: &Info, options: &mut Options) {
+    if let Some(resource_state) = &options.current_hovered_resource_state {
+        if let Some(_pointer_pos) = info.response.hover_pos() {
+            let text = format!("Resource State: {:?}", resource_state);
+
+            egui::show_tooltip(
+                &info.ctx,
+                info.response.layer_id,
+                egui::Id::new("resource_state_tooltip"),
+                |ui| {
+                    ui.label(text);
+                },
+            );
+        }
+        options.current_hovered_resource_state = None; // Reset for next frame
+    }
+}
 
 /**
  * Paints a tooltip for a job
@@ -929,24 +955,51 @@ fn paint_job(
             ResourceState::Absent => Color32::from_rgba_premultiplied(0, 150, 150, 150),
             _ => Color32::TRANSPARENT,
         };
-
+    
         let hachure_spacing = 10.0;
         let mut shapes = Vec::new();
         let mut x = info.canvas.min.x;
         let current_time_x = info.point_from_s(options, chrono::Utc::now().timestamp());
+    
+        // Define the rectangle where the hachure will be drawn
+        let hover_rect = Rect::from_min_max(
+            pos2(info.canvas.min.x, top_y),
+            pos2(info.canvas.max.x, top_y + height),
+        );
+    
+        // We check if the mouse is hovering the hachure
+        let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
+            hover_rect.contains(mouse_pos)
+        } else {
+            false
+        };
 
+        // Final color of the hachure
+        let final_hachure_color = if is_hovered {
+            hachure_color.gamma_multiply(1.5) // More visible when hovered
+        } else {
+            hachure_color
+        };
+    
         while x < info.canvas.max.x {
             if majority_state == ResourceState::Absent && x >= current_time_x {
                 break;
             }
             shapes.push(Shape::line_segment(
                 [pos2(x, top_y), pos2(x + hachure_spacing, top_y + height)],
-                Stroke::new(4.0, hachure_color),
+                Stroke::new(4.0, final_hachure_color),
             ));
             x += hachure_spacing;
         }
+    
         info.painter.extend(shapes);
+    
+        // Display tooltip if hovered
+        if is_hovered {
+            options.current_hovered_resource_state = Some(majority_state);
+        }
     }
+    
 
     if width > 20.0 {
         let text = format!("{} ({})", job.owner, job.id);
