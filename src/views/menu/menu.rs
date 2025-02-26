@@ -28,14 +28,17 @@ impl Default for Menu {
 
 impl View for Menu {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        self.options_pane.apply_options(ui.ctx());
+        self.options_pane
+            .apply_options(ui.ctx(), &mut app.font_size);
 
         ui.horizontal(|ui| {
             // Menu File
             ui.menu_button(t!("app.menu.file"), |ui| {
-
                 if app.user_connected.is_some() {
-                    ui.label(t!("app.menu.connected_as", user = app.user_connected.as_ref().unwrap()));
+                    ui.label(t!(
+                        "app.menu.connected_as",
+                        user = app.user_connected.as_ref().unwrap()
+                    ));
                     ui.separator();
                     if ui.button(t!("app.menu.logout")).clicked() {
                         app.logout();
@@ -45,8 +48,7 @@ impl View for Menu {
                         app.view_type = crate::views::view::ViewType::Authentification;
                     }
                 }
-                
-                
+
                 if ui.button("Quitter").clicked() {
                     std::process::exit(0);
                 }
@@ -58,7 +60,7 @@ impl View for Menu {
             }
 
             // Show External Window
-            self.options_pane.ui(ui);
+            self.options_pane.ui(ui, &mut app.font_size);
         });
     }
 }

@@ -36,6 +36,8 @@ pub struct ApplicationContext {
     pub jobs_sender: Sender<Vec<Job>>,
     pub resources_receiver: Receiver<Vec<Strata>>,
     pub resources_sender: Sender<Vec<Strata>>,
+
+    pub font_size: i32,
 }
 
 impl ApplicationContext {
@@ -420,6 +422,8 @@ impl Default for ApplicationContext {
             is_loading: false,
             is_refreshing: Arc::new(Mutex::new(false)),
             refresh_rate: Arc::new(Mutex::new(30)),
+
+            font_size: 16,
         };
         context.update_periodically();
         context
