@@ -34,24 +34,27 @@ impl View for Menu {
         ui.horizontal(|ui| {
             // Menu File
             ui.menu_button(t!("app.menu.file"), |ui| {
-                if app.user_connected.is_some() {
-                    ui.label(t!(
-                        "app.menu.connected_as",
-                        user = app.user_connected.as_ref().unwrap()
-                    ));
-                    ui.separator();
-                    if ui.button(t!("app.menu.logout")).clicked() {
-                        app.logout();
+                ui.set_max_width(200.0);
+                ui.vertical(|ui| {
+                    if app.user_connected.is_some() {
+                        ui.label(t!(
+                            "app.menu.connected_as",
+                            user = app.user_connected.as_ref().unwrap()
+                        ));
+                        ui.separator();
+                        if ui.button(t!("app.menu.logout")).clicked() {
+                            app.logout();
+                        }
+                    } else {
+                        if ui.button(t!("app.menu.login")).clicked() {
+                            app.view_type = crate::views::view::ViewType::Authentification;
+                        }
                     }
-                } else {
-                    if ui.button(t!("app.menu.login")).clicked() {
-                        app.view_type = crate::views::view::ViewType::Authentification;
-                    }
-                }
 
-                if ui.button("Quitter").clicked() {
-                    std::process::exit(0);
-                }
+                    if ui.button("Quitter").clicked() {
+                        std::process::exit(0);
+                    }
+                });
             });
 
             // Menu Options
