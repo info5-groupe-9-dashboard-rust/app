@@ -1,3 +1,4 @@
+use crate::models::data_structure::cluster::Cluster;
 use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::date_converter::format_timestamp;
 use crate::models::utils::utils::cluster_contain_host;
@@ -6,6 +7,7 @@ use crate::models::utils::utils::get_all_clusters;
 use crate::models::utils::utils::get_all_hosts;
 use crate::models::utils::utils::get_all_resources;
 use crate::models::utils::utils::get_cluster_from_name;
+use crate::models::utils::utils::get_tree_structure_for_job;
 use crate::views::view::View;
 use crate::{
     models::data_structure::{
@@ -206,6 +208,7 @@ impl View for GanttChart {
                     &mut self.job_details_windows,
                     &mut self.collapsed_jobs_level_1,
                     &mut self.collapsed_jobs_level_2,
+                    &app.all_clusters,
                 );
 
                 let mut used_rect = canvas;
@@ -338,6 +341,7 @@ fn ui_canvas(
     details_window: &mut Vec<JobDetailsWindow>,
     collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
     collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
+    all_cluster: &Vec<Cluster>,
 ) -> f32 {
     if options.canvas_width_s <= 0.0 {
         options.canvas_width_s = (max_ns - min_ns) as f32;
@@ -369,6 +373,7 @@ fn ui_canvas(
                 details_window,
                 collapsed_jobs_level_1,
                 app.font_size,
+                all_cluster,
             );
         }
 
@@ -398,6 +403,7 @@ fn ui_canvas(
                         collapsed_jobs_level_1,
                         collapsed_jobs_level_2,
                         app.font_size,
+                        all_cluster,
                     );
                 }
                 AggregateByLevel2Enum::None => {
@@ -419,6 +425,7 @@ fn ui_canvas(
                         details_window,
                         collapsed_jobs_level_1,
                         app.font_size,
+                        all_cluster,
                     );
                 }
                 AggregateByLevel2Enum::Host => {
@@ -452,6 +459,7 @@ fn ui_canvas(
                     collapsed_jobs_level_1,
                     collapsed_jobs_level_2,
                     app.font_size,
+                    all_cluster,
                 );
             }
             AggregateByLevel2Enum::None => {
@@ -473,6 +481,7 @@ fn ui_canvas(
                     details_window,
                     collapsed_jobs_level_1,
                     app.font_size,
+                    all_cluster,
                 );
             }
             AggregateByLevel2Enum::Host => {
@@ -506,6 +515,7 @@ fn ui_canvas(
                     collapsed_jobs_level_1,
                     collapsed_jobs_level_2,
                     app.font_size,
+                    all_cluster,
                 );
             }
         },
@@ -673,6 +683,7 @@ fn paint_aggregated_jobs_level_1(
     details_window: &mut Vec<JobDetailsWindow>,
     collapsed_jobs: &mut BTreeMap<String, bool>,
     font_size: i32,
+    all_cluster: &Vec<Cluster>,
 ) -> f32 {
     let theme_colors = get_theme_colors(&info.ctx.style());
 
@@ -711,7 +722,14 @@ fn paint_aggregated_jobs_level_1(
                 let job_start_y = cursor_y;
 
                 // Draw the job
-                paint_job(info, options, &job, job_start_y, details_window);
+                paint_job(
+                    info,
+                    options,
+                    &job,
+                    job_start_y,
+                    details_window,
+                    all_cluster,
+                );
 
                 // Add spacing between jobs
                 cursor_y += info.text_height + spacing_between_jobs + options.spacing;
@@ -737,6 +755,7 @@ fn paint_aggregated_jobs_level_2(
     collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
     collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
     font_size: i32,
+    all_cluster: &Vec<Cluster>,
 ) -> f32 {
     let theme_colors = get_theme_colors(&info.ctx.style());
 
@@ -812,7 +831,14 @@ fn paint_aggregated_jobs_level_2(
                             let job_start_y = cursor_y; // Ensure vertical alignment
 
                             // Draw the job
-                            paint_job(info, options, &job, job_start_y, details_window);
+                            paint_job(
+                                info,
+                                options,
+                                &job,
+                                job_start_y,
+                                details_window,
+                                all_cluster,
+                            );
 
                             cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                         }
@@ -843,6 +869,7 @@ fn paint_job(
     job: &Job,
     top_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
+    all_cluster: &Vec<Cluster>,
 ) -> PaintResult {
     let theme_colors = get_theme_colors(&info.ctx.style());
     let start_x = info.point_from_s(options, job.scheduled_start);
@@ -877,7 +904,8 @@ fn paint_job(
 
     // Add click detection for the job
     if is_hovered && info.response.secondary_clicked() {
-        let window = JobDetailsWindow::new(job.clone(), vec![]);
+        let window =
+            JobDetailsWindow::new(job.clone(), get_tree_structure_for_job(job, all_cluster));
         // Check if a window for this job already exists, if so, don't open a new one
         if !details_window.iter().any(|w| w.job.id == job.id) {
             details_window.push(window);
