@@ -28,7 +28,8 @@ impl Default for Menu {
 
 impl View for Menu {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        self.options_pane.apply_options(ui.ctx());
+        self.options_pane
+            .apply_options(ui.ctx(), &mut app.font_size);
 
         ui.horizontal(|ui| {
             // Menu File
@@ -62,7 +63,7 @@ impl View for Menu {
             }
 
             // Show External Window
-            self.options_pane.ui(ui);
+            self.options_pane.ui(ui, &mut app.font_size);
         });
     }
 }

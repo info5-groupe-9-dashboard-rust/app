@@ -176,7 +176,7 @@ impl View for GanttChart {
                     canvas,
                     response,
                     painter: ui.painter_at(canvas),
-                    text_height: 15.0,
+                    text_height: app.font_size as f32,
                     start_s: min_s,
                     stop_s: max_s,
                     font_id: TextStyle::Body.resolve(ui.style()),
@@ -368,6 +368,7 @@ fn ui_canvas(
                 cursor_y,
                 details_window,
                 collapsed_jobs_level_1,
+                app.font_size,
             );
         }
 
@@ -396,6 +397,7 @@ fn ui_canvas(
                         details_window,
                         collapsed_jobs_level_1,
                         collapsed_jobs_level_2,
+                        app.font_size,
                     );
                 }
                 AggregateByLevel2Enum::None => {
@@ -416,6 +418,7 @@ fn ui_canvas(
                         cursor_y,
                         details_window,
                         collapsed_jobs_level_1,
+                        app.font_size,
                     );
                 }
                 AggregateByLevel2Enum::Host => {
@@ -448,6 +451,7 @@ fn ui_canvas(
                     details_window,
                     collapsed_jobs_level_1,
                     collapsed_jobs_level_2,
+                    app.font_size,
                 );
             }
             AggregateByLevel2Enum::None => {
@@ -468,6 +472,7 @@ fn ui_canvas(
                     cursor_y,
                     details_window,
                     collapsed_jobs_level_1,
+                    app.font_size,
                 );
             }
             AggregateByLevel2Enum::Host => {
@@ -500,6 +505,7 @@ fn ui_canvas(
                     details_window,
                     collapsed_jobs_level_1,
                     collapsed_jobs_level_2,
+                    app.font_size,
                 );
             }
         },
@@ -666,10 +672,11 @@ fn paint_aggregated_jobs_level_1(
     mut cursor_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
     collapsed_jobs: &mut BTreeMap<String, bool>,
+    font_size: i32,
 ) -> f32 {
     let theme_colors = get_theme_colors(&info.ctx.style());
 
-    let spacing_between_level_1 = 20.0;
+    let spacing_between_level_1 = 5.0 + font_size as f32;
     let spacing_between_jobs = 5.0;
     let offset_level_1 = 10.0;
 
@@ -729,11 +736,12 @@ fn paint_aggregated_jobs_level_2(
     details_window: &mut Vec<JobDetailsWindow>,
     collapsed_jobs_level_1: &mut BTreeMap<String, bool>,
     collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
+    font_size: i32,
 ) -> f32 {
     let theme_colors = get_theme_colors(&info.ctx.style());
 
-    let spacing_between_level_1 = 20.0;
-    let spacing_between_level_2 = 15.0;
+    let spacing_between_level_1 = font_size as f32;
+    let spacing_between_level_2 = 5.0 + font_size as f32;
     let spacing_between_jobs = 5.0;
     let offset_level_1 = 10.0;
 
