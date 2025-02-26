@@ -364,52 +364,53 @@ impl ApplicationContext {
             .all_jobs
             .iter()
             .filter(|job| {
-                (self
-                    .filters
-                    .owners
-                    .as_ref()
-                    .map_or(true, |owners| owners.contains(&job.owner)))
-                    && (self
+                job.id == 0
+                    || (self
                         .filters
-                        .states
+                        .owners
                         .as_ref()
-                        .map_or(true, |states| states.contains(&job.state)))
-                    && (((self
-                        .filters
-                        .scheduled_start_time
-                        .map_or(true, |time| job.scheduled_start >= time))
-                        && (self.filters.wall_time.map_or(true, |time| {
-                            job.scheduled_start
-                                <= self.filters.scheduled_start_time.unwrap_or(0) + time
-                        })))
-                        || ((self
+                        .map_or(true, |owners| owners.contains(&job.owner)))
+                        && (self
+                            .filters
+                            .states
+                            .as_ref()
+                            .map_or(true, |states| states.contains(&job.state)))
+                        && (((self
                             .filters
                             .scheduled_start_time
-                            .map_or(true, |time| job.get_end_date() >= time))
+                            .map_or(true, |time| job.scheduled_start >= time))
                             && (self.filters.wall_time.map_or(true, |time| {
-                                job.get_end_date()
+                                job.scheduled_start
                                     <= self.filters.scheduled_start_time.unwrap_or(0) + time
                             })))
-                        || ((self
-                            .filters
-                            .scheduled_start_time
-                            .map_or(true, |time| job.start_time >= time))
-                            && (self.filters.wall_time.map_or(true, |time| {
-                                job.start_time
-                                    <= self.filters.scheduled_start_time.unwrap_or(0) + time
-                            }))))
-                    && (self.filters.clusters.is_none() || {
-                        let selected_clusters = self.filters.clusters.as_ref().unwrap();
-                        selected_clusters.iter().any(|cluster| {
-                            cluster.hosts.iter().any(|host| {
-                                host.cpus.iter().any(|cpu| {
-                                    cpu.resources.iter().any(|resource| {
-                                        job.assigned_resources.contains(&resource.id)
+                            || ((self
+                                .filters
+                                .scheduled_start_time
+                                .map_or(true, |time| job.get_end_date() >= time))
+                                && (self.filters.wall_time.map_or(true, |time| {
+                                    job.get_end_date()
+                                        <= self.filters.scheduled_start_time.unwrap_or(0) + time
+                                })))
+                            || ((self
+                                .filters
+                                .scheduled_start_time
+                                .map_or(true, |time| job.start_time >= time))
+                                && (self.filters.wall_time.map_or(true, |time| {
+                                    job.start_time
+                                        <= self.filters.scheduled_start_time.unwrap_or(0) + time
+                                }))))
+                        && (self.filters.clusters.is_none() || {
+                            let selected_clusters = self.filters.clusters.as_ref().unwrap();
+                            selected_clusters.iter().any(|cluster| {
+                                cluster.hosts.iter().any(|host| {
+                                    host.cpus.iter().any(|cpu| {
+                                        cpu.resources.iter().any(|resource| {
+                                            job.assigned_resources.contains(&resource.id)
+                                        })
                                     })
                                 })
                             })
                         })
-                    })
             })
             .cloned() // Clone filtred jobs here
             .collect();
