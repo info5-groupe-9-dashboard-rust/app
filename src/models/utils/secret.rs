@@ -1,13 +1,13 @@
+use chrono::{Duration, Utc};
 use egui;
 use rand::Rng;
-use std::time::{Duration, Instant};
 
 pub struct Secret {
     konami_sequence: Vec<egui::Key>,
     is_konami_active: bool,
-    konami_start_time: Option<Instant>,
+    konami_start_time: Option<chrono::DateTime<Utc>>,
     snake_game: Option<SnakeGame>,
-    last_update: Instant,
+    last_update: chrono::DateTime<Utc>,
     show_game: bool,
 }
 
@@ -18,7 +18,7 @@ impl Default for Secret {
             is_konami_active: false,
             konami_start_time: None,
             snake_game: None,
-            last_update: Instant::now(),
+            last_update: Utc::now(),
             show_game: false,
         }
     }
@@ -42,8 +42,8 @@ impl Secret {
         self.random_secret(ctx);
 
         if self.is_konami_active {
-            let now = Instant::now();
-            if now.duration_since(self.last_update) >= Duration::from_millis(500) {
+            let now = Utc::now();
+            if now.signed_duration_since(self.last_update) >= Duration::milliseconds(500) {
                 if let Some(game) = &mut self.snake_game {
                     game.update();
                     self.last_update = now;
@@ -69,7 +69,7 @@ impl Secret {
                     {
                         self.is_konami_active = true;
                         self.snake_game = Some(SnakeGame::new());
-                        self.konami_start_time = Some(Instant::now());
+                        self.konami_start_time = Some(Utc::now());
                         self.show_game = true;
                         //println!("Konami code activated!");
                     }

@@ -3,11 +3,14 @@ use chrono::{DateTime, Local};
 use std::time::Duration;
 
 use crate::models::data_structure::application_context::ApplicationContext;
+
 #[cfg(target_arch = "wasm32")]
-use crate::models::job::mock_jobs;
+use super::mocker::{mock_jobs,mock_stratas};
+
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::models::utils::parser::get_current_jobs_for_period;
+
 #[cfg(not(target_arch = "wasm32"))]
 use std::thread;
 
@@ -98,7 +101,11 @@ impl ApplicationContext {
             // LOG DEBUG
             // log::info!("instant_update: start_date: {:?}, end_date: {:?}", start, end);
             let jobs = mock_jobs();
-            sender.send(jobs).unwrap();
+            jobs_sender.send(jobs).unwrap();
+
+            let strata = mock_stratas();
+            resources_sender.send(strata).unwrap();
+            
             // set refreshing to false
             *is_refreshing.lock().unwrap() = false;
         }
@@ -166,7 +173,10 @@ impl ApplicationContext {
             // LOG DEBUG
             // log::info!("update_periodically: start_date: {:?}, end_date: {:?}", start, end);
             let jobs = mock_jobs();
-            sender.send(jobs).unwrap();
+            jobs_sender.send(jobs).unwrap();
+
+            let strata = mock_stratas();
+            resources_sender.send(strata).unwrap();
         }
     }
 

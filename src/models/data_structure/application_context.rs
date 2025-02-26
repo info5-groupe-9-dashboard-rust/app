@@ -12,9 +12,6 @@ use chrono::{DateTime, Local};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
-#[cfg(target_arch = "wasm32")]
-use crate::models::job::mock_jobs;
-
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>,
     pub swap_all_jobs: Vec<Job>, // Used to store all jobs when refreshing (and swapped with all_jobs when refreshing is done)
