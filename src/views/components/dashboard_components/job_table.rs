@@ -17,8 +17,7 @@ pub struct JobTable {
     displayed_jobs_per_page: Vec<Job>,
     sort_key: SortKey,
     sort_ascending: bool,
-    column_selection: ColumnSelection,
-    selected_column_color: egui::Color32
+    column_selection: ColumnSelection
 }
 
 impl Default for JobTable {
@@ -32,8 +31,7 @@ impl Default for JobTable {
             displayed_jobs_per_page: Vec::new(),
             sort_key: SortKey::Id,
             sort_ascending: true,
-            column_selection: ColumnSelection::default(),
-            selected_column_color: egui::Color32::from_rgba_premultiplied(100, 100, 255, 25)
+            column_selection: ColumnSelection::default()
         }
     }
 }
