@@ -31,7 +31,7 @@ impl Default for JobTable {
             displayed_jobs_per_page: Vec::new(),
             sort_key: SortKey::Id,
             sort_ascending: true,
-            column_selection: ColumnSelection::default(),
+            column_selection: ColumnSelection::default()
         }
     }
 }
@@ -125,14 +125,23 @@ impl JobTable {
                 for value in self.column_selection.values.values() {
                     if value.selected {
                         header.col(|ui| {
-                            if ui
-                                .button(RichText::new(t!(value.name.clone())).strong())
-                                .clicked()
-                            {
+
+                            let is_current_column = value.sort_key == self.sort_key;
+
+                            let header_btn;
+
+                            if is_current_column {
+                                header_btn = egui::Button::new(format!("{} {}", t!(value.name.clone()), if self.sort_ascending { '⬆' } else { '⬇' })).frame(true);
+                            } else {
+                                header_btn = egui::Button::new(t!(value.name.clone())).frame(false);
+                            }
+
+                            if ui.add(header_btn).clicked() {
                                 self.sort_key = value.sort_key;
                                 self.sort_ascending = !self.sort_ascending;
                                 self.page = 0;
                             }
+
                         });
                     }
                 }

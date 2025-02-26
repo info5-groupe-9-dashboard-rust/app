@@ -2,11 +2,13 @@ use crate::models::data_structure::job::{Job, JobState};
 use crate::models::data_structure::resource::ResourceState;
 use crate::models::data_structure::strata::Strata;
 use crate::models::utils::utils::convert_id_to_color;
-use chrono::{DateTime, Local};
 use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
 use std::process::Command;
+
+#[cfg(not(target_arch = "wasm32"))]
+use chrono::{DateTime, Local};
 
 /**
  * Test SSH connection to the specified host
