@@ -418,7 +418,7 @@ impl Default for ApplicationContext {
             filters: JobFilters::default(),
             start_date: Arc::new(Mutex::new(now - chrono::Duration::hours(1))),
             end_date: Arc::new(Mutex::new(now + chrono::Duration::hours(1))),
-            view_type: ViewType::Dashboard,
+            view_type: ViewType::Gantt,
             is_loading: false,
             is_refreshing: Arc::new(Mutex::new(false)),
             refresh_rate: Arc::new(Mutex::new(30)),
