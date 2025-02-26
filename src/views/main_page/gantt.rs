@@ -1,9 +1,17 @@
 use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::date_converter::format_timestamp;
+use crate::models::utils::utils::cluster_contain_host;
 use crate::models::utils::utils::compare_string_with_number;
+use crate::models::utils::utils::get_all_clusters;
+use crate::models::utils::utils::get_all_hosts;
+use crate::models::utils::utils::get_all_resources;
+use crate::models::utils::utils::get_cluster_from_name;
 use crate::views::view::View;
 use crate::{
-    models::data_structure::{application_context::ApplicationContext, job::Job},
+    models::data_structure::{
+        application_context::ApplicationContext,
+        job::{Job, JobState},
+    },
     views::components::{
         gantt_aggregate_by::{AggregateBy, AggregateByLevel1Enum, AggregateByLevel2Enum},
         gantt_job_color::JobColor,
@@ -86,10 +94,45 @@ impl View for GanttChart {
                     || (self.options.aggregate_by.level_1 == AggregateByLevel1Enum::Cluster
                         && self.options.aggregate_by.level_2 == AggregateByLevel2Enum::Host)
                 {
-                    // Add a checkbox to see all resources
-                    ui.checkbox(&mut self.options.see_all_res, "See all resources");
+                    if !self.options.see_all_res {
+                        if ui.button("Hide all resources").clicked() {
+                            if !self.options.see_all_res {
+                                self.options.see_all_res = true;
+                                app.all_jobs.push(Job {
+                                    id: 0,
+                                    owner: "all_resources".to_string(),
+                                    state: JobState::Unknown,
+                                    scheduled_start: 0,
+                                    walltime: 0,
+                                    hosts: get_all_hosts(&app.all_clusters),
+                                    clusters: get_all_clusters(&app.all_clusters),
+                                    command: String::new(),
+                                    message: None,
+                                    queue: String::new(),
+                                    assigned_resources: get_all_resources(&app.all_clusters),
+                                    submission_time: 0,
+                                    start_time: 0,
+                                    stop_time: 0,
+                                    exit_code: None,
+                                    gantt_color: Color32::TRANSPARENT,
+                                    main_resource_state: ResourceState::Unknown,
+                                });
+                            }
+                        }
+                    } else {
+                        if ui.button("See all resources").clicked() {
+                            if self.options.see_all_res {
+                                self.options.see_all_res = false;
+                                // remove the job with id 0 from the filter_jobs
+                                app.all_jobs.retain(|job| job.id != 0);
+                            }
+                        }
+                    }
                     ui.separator();
                 } else {
+                    if self.options.see_all_res {
+                        app.all_jobs.retain(|job| job.id != 0);
+                    }
                     self.options.see_all_res = false;
                 }
 
@@ -433,12 +476,18 @@ fn ui_canvas(
                 for job in jobs {
                     for cluster in job.clusters.iter() {
                         for host in job.hosts.iter() {
-                            jobs_by_cluster_by_host
-                                .entry(cluster.clone())
-                                .or_insert_with(BTreeMap::new)
-                                .entry(host.clone())
-                                .or_insert_with(Vec::new)
-                                .push(job.clone());
+                            // We don't add the host to the cluster if this host doesn't belong to the cluster
+                            let curr_cluster =
+                                get_cluster_from_name(&app.all_clusters, &cluster).unwrap();
+
+                            if cluster_contain_host(&curr_cluster, &host) {
+                                jobs_by_cluster_by_host
+                                    .entry(cluster.clone())
+                                    .or_insert_with(BTreeMap::new)
+                                    .entry(host.clone())
+                                    .or_insert_with(Vec::new)
+                                    .push(job.clone());
+                            }
                         }
                     }
                 }

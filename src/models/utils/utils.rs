@@ -22,6 +22,56 @@ pub fn convert_id_to_color(id: u32) -> egui::Color32 {
     egui::Color32::from_rgb(r, g, b)
 }
 
+pub fn get_all_hosts(clusters: &Vec<Cluster>) -> Vec<String> {
+    let mut result: Vec<String> = Vec::new();
+
+    for cluster in clusters {
+        for host in &cluster.hosts {
+            result.push(host.name.clone());
+        }
+    }
+
+    result
+}
+
+pub fn cluster_contain_host(cluster: &Cluster, host_name: &str) -> bool {
+    for host in &cluster.hosts {
+        if host.name == host_name {
+            return true;
+        }
+    }
+    false
+}
+
+pub fn get_cluster_from_name(clusters: &Vec<Cluster>, name: &str) -> Option<Cluster> {
+    for cluster in clusters {
+        if cluster.name == name {
+            return Some(cluster.clone());
+        }
+    }
+    None
+}
+
+pub fn get_all_clusters(clusters: &Vec<Cluster>) -> Vec<String> {
+    let mut result: Vec<String> = Vec::new();
+
+    for cluster in clusters {
+        result.push(cluster.name.clone());
+    }
+
+    result
+}
+
+pub fn get_all_resources(clusters: &Vec<Cluster>) -> Vec<u32> {
+    let mut result: Vec<u32> = Vec::new();
+
+    for cluster in clusters {
+        result.extend(cluster.resource_ids.iter());
+    }
+
+    result
+}
+
 // Compare two strings that may contain numbers
 pub fn compare_string_with_number(a: &str, b: &str) -> Ordering {
     let mut strings_a: Vec<String> = Vec::new();
