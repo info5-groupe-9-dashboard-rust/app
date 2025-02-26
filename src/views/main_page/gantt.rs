@@ -846,8 +846,8 @@ fn paint_job(
 ) -> PaintResult {
     let theme_colors = get_theme_colors(&info.ctx.style());
     let start_x = info.point_from_s(options, job.scheduled_start);
-    let stop_time = if (job.scheduled_start + job.walltime) > info.stop_s {
-        info.stop_s
+    let stop_time = if job.stop_time > 0 {
+        job.stop_time
     } else {
         job.scheduled_start + job.walltime
     };
