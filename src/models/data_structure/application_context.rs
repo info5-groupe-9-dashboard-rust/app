@@ -378,27 +378,27 @@ impl ApplicationContext {
                         && (((self
                             .filters
                             .scheduled_start_time
-                            .map_or(true, |time| job.scheduled_start >= time))
-                            && (self.filters.wall_time.map_or(true, |time| {
-                                job.scheduled_start
-                                    <= self.filters.scheduled_start_time.unwrap_or(0) + time
-                            })))
+                            .map_or(true, |time| time <= job.scheduled_start))
+                            && (self
+                                .filters
+                                .wall_time
+                                .map_or(true, |time| time >= job.scheduled_start)))
                             || ((self
                                 .filters
                                 .scheduled_start_time
-                                .map_or(true, |time| job.get_end_date() >= time))
-                                && (self.filters.wall_time.map_or(true, |time| {
-                                    job.get_end_date()
-                                        <= self.filters.scheduled_start_time.unwrap_or(0) + time
-                                })))
+                                .map_or(true, |time| time <= job.get_end_date()))
+                                && (self
+                                    .filters
+                                    .wall_time
+                                    .map_or(true, |time| time >= job.get_end_date())))
                             || ((self
                                 .filters
                                 .scheduled_start_time
-                                .map_or(true, |time| job.start_time >= time))
-                                && (self.filters.wall_time.map_or(true, |time| {
-                                    job.start_time
-                                        <= self.filters.scheduled_start_time.unwrap_or(0) + time
-                                }))))
+                                .map_or(true, |time| time >= job.start_time))
+                                && (self
+                                    .filters
+                                    .wall_time
+                                    .map_or(true, |time| time <= job.get_end_date()))))
                         && (self.filters.clusters.is_none() || {
                             let selected_clusters = self.filters.clusters.as_ref().unwrap();
                             selected_clusters.iter().any(|cluster| {
