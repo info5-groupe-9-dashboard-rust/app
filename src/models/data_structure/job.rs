@@ -194,6 +194,14 @@ impl JobSortable for Job {
     fn get_clusters(&self) -> &Vec<String> {
         &self.clusters
     }
+
+    fn get_end_date(&self) -> i64 {
+        if self.stop_time > 0 {
+            self.stop_time
+        } else {
+            self.start_time + self.walltime
+        }
+    }
 }
 
 impl Job {

@@ -10,7 +10,6 @@ use std::process::Command;
 #[cfg(not(target_arch = "wasm32"))]
 use chrono::{DateTime, Local};
 
-
 /**
  * Test SSH connection to the specified host
  */
@@ -37,14 +36,13 @@ pub fn test_connection(host: &str) -> bool {
  */
 #[cfg(not(target_arch = "wasm32"))]
 pub fn get_current_jobs_for_period(start_date: DateTime<Local>, end_date: DateTime<Local>) -> bool {
-    // Test connection first
-
-    // The interval should be upscale by 30% to avoid missing jobs
+    // Add a margin to the interval
     let interval = end_date - start_date;
     let margin = interval.num_seconds() * 30 / 100;
     let start_date = start_date - chrono::Duration::seconds(margin);
     let end_date = end_date + chrono::Duration::seconds(margin);
 
+    // Test connection first
     if !test_connection("grenoble.g5k") {
         return false;
     }
