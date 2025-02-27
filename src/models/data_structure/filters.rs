@@ -1,6 +1,6 @@
 use super::{cluster::Cluster, job::JobState};
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 
 pub struct JobFilters {
     pub owners: Option<Vec<String>>,

@@ -2,6 +2,8 @@ use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::date_converter::format_timestamp;
 use crate::models::utils::utils::cluster_contain_host;
 use crate::models::utils::utils::compare_string_with_number;
+use crate::models::utils::utils::contains_cluster;
+use crate::models::utils::utils::contains_host;
 use crate::models::utils::utils::get_all_clusters;
 use crate::models::utils::utils::get_all_hosts;
 use crate::models::utils::utils::get_all_resources;
@@ -378,8 +380,14 @@ fn ui_canvas(
                 AggregateByLevel2Enum::Owner => {
                     let mut jobs_by_host_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
                         BTreeMap::new();
+                    let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
                     for job in jobs {
                         for host in job.hosts.iter() {
+                            if filtered_clusters.len() != 0
+                                && !contains_host(&filtered_clusters, host)
+                            {
+                                continue;
+                            }
                             jobs_by_host_by_owner
                                 .entry(host.clone())
                                 .or_insert_with(BTreeMap::new)
@@ -402,8 +410,14 @@ fn ui_canvas(
                 }
                 AggregateByLevel2Enum::None => {
                     let mut jobs_by_host: BTreeMap<String, Vec<Job>> = BTreeMap::new();
+                    let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
                     for job in jobs {
                         for host in job.hosts.iter() {
+                            if filtered_clusters.len() != 0
+                                && !contains_host(&filtered_clusters, host)
+                            {
+                                continue;
+                            }
                             jobs_by_host
                                 .entry(host.clone())
                                 .or_insert_with(Vec::new)
@@ -432,8 +446,14 @@ fn ui_canvas(
             AggregateByLevel2Enum::Owner => {
                 let mut jobs_by_cluster_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
                     BTreeMap::new();
+                let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
                 for job in jobs {
                     for cluster in job.clusters.iter() {
+                        if filtered_clusters.len() != 0
+                            && contains_cluster(&filtered_clusters, cluster)
+                        {
+                            continue;
+                        }
                         jobs_by_cluster_by_owner
                             .entry(cluster.clone())
                             .or_insert_with(BTreeMap::new)
@@ -456,8 +476,14 @@ fn ui_canvas(
             }
             AggregateByLevel2Enum::None => {
                 let mut jobs_by_cluster: BTreeMap<String, Vec<Job>> = BTreeMap::new();
+                let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
                 for job in jobs {
                     for cluster in job.clusters.iter() {
+                        if filtered_clusters.len() != 0
+                            && contains_cluster(&filtered_clusters, cluster)
+                        {
+                            continue;
+                        }
                         jobs_by_cluster
                             .entry(cluster.clone())
                             .or_insert_with(Vec::new)
@@ -478,9 +504,15 @@ fn ui_canvas(
             AggregateByLevel2Enum::Host => {
                 let mut jobs_by_cluster_by_host: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
                     BTreeMap::new();
+                let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
                 for job in jobs {
                     for cluster in job.clusters.iter() {
                         for host in job.hosts.iter() {
+                            if filtered_clusters.len() != 0
+                                && !contains_host(&filtered_clusters, host)
+                            {
+                                continue;
+                            }
                             // We don't add the host to the cluster if this host doesn't belong to the cluster
                             let curr_cluster =
                                 get_cluster_from_name(&app.all_clusters, &cluster).unwrap();
@@ -914,13 +946,6 @@ fn paint_job(
     info.painter.rect_filled(rect, options.rounding, fill_color);
 
     let majority_state = job.main_resource_state.clone();
-
-    //even or odd just to test
-    // let majority_state = if job.id % 2 == 0 {
-    //     ResourceState::Dead
-    // } else {
-    //     ResourceState::Absent
-    // };
 
     // paint hatch
     if majority_state == ResourceState::Dead || majority_state == ResourceState::Absent {

@@ -72,6 +72,26 @@ pub fn get_all_resources(clusters: &Vec<Cluster>) -> Vec<u32> {
     result
 }
 
+pub fn contains_host(cluster: &Vec<Cluster>, host_name: &str) -> bool {
+    for c in cluster {
+        for host in &c.hosts {
+            if host.name == host_name {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+pub fn contains_cluster(cluster: &Vec<Cluster>, cluster_name: &str) -> bool {
+    for c in cluster {
+        if c.name == cluster_name {
+            return true;
+        }
+    }
+    false
+}
+
 // Compare two strings that may contain numbers
 pub fn compare_string_with_number(a: &str, b: &str) -> Ordering {
     let mut strings_a: Vec<String> = Vec::new();
