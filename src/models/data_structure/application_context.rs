@@ -305,31 +305,28 @@ impl ApplicationContext {
                     cluster.state = ResourceState::Unknown;
                 }
             }
+            // Swap all_jobs and all_clusters with swap_all_jobs and swap_all_clusters
+            // If there is a job with id 0 in all_jobs, we keep it
+            let has_job_0 = self.all_jobs.iter().any(|job| job.id == 0);
+            if has_job_0 {
+                // Get the job with id 0
+                let job_0 = self
+                    .all_jobs
+                    .iter()
+                    .find(|job| job.id == 0)
+                    .unwrap()
+                    .clone();
+                self.swap_all_jobs.push(job_0);
+            }
+
+            self.all_jobs = self.swap_all_jobs.clone();
+            self.all_clusters = self.swap_all_clusters.clone();
         }
     }
 
     pub fn check_data_update(&mut self) {
         self.check_job_update();
         self.check_ressource_update();
-
-        // Swap all_jobs and all_clusters with swap_all_jobs and swap_all_clusters
-        // If there is a job with id 0 in all_jobs, we keep it
-        let has_job_0 = self.all_jobs.iter().any(|job| job.id == 0);
-        if has_job_0 {
-            // Get the job with id 0
-            let job_0 = self
-                .all_jobs
-                .iter()
-                .find(|job| job.id == 0)
-                .unwrap()
-                .clone();
-            self.all_jobs = self.swap_all_jobs.clone();
-            self.all_jobs.push(job_0);
-            self.all_clusters = self.swap_all_clusters.clone();
-        } else {
-            self.all_jobs = self.swap_all_jobs.clone();
-            self.all_clusters = self.swap_all_clusters.clone();
-        }
 
         // set filter date to the date of the app context
         self.filters
