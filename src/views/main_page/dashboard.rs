@@ -31,9 +31,9 @@ impl View for Dashboard {
             // Add a button to toggle between the job chart and the job state metrics
             if ui
                 .button(if self.show_chart {
-                    "Show Metrics"
+                    t!("app.dashboard.show_metrics")
                 } else {
-                    "Show Chart"
+                    t!("app.dashboard.show_charts")
                 })
                 .clicked()
             {

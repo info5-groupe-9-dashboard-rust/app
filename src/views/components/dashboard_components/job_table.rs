@@ -58,20 +58,14 @@ impl JobTable {
         ui.horizontal(|ui| {
             // Left side with Options
             ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                ui.menu_button("🔧 Settings", |ui| {
+                ui.menu_button(t!("app.job_table.settings"), |ui| {
                     ui.set_max_height(500.0);
 
                     // Column selection
                     self.column_selection.ui(ui);
                 });
                 ui.menu_button("❓", |ui| {
-                    ui.label(
-                        "Actions disponibles:\n\
-                         - Navigation: Utilisez les boutons page suivante/précédente\n\
-                         - Tri: Cliquez sur l'en-tête d'une colonne pour trier (croissant/décroissant)\n\
-                         - Détails: Cliquez sur une ligne pour voir les détails du job\n\
-                         - Paramètres: Via le bouton '🔧 Settings' pour configurer l'affichage",
-                    );
+                    ui.label(t!("app.job_table.help"));
                 });
             });
 

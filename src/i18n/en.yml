@@ -1,6 +1,7 @@
 app:
   title: 'HPC Dashboard'
   mode: 'Mode:'
+  refreshing: 'Refreshing data...'
   menu:
     file: 'File'
     options: 'Options'
@@ -41,8 +42,27 @@ app:
     start_time: 'Start Time'
     end_time: 'End Time'
     total_jobs: 'Total Jobs'
+    show_metrics: 'Show metrics'
+    show_charts: 'Show charts'
   gantt:
-    title: 'Gantt Chart - OAR Jobs'
+    settings:
+      title: '🔧 Settings'
+      job_color: 'Job color'
+      job_color_random: 'Random'
+      job_color_state: 'By state'
+      hide_resources: 'Hide all resources'
+      show_resources: 'Show all resources'
+      level: 'Level'
+      aggregate_by: 'Aggregate by'
+      host: 'Host'
+      owner: 'Owner'
+      none: 'None'
+    help: "Drag to move around.\n\
+            Zoom: Ctrl/cmd + scroll or vertical drag with right click.\n\
+            Left click on a job to zoom to it.\n\
+            Double left click to reset view.\n\
+            Right click on a job to see details"
+    title: 'Gantt Chart'
     zoom_in: 'Zoom +'
     zoom_out: 'Zoom -'
   loading: 'Loading data...'
@@ -82,6 +102,12 @@ app:
     previous: "Previous"
     select_all: "Select all"
     select_default: "Select default"
+    settings: '🔧 Settings'
+    help: "Available actions:\n\
+          - Navigation: Use next/previous page buttons\n\
+          - Sort: Click on a column header to sort (ascending/descending)\n\
+          - Details: Click on a row to see job details\n\
+          - Settings: Via the '🔧 Settings' button to configure display"
     table:
       row: "Row"
       job_id: "Job ID"
@@ -106,3 +132,8 @@ app:
     states: 'States'
     reset: 'Reset'
     apply: 'Apply'
+  authentification:
+     title: 'Authentication'
+     login: 'Login'
+     username: 'Username'
+     password: 'Password'
