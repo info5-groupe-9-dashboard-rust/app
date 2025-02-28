@@ -20,7 +20,6 @@ impl ApplicationContext {
     pub fn update_refresh_rate(&mut self, new_rate: u64) {
         let mut rate = self.refresh_rate.lock().unwrap();
         *rate = new_rate;
-        println!("New refresh rate: {:?}", self.refresh_rate);
     }
 
     #[allow(dead_code)]
@@ -57,7 +56,6 @@ impl ApplicationContext {
 
         // if the app is already refreshing, return
         if *is_refreshing.lock().unwrap() {
-            print!("Already refreshing");
             return;
         }
 
@@ -79,7 +77,6 @@ impl ApplicationContext {
                 if res {
                     let jobs = get_jobs_from_json("./data/data.json");
                     let resources = get_resources_from_json("./data/data.json");
-
                     jobs_sender.send(jobs).unwrap_or_else(|e| {
                         println!("Error while sending jobs: {}", e);
                     });
@@ -87,10 +84,8 @@ impl ApplicationContext {
                     resources_sender.send(resources).unwrap_or_else(|e| {
                         println!("Error while sending resources: {}", e);
                     });
-                } else {
-                    // LOG ERROR
-                    print!("Error while fetching data");
                 }
+
                 // set refreshing to false
                 *is_refreshing_clone.lock().unwrap() = false;
             });
@@ -127,7 +122,6 @@ impl ApplicationContext {
                 loop {
                     // Check if already refreshing
                     if *is_refreshing.lock().unwrap() {
-                        print!("Already refreshing");
                         thread::sleep(Duration::from_secs(rate));
                         continue;
                     }
@@ -155,9 +149,6 @@ impl ApplicationContext {
                         resources_sender.send(resources).unwrap_or_else(|e| {
                             println!("Error while sending resources: {}", e);
                         });
-                    } else {
-                        // LOG ERROR
-                        print!("Error while fetching data");
                     }
 
                     // Set refreshing to false
@@ -199,9 +190,6 @@ impl ApplicationContext {
                 if res {
                     let jobs = get_jobs_from_json("./data/data.json");
                     sender.send(jobs).unwrap();
-                } else {
-                    // LOG ERROR
-                    print!("Error while fetching data");
                 }
             });
         }

@@ -71,7 +71,6 @@ impl Secret {
                         self.snake_game = Some(SnakeGame::new());
                         self.konami_start_time = Some(Utc::now());
                         self.show_game = true;
-                        //println!("Konami code activated!");
                     }
                 }
             }
