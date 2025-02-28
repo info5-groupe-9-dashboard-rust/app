@@ -21,7 +21,6 @@ use crate::{
     views::components::{
         gantt_aggregate_by::{AggregateBy, AggregateByLevel1Enum, AggregateByLevel2Enum},
         gantt_job_color::JobColor,
-        gantt_sorting::Sorting,
         job_details::JobDetailsWindow,
     },
 };
@@ -100,38 +99,29 @@ impl View for GanttChart {
                     || (self.options.aggregate_by.level_1 == AggregateByLevel1Enum::Cluster
                         && self.options.aggregate_by.level_2 == AggregateByLevel2Enum::Host)
                 {
-                    if !self.options.see_all_res {
-                        if ui.button("Hide all resources").clicked() {
-                            if !self.options.see_all_res {
-                                self.options.see_all_res = true;
-                                app.all_jobs.push(Job {
-                                    id: 0,
-                                    owner: "all_resources".to_string(),
-                                    state: JobState::Unknown,
-                                    scheduled_start: 0,
-                                    walltime: 0,
-                                    hosts: get_all_hosts(&app.all_clusters),
-                                    clusters: get_all_clusters(&app.all_clusters),
-                                    command: String::new(),
-                                    message: None,
-                                    queue: String::new(),
-                                    assigned_resources: get_all_resources(&app.all_clusters),
-                                    submission_time: 0,
-                                    start_time: 0,
-                                    stop_time: 0,
-                                    exit_code: None,
-                                    gantt_color: Color32::TRANSPARENT,
-                                    main_resource_state: ResourceState::Unknown,
-                                });
-                            }
-                        }
-                    } else {
-                        if ui.button("See all resources").clicked() {
-                            if self.options.see_all_res {
-                                self.options.see_all_res = false;
-                                // remove the job with id 0 from the filter_jobs
-                                app.all_jobs.retain(|job| job.id != 0);
-                            }
+                    if ui.checkbox(&mut self.options.see_all_res, "Show all hosts").clicked() {
+                        if self.options.see_all_res {
+                            app.all_jobs.push(Job {
+                                id: 0,
+                                owner: "all_resources".to_string(),
+                                state: JobState::Unknown,
+                                scheduled_start: 0,
+                                walltime: 0,
+                                hosts: get_all_hosts(&app.all_clusters),
+                                clusters: get_all_clusters(&app.all_clusters),
+                                command: String::new(),
+                                message: None,
+                                queue: String::new(),
+                                assigned_resources: get_all_resources(&app.all_clusters),
+                                submission_time: 0,
+                                start_time: 0,
+                                stop_time: 0,
+                                exit_code: None,
+                                gantt_color: Color32::TRANSPARENT,
+                                main_resource_state: ResourceState::Unknown,
+                            });
+                        } else {
+                            app.all_jobs.retain(|job| job.id != 0);
                         }
                     }
                     ui.separator();
@@ -144,10 +134,6 @@ impl View for GanttChart {
 
                 // Job color component (random, state)
                 self.options.job_color.ui(ui);
-                ui.separator();
-
-                // Sorting options component (sort by, reversed)
-                self.options.sorting.ui(ui);
             });
 
             ui.menu_button("❓", |ui| {
@@ -297,7 +283,6 @@ pub struct Options {
     pub rect_height: f32,             // Height of a job
     pub spacing: f32,                 // Vertical spacing between jobs
     pub rounding: f32,                // Rounded corners
-    pub sorting: Sorting,             // Sorting
     pub aggregate_by: AggregateBy,    // Aggregate by
     pub job_color: JobColor,          // Job color
     pub see_all_res: bool,            // See all resources
@@ -321,7 +306,6 @@ impl Default for Options {
             spacing: 5.0,                     // vertical spacing between jobs
             rounding: 4.0,                    // rounded corners
             aggregate_by: Default::default(), // aggregate by component
-            sorting: Default::default(),      // sorting component
             job_color: Default::default(),    // job color component
             zoom_to_relative_s_range: None,   // no zooming by default
             current_hovered_job: None,        // no hovered job by default
@@ -357,8 +341,7 @@ fn ui_canvas(
     let mut cursor_y = info.canvas.top();
     cursor_y += info.text_height;
 
-    // Apply sorting
-    let jobs = options.sorting.sort(app.filtered_jobs.clone());
+    let jobs = app.filtered_jobs.clone();
 
     match options.aggregate_by.level_1 {
         // Aggregate by owner only
@@ -755,8 +738,13 @@ fn paint_aggregated_jobs_level_1(
 
     cursor_y += spacing_between_level_1;
 
+    // Sort the level 1 keys
+    let mut sorted_level_1: Vec<String> = jobs.keys().cloned().collect();
+    sorted_level_1.sort_by(|a, b| compare_string_with_number(&a, &b));
+
     // Display jobs
-    for (level_1, job_list) in jobs {
+    for level_1 in sorted_level_1 {
+        let job_list = jobs.get(&level_1).unwrap();
         // Draw a line to separate
         info.painter.line_segment(
             [
@@ -846,7 +834,12 @@ fn paint_aggregated_jobs_level_2(
 
     cursor_y += spacing_between_level_1;
 
-    for (level_1, level_2_map) in jobs {
+    // Sort the level 1 keys
+    let mut sorted_level_1: Vec<String> = jobs.keys().cloned().collect();
+    sorted_level_1.sort_by(|a, b| compare_string_with_number(&a, &b));
+
+    for level_1 in sorted_level_1 {
+        let level_2_map = jobs.get(&level_1).unwrap();
         let level_1_key = level_1.clone();
 
         // Draw a line to separate
@@ -874,6 +867,7 @@ fn paint_aggregated_jobs_level_2(
 
         // Only show jobs if section is not collapsed
         if !*is_collapsed_level_1 {
+
             // Sort the level 2 keys
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
             sorted_level_2.sort_by(|a, b| compare_string_with_number(&a, &b));
