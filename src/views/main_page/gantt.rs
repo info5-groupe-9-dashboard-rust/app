@@ -737,8 +737,13 @@ fn paint_aggregated_jobs_level_1(
 
     cursor_y += spacing_between_level_1;
 
+    // Sort the level 1 keys
+    let mut sorted_level_1: Vec<String> = jobs.keys().cloned().collect();
+    sorted_level_1.sort_by(|a, b| compare_string_with_number(&a, &b));
+
     // Display jobs
-    for (level_1, job_list) in jobs {
+    for level_1 in sorted_level_1 {
+        let job_list = jobs.get(&level_1).unwrap();
         // Draw a line to separate
         info.painter.line_segment(
             [
@@ -828,7 +833,12 @@ fn paint_aggregated_jobs_level_2(
 
     cursor_y += spacing_between_level_1;
 
-    for (level_1, level_2_map) in jobs {
+    // Sort the level 1 keys
+    let mut sorted_level_1: Vec<String> = jobs.keys().cloned().collect();
+    sorted_level_1.sort_by(|a, b| compare_string_with_number(&a, &b));
+
+    for level_1 in sorted_level_1 {
+        let level_2_map = jobs.get(&level_1).unwrap();
         let level_1_key = level_1.clone();
 
         // Draw a line to separate
@@ -856,6 +866,7 @@ fn paint_aggregated_jobs_level_2(
 
         // Only show jobs if section is not collapsed
         if !*is_collapsed_level_1 {
+
             // Sort the level 2 keys
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
             sorted_level_2.sort_by(|a, b| compare_string_with_number(&a, &b));
