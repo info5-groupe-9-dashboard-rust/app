@@ -30,24 +30,24 @@ impl Filtering {
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         let mut open = self.open; // Copy the value of self.open to a mutable variable
         if self.open {
-            egui::Window::new("Filters")
+            egui::Window::new(t!("app.filter.page_title"))
                 .collapsible(true)
                 .movable(true)
                 .open(&mut open)
                 .default_size([600.0, 500.0])
                 .show(ui.ctx(), |ui| {
-                    ui.heading("Filter Options");
+                    ui.heading(t!("app.filter.title"));
 
                     ui.separator(); // Add a separator
 
-                    egui::CollapsingHeader::new("Owners")
+                    egui::CollapsingHeader::new(t!("app.filter.owner"))
                         .default_open(false)
                         .show(ui, |ui| {
                             self.render_owners_selector(ui, app);
                         });
                     ui.add_space(10.0);
 
-                    egui::CollapsingHeader::new("Job States")
+                    egui::CollapsingHeader::new(t!("app.filter.state"))
                         .default_open(false)
                         .show(ui, |ui| {
                             self.render_states_selector(ui);
@@ -118,10 +118,7 @@ impl Filtering {
             .show(ui, |ui| {
                 for (i, state) in JobState::iter().enumerate() {
                     let mut is_selected = selected_states.contains(&state);
-                    if ui
-                        .checkbox(&mut is_selected, format!("{:?}", state))
-                        .changed()
-                    {
+                    if ui.checkbox(&mut is_selected, state.get_label()).changed() {
                         if is_selected {
                             selected_states.push(state);
                         } else {
