@@ -9,8 +9,8 @@ use crate::models::utils::utils::get_all_clusters;
 use crate::models::utils::utils::get_all_hosts;
 use crate::models::utils::utils::get_all_resources;
 use crate::models::utils::utils::get_cluster_from_name;
-use crate::models::utils::utils::get_cluster_state;
-use crate::models::utils::utils::get_host_state;
+use crate::models::utils::utils::get_cluster_state_from_name;
+use crate::models::utils::utils::get_host_state_from_name;
 use crate::models::utils::utils::get_tree_structure_for_job;
 use crate::views::view::View;
 use crate::{
@@ -99,7 +99,10 @@ impl View for GanttChart {
                     || (self.options.aggregate_by.level_1 == AggregateByLevel1Enum::Cluster
                         && self.options.aggregate_by.level_2 == AggregateByLevel2Enum::Host)
                 {
-                    if ui.checkbox(&mut self.options.see_all_res, "Show all hosts").clicked() {
+                    if ui
+                        .checkbox(&mut self.options.see_all_res, "Show all hosts")
+                        .clicked()
+                    {
                         if self.options.see_all_res {
                             app.all_jobs.push(Job {
                                 id: 0,
@@ -276,17 +279,17 @@ impl Info {
  * Options struct
  */
 pub struct Options {
-    pub canvas_width_s: f32,          // Canvas width
-    pub sideways_pan_in_points: f32,  // Sideways pan in points
-    pub cull_width: f32,              // Culling width
-    pub min_width: f32,               // Minimum width of a job
-    pub rect_height: f32,             // Height of a job
-    pub spacing: f32,                 // Vertical spacing between jobs
-    pub rounding: f32,                // Rounded corners
-    pub aggregate_by: AggregateBy,    // Aggregate by
-    pub job_color: JobColor,          // Job color
-    pub see_all_res: bool,            // See all resources
-    current_hovered_job: Option<Job>, // Current hovered job
+    pub canvas_width_s: f32,                               // Canvas width
+    pub sideways_pan_in_points: f32,                       // Sideways pan in points
+    pub cull_width: f32,                                   // Culling width
+    pub min_width: f32,                                    // Minimum width of a job
+    pub rect_height: f32,                                  // Height of a job
+    pub spacing: f32,                                      // Vertical spacing between jobs
+    pub rounding: f32,                                     // Rounded corners
+    pub aggregate_by: AggregateBy,                         // Aggregate by
+    pub job_color: JobColor,                               // Job color
+    pub see_all_res: bool,                                 // See all resources
+    current_hovered_job: Option<Job>,                      // Current hovered job
     current_hovered_resource_state: Option<ResourceState>, // Current hovered resource state
     #[cfg_attr(feature = "serde", serde(skip))]
     zoom_to_relative_s_range: Option<(f64, (f64, f64))>, // Zoom to relative s range
@@ -696,7 +699,22 @@ fn paint_tooltip(info: &Info, options: &mut Options) {
         if !tooltip_text.is_empty() {
             tooltip_text.push_str("\n");
         }
-        tooltip_text.push_str(&format!("Host State: {:?}", resource_state));
+        tooltip_text.push_str(&format!(
+            "{} State: {:?}",
+            if (options.aggregate_by.level_2 == AggregateByLevel2Enum::None
+                && options.aggregate_by.level_1 == AggregateByLevel1Enum::Host)
+                || options.aggregate_by.level_2 == AggregateByLevel2Enum::Host
+            {
+                "Host"
+            } else if options.aggregate_by.level_2 == AggregateByLevel2Enum::None
+                && options.aggregate_by.level_1 == AggregateByLevel1Enum::Cluster
+            {
+                "Cluster"
+            } else {
+                "Resource"
+            },
+            resource_state
+        ));
         options.current_hovered_resource_state = None; // Reset for next frame
     }
 
@@ -772,9 +790,9 @@ fn paint_aggregated_jobs_level_1(
         if aggregate_by == AggregateByLevel1Enum::Owner {
             owner = true;
         } else if aggregate_by == AggregateByLevel1Enum::Host {
-            state = get_host_state(all_cluster, &level_1);
+            state = get_host_state_from_name(all_cluster, &level_1);
         } else {
-            state = get_cluster_state(all_cluster, &level_1);
+            state = get_cluster_state_from_name(all_cluster, &level_1);
         }
 
         // Only show jobs if section is not collapsed
@@ -867,7 +885,6 @@ fn paint_aggregated_jobs_level_2(
 
         // Only show jobs if section is not collapsed
         if !*is_collapsed_level_1 {
-
             // Sort the level 2 keys
             let mut sorted_level_2: Vec<_> = level_2_map.keys().collect();
             sorted_level_2.sort_by(|a, b| compare_string_with_number(&a, &b));
@@ -908,12 +925,12 @@ fn paint_aggregated_jobs_level_2(
                     let mut owner = false;
 
                     if aggregate_by_level_2 == AggregateByLevel2Enum::Host {
-                        state = get_host_state(all_cluster, &level_2);
+                        state = get_host_state_from_name(all_cluster, &level_2);
                     } else if aggregate_by_level_2 == AggregateByLevel2Enum::None {
                         if aggregate_by_level_1 == AggregateByLevel1Enum::Host {
-                            state = get_host_state(all_cluster, &level_1);
+                            state = get_host_state_from_name(all_cluster, &level_1);
                         } else if aggregate_by_level_1 == AggregateByLevel1Enum::Cluster {
-                            state = get_cluster_state(all_cluster, &level_1);
+                            state = get_cluster_state_from_name(all_cluster, &level_1);
                         } else {
                             owner = true;
                         }
@@ -1051,12 +1068,12 @@ fn paint_job(
             ResourceState::Absent => Color32::from_rgba_premultiplied(0, 150, 150, 150),
             _ => Color32::TRANSPARENT,
         };
-    
+
         let hachure_spacing = 10.0;
         let mut shapes = Vec::new();
         let mut x = info.canvas.min.x;
         let current_time_x = info.point_from_s(options, chrono::Utc::now().timestamp());
-    
+
         // Define the rectangle where the hachure will be drawn
         let hover_rect = match state {
             ResourceState::Dead => Rect::from_min_max(
@@ -1069,7 +1086,7 @@ fn paint_job(
             ),
             _ => Rect::from_min_max(pos2(0.0, 0.0), pos2(0.0, 0.0)), // draw nothing
         };
-    
+
         // We check if the mouse is hovering the hachure
         let is_hachure_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
             hover_rect.contains(mouse_pos)
@@ -1083,7 +1100,7 @@ fn paint_job(
         } else {
             hachure_color
         };
-    
+
         while x < info.canvas.max.x {
             if state == ResourceState::Absent && x >= current_time_x {
                 break;
@@ -1094,15 +1111,14 @@ fn paint_job(
             ));
             x += hachure_spacing;
         }
-    
+
         info.painter.extend(shapes);
-    
+
         // Display tooltip if hovered
         if is_hachure_hovered {
             options.current_hovered_resource_state = Some(state.clone());
         }
     }
-    
 
     if width > 20.0 {
         let text = format!("{} ({})", job.owner, job.id);
