@@ -566,11 +566,8 @@ fn ui_canvas(
         },
     }
 
-    // Paint tooltip for hovered job if there is one
-    paint_job_tooltip(info, options);
-
-    // Paint tooltip for hovered resource state if there is one
-    paint_resource_state_tooltip(info, options);
+    // Paint tooltip for hovered job/resource state
+    paint_tooltip(info, options);
 
     // Paint the timeline text on top of everything
     paint_timeline_text_on_top(info, options, fixed_timeline_y);
@@ -693,51 +690,46 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
 /****************************************************************************************************************************/
 
 /**
- * Paints a tooltip for a resource state
+ * Paints a tooltip for a job and/or resource state
  */
-fn paint_resource_state_tooltip(info: &Info, options: &mut Options) {
-    if let Some(resource_state) = &options.current_hovered_resource_state {
-        if let Some(_pointer_pos) = info.response.hover_pos() {
-            let text = format!("Resource State: {:?}", resource_state);
+fn paint_tooltip(info: &Info, options: &mut Options) {
+    let mut tooltip_text = String::new();
 
-            egui::show_tooltip(
-                &info.ctx,
-                info.response.layer_id,
-                egui::Id::new("resource_state_tooltip"),
-                |ui| {
-                    ui.label(text);
-                },
-            );
+    // Add job info if there's a hovered job
+    if let Some(job) = &options.current_hovered_job {
+        tooltip_text.push_str(&format!(
+            "Job ID: {}\nOwner: {:?}\nState: {}\nStart: {}\nWalltime: {} seconds",
+            job.id,
+            job.owner,
+            job.state.get_label(),
+            format_timestamp(job.scheduled_start),
+            job.walltime
+        ));
+        options.current_hovered_job = None; // Reset for next frame
+    }
+
+    // Add resource state info if there's a hovered resource state
+    if let Some(resource_state) = &options.current_hovered_resource_state {
+        if !tooltip_text.is_empty() {
+            tooltip_text.push_str("\n");
         }
+        tooltip_text.push_str(&format!("Host State: {:?}", resource_state));
         options.current_hovered_resource_state = None; // Reset for next frame
     }
-}
 
-/**
- * Paints a tooltip for a job
- */
-fn paint_job_tooltip(info: &Info, options: &mut Options) {
-    if let Some(job) = &options.current_hovered_job {
+    // Show tooltip if we have any text to display
+    if !tooltip_text.is_empty() {
         if let Some(_pointer_pos) = info.response.hover_pos() {
-            let text = format!(
-                "Job ID: {}\nOwner: {:?}\nState: {}\nStart: {}\nWalltime: {} seconds",
-                job.id,
-                job.owner,
-                job.state.get_label(),
-                format_timestamp(job.scheduled_start),
-                job.walltime
-            );
-
-            egui::show_tooltip(
+            egui::show_tooltip_at_pointer(
                 &info.ctx,
                 info.response.layer_id,
-                egui::Id::new("job_tooltip"),
+                egui::Id::new("tooltip"),
                 |ui| {
-                    ui.label(text);
+                    ui.set_max_width(800.0);
+                    ui.label(tooltip_text);
                 },
             );
         }
-        options.current_hovered_job = None; // Reset for next frame
     }
 }
 
@@ -1008,19 +1000,19 @@ fn paint_job(
         egui::vec2(width.max(options.min_width), height),
     );
 
-    let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
+    let is_job_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
         rect.contains(mouse_pos)
     } else {
         false
     };
 
     // Draw tooltip
-    if is_hovered {
+    if is_job_hovered {
         options.current_hovered_job = Some(job.clone());
     }
 
     // Add click detection for the job
-    if is_hovered && info.response.secondary_clicked() {
+    if is_job_hovered && info.response.secondary_clicked() {
         let window =
             JobDetailsWindow::new(job.clone(), get_tree_structure_for_job(job, all_cluster));
         // Check if a window for this job already exists, if so, don't open a new one
@@ -1030,7 +1022,7 @@ fn paint_job(
     }
 
     // Zoom to job if clicked
-    if is_hovered && info.response.clicked() {
+    if is_job_hovered && info.response.clicked() {
         // Zoom to job
         let job_duration_s = job.walltime as f64;
         let job_start_s = job.scheduled_start as f64;
@@ -1050,7 +1042,7 @@ fn paint_job(
         job.state.get_color()
     };
 
-    let fill_color = if is_hovered {
+    let fill_color = if is_job_hovered {
         hovered_color
     } else {
         normal_color
@@ -1072,20 +1064,27 @@ fn paint_job(
         let current_time_x = info.point_from_s(options, chrono::Utc::now().timestamp());
     
         // Define the rectangle where the hachure will be drawn
-        let hover_rect = Rect::from_min_max(
-            pos2(info.canvas.min.x, top_y),
-            pos2(info.canvas.max.x, top_y + height),
-        );
+        let hover_rect = match state {
+            ResourceState::Dead => Rect::from_min_max(
+                pos2(info.canvas.min.x, top_y),
+                pos2(info.canvas.max.x, top_y + height), // draw hachure until the canvas max visible x
+            ),
+            ResourceState::Absent => Rect::from_min_max(
+                pos2(info.canvas.min.x, top_y),
+                pos2(current_time_x, top_y + height), // only draw hachure until current time
+            ),
+            _ => Rect::from_min_max(pos2(0.0, 0.0), pos2(0.0, 0.0)), // draw nothing
+        };
     
         // We check if the mouse is hovering the hachure
-        let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
+        let is_hachure_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
             hover_rect.contains(mouse_pos)
         } else {
             false
         };
 
         // Final color of the hachure
-        let final_hachure_color = if is_hovered {
+        let final_hachure_color = if is_hachure_hovered {
             hachure_color.gamma_multiply(1.5) // More visible when hovered
         } else {
             hachure_color
@@ -1105,8 +1104,8 @@ fn paint_job(
         info.painter.extend(shapes);
     
         // Display tooltip if hovered
-        if is_hovered {
-            options.current_hovered_resource_state = Some(majority_state);
+        if is_hachure_hovered {
+            options.current_hovered_resource_state = Some(state.clone());
         }
     }
     
@@ -1118,7 +1117,7 @@ fn paint_job(
             Align2::CENTER_CENTER,
             text,
             info.font_id.clone(),
-            if is_hovered {
+            if is_job_hovered {
                 theme_colors.text
             } else {
                 theme_colors.text_dim
@@ -1126,7 +1125,7 @@ fn paint_job(
         );
     }
 
-    if is_hovered {
+    if is_job_hovered {
         PaintResult::Hovered
     } else {
         PaintResult::Painted
