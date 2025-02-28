@@ -75,7 +75,6 @@ impl<'a> MetricGridBuilder<'a> {
         if self.current_column >= self.columns {
             self.new_row();
         }
-
         self.ui
             .add_sized([self.column_width, MetricBox::MIN_HEIGHT], chart);
         self.current_column += 1;
