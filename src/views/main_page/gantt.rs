@@ -1034,7 +1034,11 @@ fn paint_job(
         // Zoom to job
         let job_duration_s = job.walltime as f64;
         let job_start_s = job.scheduled_start as f64;
-        let job_end_s = job_start_s + job_duration_s;
+        let job_end_s = if job.stop_time > 0 {
+            job.stop_time as f64
+        } else {
+            job_start_s + job_duration_s
+        };
         options.zoom_to_relative_s_range = Some((
             info.ctx.input(|i| i.time),
             (
