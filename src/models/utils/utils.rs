@@ -83,7 +83,7 @@ pub fn contains_host(cluster: &Vec<Cluster>, host_name: &str) -> bool {
     false
 }
 
-pub fn get_cluster_state(cluster: &Vec<Cluster>, cluster_name: &String) -> ResourceState {
+pub fn get_cluster_state_from_name(cluster: &Vec<Cluster>, cluster_name: &String) -> ResourceState {
     for c in cluster {
         if c.name == *cluster_name {
             return c.state.clone();
@@ -92,7 +92,7 @@ pub fn get_cluster_state(cluster: &Vec<Cluster>, cluster_name: &String) -> Resou
     ResourceState::Unknown
 }
 
-pub fn get_host_state(cluster: &Vec<Cluster>, host_name: &String) -> ResourceState {
+pub fn get_host_state_from_name(cluster: &Vec<Cluster>, host_name: &String) -> ResourceState {
     for c in cluster {
         for host in &c.hosts {
             if host.name == *host_name {
