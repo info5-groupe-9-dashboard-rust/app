@@ -100,38 +100,29 @@ impl View for GanttChart {
                     || (self.options.aggregate_by.level_1 == AggregateByLevel1Enum::Cluster
                         && self.options.aggregate_by.level_2 == AggregateByLevel2Enum::Host)
                 {
-                    if !self.options.see_all_res {
-                        if ui.button("Hide all resources").clicked() {
-                            if !self.options.see_all_res {
-                                self.options.see_all_res = true;
-                                app.all_jobs.push(Job {
-                                    id: 0,
-                                    owner: "all_resources".to_string(),
-                                    state: JobState::Unknown,
-                                    scheduled_start: 0,
-                                    walltime: 0,
-                                    hosts: get_all_hosts(&app.all_clusters),
-                                    clusters: get_all_clusters(&app.all_clusters),
-                                    command: String::new(),
-                                    message: None,
-                                    queue: String::new(),
-                                    assigned_resources: get_all_resources(&app.all_clusters),
-                                    submission_time: 0,
-                                    start_time: 0,
-                                    stop_time: 0,
-                                    exit_code: None,
-                                    gantt_color: Color32::TRANSPARENT,
-                                    main_resource_state: ResourceState::Unknown,
-                                });
-                            }
-                        }
-                    } else {
-                        if ui.button("See all resources").clicked() {
-                            if self.options.see_all_res {
-                                self.options.see_all_res = false;
-                                // remove the job with id 0 from the filter_jobs
-                                app.all_jobs.retain(|job| job.id != 0);
-                            }
+                    if ui.checkbox(&mut self.options.see_all_res, "Show all hosts").clicked() {
+                        if self.options.see_all_res {
+                            app.all_jobs.push(Job {
+                                id: 0,
+                                owner: "all_resources".to_string(),
+                                state: JobState::Unknown,
+                                scheduled_start: 0,
+                                walltime: 0,
+                                hosts: get_all_hosts(&app.all_clusters),
+                                clusters: get_all_clusters(&app.all_clusters),
+                                command: String::new(),
+                                message: None,
+                                queue: String::new(),
+                                assigned_resources: get_all_resources(&app.all_clusters),
+                                submission_time: 0,
+                                start_time: 0,
+                                stop_time: 0,
+                                exit_code: None,
+                                gantt_color: Color32::TRANSPARENT,
+                                main_resource_state: ResourceState::Unknown,
+                            });
+                        } else {
+                            app.all_jobs.retain(|job| job.id != 0);
                         }
                     }
                     ui.separator();
