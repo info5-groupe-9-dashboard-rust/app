@@ -2,10 +2,6 @@ use crate::models::data_structure::resource::ResourceState;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use strum_macros::EnumIter;
-
-#[cfg(target_arch = "wasm32")]
-use chrono::{DateTime, Local};
-
 use super::cluster;
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, EnumIter, Debug, Eq, PartialOrd, Ord, Hash)]
@@ -198,6 +194,14 @@ impl JobSortable for Job {
     fn get_clusters(&self) -> &Vec<String> {
         &self.clusters
     }
+
+    fn get_end_date(&self) -> i64 {
+        if self.stop_time > 0 {
+            self.stop_time
+        } else {
+            self.start_time + self.walltime
+        }
+    }
 }
 
 impl Job {
@@ -273,116 +277,4 @@ impl Job {
             ResourceState::Unknown
         };
     }
-}
-
-// Mocking Job to Test ApplicationContext
-#[cfg(target_arch = "wasm32")]
-pub fn mock_job(id: u32) -> Job {
-    // Possible owner list
-    let owners = vec!["alice", "bob", "charlie", "david", "eva"];
-
-    // List of possible commands and their queues associated
-    let commands = vec![
-        ("python3 train_model.py", "gpu"),
-        ("make test", "test"),
-        ("mpirun -np 4 simulation", "cpu"),
-        ("jupyter notebook", "interactive"),
-        ("gcc -O3 project.c", "compile"),
-    ];
-
-    // Function to generate a random number
-    let random_index = |max: usize| -> usize {
-        let mut buf = [0u8; 8];
-        getrandom::getrandom(&mut buf).unwrap();
-        let value = u64::from_le_bytes(buf);
-        (value % max as u64) as usize
-    };
-
-    let random_float = || -> f32 {
-        let mut buf = [0u8; 8];
-        getrandom::getrandom(&mut buf).unwrap();
-        let value = u64::from_le_bytes(buf);
-        (value as f32) / (u64::MAX as f32)
-    };
-
-    // Coherent timestamp generation
-    let now = Local::now().timestamp();
-    let submission_time = now - (random_index(86400) as i64);
-    let scheduled_start = submission_time + (random_index(3300) as i64 + 300);
-    let start_time = if random_float() < 0.7 {
-        scheduled_start
-    } else {
-        0
-    };
-    let walltime = random_index(5400) as i64 + 1800;
-    let stop_time = if start_time > 0 && random_float() < 0.3 {
-        start_time + walltime
-    } else {
-        0
-    };
-
-    // Randomly select the state based on the context
-    let state = if stop_time > 0 {
-        State::Terminated
-    } else if start_time > 0 {
-        let states = vec![State::Running, State::Suspended, State::Finishing];
-        states[random_index(states.len())].clone()
-    } else if scheduled_start > now {
-        let states = vec![State::Waiting, State::Hold];
-        states[random_index(states.len())].clone()
-    } else {
-        let states = vec![State::ToLaunch, State::Launching, State::Waiting];
-        states[random_index(states.len())].clone()
-    };
-
-    // Commande and queue selection
-    let (command, queue) = commands[random_index(commands.len())];
-
-    // Assigned ressources generation
-    let num_resources = random_index(7) + 1;
-    let assigned_resources = if start_time > 0 {
-        let mut resources = Vec::new();
-        while resources.len() < num_resources {
-            let resource = (random_index(20) + 1) as u32;
-            if !resources.contains(&resource) {
-                resources.push(resource);
-            }
-        }
-        resources
-    } else {
-        vec![]
-    };
-
-    // Generate message based on the state
-    let message = match state {
-        State::Error => Some("Erreur d'exécution".to_string()),
-        State::Hold => Some("En attente de ressources".to_string()),
-        State::Suspended => Some("Suspendu par l'administrateur".to_string()),
-        _ => None,
-    };
-
-    Job {
-        id,
-        owner: owners[random_index(owners.len())].to_string(),
-        state,
-        command: command.to_string(),
-        walltime,
-        message,
-        queue: queue.to_string(),
-        assigned_resources,
-        scheduled_start,
-        submission_time,
-        start_time,
-        stop_time,
-        exit_code: if stop_time > 0 {
-            Some((random_index(3) as i32) - 1)
-        } else {
-            None
-        },
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
-pub fn mock_jobs() -> Vec<Job> {
-    (1..=50).map(|id| mock_job(id)).collect()
 }

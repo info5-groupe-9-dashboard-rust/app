@@ -7,13 +7,11 @@ use crate::models::data_structure::cpu::Cpu;
 use crate::models::data_structure::host::Host;
 use crate::models::data_structure::resource::ResourceState;
 use crate::models::utils::utils::{get_clusters_for_job, get_hosts_for_job};
+use crate::views::components::dashboard_components::job_table_sorting::JobSortable;
 use crate::views::view::ViewType;
 use chrono::{DateTime, Local};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
-
-#[cfg(target_arch = "wasm32")]
-use crate::models::job::mock_jobs;
 
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>,
@@ -257,7 +255,7 @@ impl ApplicationContext {
             }
 
             // For each host set is state to the state the most resources have
-            for cluster in self.all_clusters.iter_mut() {
+            for cluster in self.swap_all_clusters.iter_mut() {
                 for host in cluster.hosts.iter_mut() {
                     let mut dead_count = 0;
                     let mut alive_count = 0;
@@ -285,7 +283,7 @@ impl ApplicationContext {
             }
 
             // For each cluster set is state to the state the most hosts have
-            for cluster in self.all_clusters.iter_mut() {
+            for cluster in self.swap_all_clusters.iter_mut() {
                 let mut dead_count = 0;
                 let mut alive_count = 0;
                 let mut absent_count = 0;
@@ -307,6 +305,22 @@ impl ApplicationContext {
                     cluster.state = ResourceState::Unknown;
                 }
             }
+            // Swap all_jobs and all_clusters with swap_all_jobs and swap_all_clusters
+            // If there is a job with id 0 in all_jobs, we keep it
+            let has_job_0 = self.all_jobs.iter().any(|job| job.id == 0);
+            if has_job_0 {
+                // Get the job with id 0
+                let job_0 = self
+                    .all_jobs
+                    .iter()
+                    .find(|job| job.id == 0)
+                    .unwrap()
+                    .clone();
+                self.swap_all_jobs.push(job_0);
+            }
+
+            self.all_jobs = self.swap_all_jobs.clone();
+            self.all_clusters = self.swap_all_clusters.clone();
         }
     }
 
@@ -314,24 +328,12 @@ impl ApplicationContext {
         self.check_job_update();
         self.check_ressource_update();
 
-        // Swap all_jobs and all_clusters with swap_all_jobs and swap_all_clusters
-        // If there is a job with id 0 in all_jobs, we keep it
-        let has_job_0 = self.all_jobs.iter().any(|job| job.id == 0);
-        if has_job_0 {
-            // Get the job with id 0
-            let job_0 = self
-                .all_jobs
-                .iter()
-                .find(|job| job.id == 0)
-                .unwrap()
-                .clone();
-            self.all_jobs = self.swap_all_jobs.clone();
-            self.all_jobs.push(job_0);
-            self.all_clusters = self.swap_all_clusters.clone();
-        } else {
-            self.all_jobs = self.swap_all_jobs.clone();
-            self.all_clusters = self.swap_all_clusters.clone();
-        }
+        // set filter date to the date of the app context
+        self.filters
+            .set_scheduled_start_time(self.start_date.lock().unwrap().timestamp());
+        self.filters
+            .set_wall_time(self.end_date.lock().unwrap().timestamp());
+
         self.filter_jobs();
     }
 
@@ -359,36 +361,53 @@ impl ApplicationContext {
             .all_jobs
             .iter()
             .filter(|job| {
-                (self
-                    .filters
-                    .owners
-                    .as_ref()
-                    .map_or(true, |owners| owners.contains(&job.owner)))
-                    && (self
+                job.id == 0
+                    || (self
                         .filters
-                        .states
+                        .owners
                         .as_ref()
-                        .map_or(true, |states| states.contains(&job.state)))
-                    && (self
-                        .filters
-                        .scheduled_start_time
-                        .map_or(true, |time| job.scheduled_start == time))
-                    && (self
-                        .filters
-                        .wall_time
-                        .map_or(true, |time| job.walltime == time))
-                    && (self.filters.clusters.is_none() || {
-                        let selected_clusters = self.filters.clusters.as_ref().unwrap();
-                        selected_clusters.iter().any(|cluster| {
-                            cluster.hosts.iter().any(|host| {
-                                host.cpus.iter().any(|cpu| {
-                                    cpu.resources.iter().any(|resource| {
-                                        job.assigned_resources.contains(&resource.id)
+                        .map_or(true, |owners| owners.contains(&job.owner)))
+                        && (self
+                            .filters
+                            .states
+                            .as_ref()
+                            .map_or(true, |states| states.contains(&job.state)))
+                        && (((self
+                            .filters
+                            .scheduled_start_time
+                            .map_or(true, |time| time <= job.scheduled_start))
+                            && (self
+                                .filters
+                                .wall_time
+                                .map_or(true, |time| time >= job.scheduled_start)))
+                            || ((self
+                                .filters
+                                .scheduled_start_time
+                                .map_or(true, |time| time <= job.get_end_date()))
+                                && (self
+                                    .filters
+                                    .wall_time
+                                    .map_or(true, |time| time >= job.get_end_date())))
+                            || ((self
+                                .filters
+                                .scheduled_start_time
+                                .map_or(true, |time| time >= job.start_time))
+                                && (self
+                                    .filters
+                                    .wall_time
+                                    .map_or(true, |time| time <= job.get_end_date()))))
+                        && (self.filters.clusters.is_none() || {
+                            let selected_clusters = self.filters.clusters.as_ref().unwrap();
+                            selected_clusters.iter().any(|cluster| {
+                                cluster.hosts.iter().any(|host| {
+                                    host.cpus.iter().any(|cpu| {
+                                        cpu.resources.iter().any(|resource| {
+                                            job.assigned_resources.contains(&resource.id)
+                                        })
                                     })
                                 })
                             })
                         })
-                    })
             })
             .cloned() // Clone filtred jobs here
             .collect();
@@ -418,7 +437,7 @@ impl Default for ApplicationContext {
             filters: JobFilters::default(),
             start_date: Arc::new(Mutex::new(now - chrono::Duration::hours(1))),
             end_date: Arc::new(Mutex::new(now + chrono::Duration::hours(1))),
-            view_type: ViewType::Dashboard,
+            view_type: ViewType::Gantt,
             is_loading: false,
             is_refreshing: Arc::new(Mutex::new(false)),
             refresh_rate: Arc::new(Mutex::new(30)),

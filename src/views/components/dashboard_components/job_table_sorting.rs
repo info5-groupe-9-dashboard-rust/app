@@ -14,7 +14,7 @@ pub(crate) enum SortKey {
     StopTime,
     ExitCode,
     Clusters,
-    WallTime
+    WallTime,
 }
 
 impl SortKey {
@@ -33,12 +33,18 @@ impl SortKey {
                 SortKey::Command => a.get_command().cmp(&b.get_command()),
                 SortKey::Message => a.get_message().cmp(&b.get_message()),
                 SortKey::SubmissionTime => a.get_submission_time().cmp(&b.get_submission_time()),
-                SortKey::ScheduledStartTime => a.get_scheduled_start().cmp(&b.get_scheduled_start()),
+                SortKey::ScheduledStartTime => {
+                    a.get_scheduled_start().cmp(&b.get_scheduled_start())
+                }
                 SortKey::StopTime => a.get_stop_time().cmp(&b.get_stop_time()),
                 SortKey::ExitCode => a.get_exit_code().cmp(&b.get_exit_code()),
                 SortKey::Clusters => a.get_clusters().cmp(&b.get_clusters()),
             };
-            if ascending { cmp } else { cmp.reverse() }
+            if ascending {
+                cmp
+            } else {
+                cmp.reverse()
+            }
         };
         jobs.sort_by(comparator);
     }
@@ -58,4 +64,5 @@ pub trait JobSortable {
     fn get_stop_time(&self) -> u64;
     fn get_exit_code(&self) -> &Option<i32>;
     fn get_clusters(&self) -> &Vec<String>;
+    fn get_end_date(&self) -> i64;
 }

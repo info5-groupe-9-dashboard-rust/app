@@ -25,7 +25,6 @@ impl Default for Dashboard {
 
 impl View for Dashboard {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-
         egui::CentralPanel::default().show(ui.ctx(), |ui| {
             ui.heading(RichText::new(t!("app.dashboard.title")).strong().size(20.0));
 
@@ -83,7 +82,7 @@ impl View for Dashboard {
                     ));
 
                     grid.add_metric(MetricBox::new(
-                        t!("app.dashboard.end_time").to_string(), 
+                        t!("app.dashboard.end_time").to_string(),
                         end_time.format("%Y-%m-%d %H:%M").to_string(),
                         egui::Color32::from_rgb(70, 130, 180),
                     ));

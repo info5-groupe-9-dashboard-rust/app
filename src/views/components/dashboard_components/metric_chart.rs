@@ -1,4 +1,5 @@
 use egui::{Response, RichText, Vec2, Widget};
+use egui_plot::AxisHints;
 use egui_plot::{Bar, BarChart, Plot};
 use std::collections::HashMap;
 
@@ -14,17 +15,19 @@ pub struct MetricChart {
     pub title: String,
     pub chart: ChartType,
     pub color: egui::Color32,
+    pub labels: Vec<String>,
 }
 
 impl MetricChart {
     const MIN_WIDTH: f32 = 200.0;
     const MIN_HEIGHT: f32 = 150.0;
 
-    pub fn new(title: &str, chart: ChartType) -> Self {
+    pub fn new(title: &str, chart: ChartType, labels: Vec<String>) -> Self {
         MetricChart {
             title: title.to_string(),
             chart,
             color: egui::Color32::from_rgb(128, 128, 128),
+            labels,
         }
     }
 
@@ -42,15 +45,30 @@ impl MetricChart {
                 ui.vertical_centered(|ui| {
                     let title_size = (13.0 * size.x / Self::MIN_WIDTH).min(16.0);
 
-                    ui.add_space(size.y * 0.1);
                     ui.label(
                         RichText::new(&self.title)
                             .color(egui::Color32::from_gray(160))
                             .size(title_size),
                     );
                     ui.add_space(size.y * 0.15);
+
+                    let labels = &self.labels;
                     Plot::new("metric_chart")
                         .view_aspect(2.0)
+                        .allow_drag(false)
+                        .allow_zoom(false)
+                        .allow_scroll(false)
+                        .show_x(false)
+                        .show_y(false)
+                        .custom_x_axes(vec![AxisHints::new_x().formatter(move |mark, _range| {
+                            let index = mark.value.round() as usize;
+                            if index < labels.len() {
+                                labels[index].to_string()
+                            } else {
+                                // Fallback for out-of-range values
+                                format!("{:.1}", mark.value)
+                            }
+                        })])
                         .show(ui, |plot_ui| match self.chart {
                             ChartType::Bar(bar_chart) => plot_ui.bar_chart(bar_chart),
                             //ChartType::Box(boxplot_chart) => plot_ui.box_plot(boxplot_chart),
@@ -79,6 +97,12 @@ pub fn create_jobstate_chart(jobs: Vec<Job>) -> MetricChart {
     let mut state_counts: Vec<_> = job_states.into_iter().collect();
     state_counts.sort_by_key(|(state, _)| state.get_label());
 
+    // Extract labels for the x-axis
+    let labels: Vec<String> = state_counts
+        .iter()
+        .map(|(state, _)| state.get_label().to_string())
+        .collect();
+
     let bars: Vec<Bar> = state_counts
         .into_iter()
         .enumerate()
@@ -90,5 +114,5 @@ pub fn create_jobstate_chart(jobs: Vec<Job>) -> MetricChart {
         .collect();
 
     let plot = BarChart::new(bars).name("Job States");
-    MetricChart::new("Job State", ChartType::Bar(plot))
+    MetricChart::new("Job State", ChartType::Bar(plot), labels)
 }
