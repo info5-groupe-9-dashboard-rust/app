@@ -86,7 +86,7 @@ impl View for GanttChart {
 
         // Settings menu
         ui.horizontal(|ui| {
-            ui.menu_button("🔧 Settings", |ui| {
+            ui.menu_button(t!("app.gantt.settings.title"), |ui| {
                 ui.set_max_height(500.0);
 
                 // Aggregate by component (levels)
@@ -100,7 +100,10 @@ impl View for GanttChart {
                         && self.options.aggregate_by.level_2 == AggregateByLevel2Enum::Host)
                 {
                     if ui
-                        .checkbox(&mut self.options.see_all_res, "Show all hosts")
+                        .checkbox(
+                            &mut self.options.see_all_res,
+                            t!("app.gantt.settings.show_resources"),
+                        )
                         .clicked()
                     {
                         if self.options.see_all_res {
@@ -140,13 +143,7 @@ impl View for GanttChart {
             });
 
             ui.menu_button("❓", |ui| {
-                ui.label(
-                    "Drag to move around.\n\
-                            Zoom: Ctrl/cmd + scroll or vertical drag with right click.\n\
-                            Left click on a job to zoom to it.\n\
-                            Double left click to reset view.\n\
-                            Right click on a job to see details.",
-                );
+                ui.label(t!("app.gantt.help"));
             });
         });
 

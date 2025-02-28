@@ -74,7 +74,7 @@ impl eframe::App for App {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if *self.application_context.is_refreshing.lock().unwrap() {
                         ui.add(egui::Spinner::new());
-                        ui.label("Refreshing data...");
+                        ui.label(t!("app.refreshing"));
                     }
                 });
             });

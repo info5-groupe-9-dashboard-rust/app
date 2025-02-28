@@ -51,7 +51,7 @@ impl View for Menu {
                         }
                     }
 
-                    if ui.button("Quitter").clicked() {
+                    if ui.button(t!("app.menu.quit")).clicked() {
                         std::process::exit(0);
                     }
                 });
