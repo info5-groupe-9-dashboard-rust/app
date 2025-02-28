@@ -9,6 +9,8 @@ use crate::models::utils::utils::get_all_clusters;
 use crate::models::utils::utils::get_all_hosts;
 use crate::models::utils::utils::get_all_resources;
 use crate::models::utils::utils::get_cluster_from_name;
+use crate::models::utils::utils::get_cluster_state;
+use crate::models::utils::utils::get_host_state;
 use crate::models::utils::utils::get_tree_structure_for_job;
 use crate::views::view::View;
 use crate::{
@@ -376,6 +378,7 @@ fn ui_canvas(
                 collapsed_jobs_level_1,
                 app.font_size,
                 all_cluster,
+                AggregateByLevel1Enum::Owner,
             );
         }
 
@@ -412,6 +415,8 @@ fn ui_canvas(
                         collapsed_jobs_level_2,
                         app.font_size,
                         all_cluster,
+                        AggregateByLevel1Enum::Host,
+                        AggregateByLevel2Enum::Owner,
                     );
                 }
                 AggregateByLevel2Enum::None => {
@@ -440,6 +445,7 @@ fn ui_canvas(
                         collapsed_jobs_level_1,
                         app.font_size,
                         all_cluster,
+                        AggregateByLevel1Enum::Host,
                     );
                 }
                 AggregateByLevel2Enum::Host => {
@@ -480,6 +486,8 @@ fn ui_canvas(
                     collapsed_jobs_level_2,
                     app.font_size,
                     all_cluster,
+                    AggregateByLevel1Enum::Cluster,
+                    AggregateByLevel2Enum::Owner,
                 );
             }
             AggregateByLevel2Enum::None => {
@@ -508,6 +516,7 @@ fn ui_canvas(
                     collapsed_jobs_level_1,
                     app.font_size,
                     all_cluster,
+                    AggregateByLevel1Enum::Cluster,
                 );
             }
             AggregateByLevel2Enum::Host => {
@@ -548,6 +557,8 @@ fn ui_canvas(
                     collapsed_jobs_level_2,
                     app.font_size,
                     all_cluster,
+                    AggregateByLevel1Enum::Cluster,
+                    AggregateByLevel2Enum::Host,
                 );
             }
         },
@@ -716,6 +727,7 @@ fn paint_aggregated_jobs_level_1(
     collapsed_jobs: &mut BTreeMap<String, bool>,
     font_size: i32,
     all_cluster: &Vec<Cluster>,
+    aggregate_by: AggregateByLevel1Enum,
 ) -> f32 {
     let theme_colors = get_theme_colors(&info.ctx.style());
 
@@ -744,14 +756,29 @@ fn paint_aggregated_jobs_level_1(
         let is_collapsed = collapsed_jobs.entry(level_1.clone()).or_insert(false);
 
         // Paint the job info
-        paint_job_info(info, level_1, text_pos, is_collapsed, 1);
+        paint_job_info(info, &level_1, text_pos, is_collapsed, 1);
 
         cursor_y += spacing_between_level_1; // Spacing after the owner
+
+        let mut state = ResourceState::Unknown;
+        let mut owner = false;
+
+        if aggregate_by == AggregateByLevel1Enum::Owner {
+            owner = true;
+        } else if aggregate_by == AggregateByLevel1Enum::Host {
+            state = get_host_state(all_cluster, &level_1);
+        } else {
+            state = get_cluster_state(all_cluster, &level_1);
+        }
 
         // Only show jobs if section is not collapsed
         if !*is_collapsed {
             for job in job_list {
                 let job_start_y = cursor_y;
+
+                if owner {
+                    state = job.main_resource_state.clone()
+                }
 
                 // Draw the job
                 paint_job(
@@ -761,6 +788,7 @@ fn paint_aggregated_jobs_level_1(
                     job_start_y,
                     details_window,
                     all_cluster,
+                    state,
                 );
 
                 // Add spacing between jobs
@@ -788,6 +816,8 @@ fn paint_aggregated_jobs_level_2(
     collapsed_jobs_level_2: &mut BTreeMap<(String, String), bool>,
     font_size: i32,
     all_cluster: &Vec<Cluster>,
+    aggregate_by_level_1: AggregateByLevel1Enum,
+    aggregate_by_level_2: AggregateByLevel2Enum,
 ) -> f32 {
     let theme_colors = get_theme_colors(&info.ctx.style());
 
@@ -820,7 +850,7 @@ fn paint_aggregated_jobs_level_2(
             .or_insert(false);
 
         // Paint the job info
-        paint_job_info(info, level_1, text_pos, is_collapsed_level_1, 1);
+        paint_job_info(info, &level_1, text_pos, is_collapsed_level_1, 1);
 
         cursor_y += spacing_between_level_1;
 
@@ -852,15 +882,42 @@ fn paint_aggregated_jobs_level_2(
                         .or_insert(false);
 
                     // Paint the job info
-                    paint_job_info(info, level_2.to_string(), text_pos, is_collapsed_level_2, 2);
+                    paint_job_info(
+                        info,
+                        &level_2.to_string(),
+                        text_pos,
+                        is_collapsed_level_2,
+                        2,
+                    );
 
                     cursor_y += spacing_between_level_2;
+
+                    let mut state = ResourceState::Unknown;
+                    let mut owner = false;
+
+                    if aggregate_by_level_2 == AggregateByLevel2Enum::Host {
+                        state = get_host_state(all_cluster, &level_2);
+                    } else if aggregate_by_level_2 == AggregateByLevel2Enum::None {
+                        if aggregate_by_level_1 == AggregateByLevel1Enum::Host {
+                            state = get_host_state(all_cluster, &level_1);
+                        } else if aggregate_by_level_1 == AggregateByLevel1Enum::Cluster {
+                            state = get_cluster_state(all_cluster, &level_1);
+                        } else {
+                            owner = true;
+                        }
+                    } else {
+                        owner = true;
+                    }
 
                     // Only show jobs if section is not collapsed
                     if !*is_collapsed_level_2 {
                         // Display jobs
                         for job in job_list {
                             let job_start_y = cursor_y; // Ensure vertical alignment
+
+                            if owner {
+                                state = job.main_resource_state.clone()
+                            }
 
                             // Draw the job
                             paint_job(
@@ -870,6 +927,7 @@ fn paint_aggregated_jobs_level_2(
                                 job_start_y,
                                 details_window,
                                 all_cluster,
+                                state,
                             );
 
                             cursor_y += info.text_height + spacing_between_jobs + options.spacing;
@@ -902,6 +960,7 @@ fn paint_job(
     top_y: f32,
     details_window: &mut Vec<JobDetailsWindow>,
     all_cluster: &Vec<Cluster>,
+    state: ResourceState,
 ) -> PaintResult {
     let theme_colors = get_theme_colors(&info.ctx.style());
     let start_x = info.point_from_s(options, job.scheduled_start);
@@ -973,11 +1032,9 @@ fn paint_job(
 
     info.painter.rect_filled(rect, options.rounding, fill_color);
 
-    let majority_state = job.main_resource_state.clone();
-
     // paint hatch
-    if majority_state == ResourceState::Dead || majority_state == ResourceState::Absent {
-        let hachure_color = match majority_state {
+    if state == ResourceState::Dead || state == ResourceState::Absent {
+        let hachure_color = match state {
             ResourceState::Dead => Color32::from_rgba_premultiplied(255, 0, 0, 150),
             ResourceState::Absent => Color32::from_rgba_premultiplied(0, 150, 150, 150),
             _ => Color32::TRANSPARENT,
@@ -989,7 +1046,7 @@ fn paint_job(
         let current_time_x = info.point_from_s(options, chrono::Utc::now().timestamp());
 
         while x < info.canvas.max.x {
-            if majority_state == ResourceState::Absent && x >= current_time_x {
+            if state == ResourceState::Absent && x >= current_time_x {
                 break;
             }
             shapes.push(Shape::line_segment(
@@ -1026,7 +1083,7 @@ fn paint_job(
 /**
  * Paints a job info appearing on the left side of the canvas
  */
-fn paint_job_info(info: &Info, info_label: String, pos: Pos2, collapsed: &mut bool, level: u8) {
+fn paint_job_info(info: &Info, info_label: &str, pos: Pos2, collapsed: &mut bool, level: u8) {
     let theme_colors = get_theme_colors(&info.ctx.style());
     let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
     let label = format!("{} {}", collapsed_symbol, info_label);

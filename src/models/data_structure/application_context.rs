@@ -255,7 +255,7 @@ impl ApplicationContext {
             }
 
             // For each host set is state to the state the most resources have
-            for cluster in self.all_clusters.iter_mut() {
+            for cluster in self.swap_all_clusters.iter_mut() {
                 for host in cluster.hosts.iter_mut() {
                     let mut dead_count = 0;
                     let mut alive_count = 0;
@@ -283,7 +283,7 @@ impl ApplicationContext {
             }
 
             // For each cluster set is state to the state the most hosts have
-            for cluster in self.all_clusters.iter_mut() {
+            for cluster in self.swap_all_clusters.iter_mut() {
                 let mut dead_count = 0;
                 let mut alive_count = 0;
                 let mut absent_count = 0;
