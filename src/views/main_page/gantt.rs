@@ -786,11 +786,10 @@ fn paint_aggregated_jobs_level_1(
 
         cursor_y += spacing_between_level_1; // Spacing after the owner
 
-        let mut state = ResourceState::Unknown;
-        let mut owner = false;
+        let state;
 
         if aggregate_by == AggregateByLevel1Enum::Owner {
-            owner = true;
+            state = ResourceState::Alive;
         } else if aggregate_by == AggregateByLevel1Enum::Host {
             state = get_host_state_from_name(all_cluster, &level_1);
         } else {
@@ -801,10 +800,6 @@ fn paint_aggregated_jobs_level_1(
         if !*is_collapsed {
             for job in job_list {
                 let job_start_y = cursor_y;
-
-                if owner {
-                    state = job.main_resource_state.clone()
-                }
 
                 // Draw the job
                 paint_job(
@@ -923,8 +918,7 @@ fn paint_aggregated_jobs_level_2(
 
                     cursor_y += spacing_between_level_2;
 
-                    let mut state = ResourceState::Unknown;
-                    let mut owner = false;
+                    let state;
 
                     if aggregate_by_level_2 == AggregateByLevel2Enum::Host {
                         state = get_host_state_from_name(all_cluster, &level_2);
@@ -934,10 +928,10 @@ fn paint_aggregated_jobs_level_2(
                         } else if aggregate_by_level_1 == AggregateByLevel1Enum::Cluster {
                             state = get_cluster_state_from_name(all_cluster, &level_1);
                         } else {
-                            owner = true;
+                            state = ResourceState::Alive;
                         }
                     } else {
-                        owner = true;
+                        state = ResourceState::Alive;
                     }
 
                     // Only show jobs if section is not collapsed
@@ -945,10 +939,6 @@ fn paint_aggregated_jobs_level_2(
                         // Display jobs
                         for job in job_list {
                             let job_start_y = cursor_y; // Ensure vertical alignment
-
-                            if owner {
-                                state = job.main_resource_state.clone()
-                            }
 
                             // Draw the job
                             paint_job(
