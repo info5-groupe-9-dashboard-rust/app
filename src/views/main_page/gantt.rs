@@ -287,6 +287,7 @@ pub struct Options {
     pub job_color: JobColor,                               // Job color
     pub see_all_res: bool,                                 // See all resources
     current_hovered_job: Option<Job>,                      // Current hovered job
+    previous_hovered_job: Option<Job>,                     // Previous hovered job
     current_hovered_resource_state: Option<ResourceState>, // Current hovered resource state
     #[cfg_attr(feature = "serde", serde(skip))]
     zoom_to_relative_s_range: Option<(f64, (f64, f64))>, // Zoom to relative s range
@@ -309,6 +310,7 @@ impl Default for Options {
             job_color: Default::default(),    // job color component
             zoom_to_relative_s_range: None,   // no zooming by default
             current_hovered_job: None,        // no hovered job by default
+            previous_hovered_job: None,       // no previous hovered job by default
             see_all_res: false,
             current_hovered_resource_state: None, // no hovered resource stae by default
         }
@@ -552,6 +554,10 @@ fn ui_canvas(
     // Paint tooltip for hovered job/resource state
     paint_tooltip(info, options);
 
+    // Update previous hovered job for next frame
+    options.previous_hovered_job = options.current_hovered_job.clone();
+    options.current_hovered_job = None; // Reset for next frame, but keep previous_hovered_job
+
     // Paint the timeline text on top of everything
     paint_timeline_text_on_top(info, options, fixed_timeline_y);
 
@@ -688,7 +694,6 @@ fn paint_tooltip(info: &Info, options: &mut Options) {
             format_timestamp(job.scheduled_start),
             job.walltime
         ));
-        options.current_hovered_job = None; // Reset for next frame
     }
 
     // Add resource state info if there's a hovered resource state
@@ -1008,14 +1013,28 @@ fn paint_job(
         egui::vec2(width.max(options.min_width), height),
     );
 
-    let is_job_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
+    let is_job_trully_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
         rect.contains(mouse_pos)
     } else {
         false
     };
 
-    // Draw tooltip
-    if is_job_hovered {
+    // Update how we determine if a job is hovered
+    let is_job_hovered = (if let Some(mouse_pos) = info.response.hover_pos() {
+        rect.contains(mouse_pos)
+    } else {
+        false
+    }) || options
+        .current_hovered_job
+        .as_ref()
+        .map_or(false, |j| j.id == job.id)
+        || options
+            .previous_hovered_job
+            .as_ref()
+            .map_or(false, |j| j.id == job.id);
+
+    // If this job is being directly hovered, update the tooltip and hovered ID
+    if is_job_trully_hovered && options.current_hovered_job.is_none() {
         options.current_hovered_job = Some(job.clone());
     }
 
