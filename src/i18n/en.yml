@@ -57,6 +57,7 @@ app:
       job_color_state: "By state"
       hide_resources: "Hide all resources"
       show_resources: "Show all resources"
+      squash_resources: "Squash resources"
       level: "Level"
       aggregate_by: "Aggregate by"
       host: "Host"
