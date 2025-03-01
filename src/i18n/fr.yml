@@ -57,6 +57,7 @@ app:
       job_color_state: "Par état"
       hide_resources: "Masquer toutes les ressources"
       show_resources: "Afficher toutes les ressources"
+      squash_resources: "Regrouper les ressources"
       level: "Niveau"
       aggregate_by: "Agrégation par"
       host: "Hôte"

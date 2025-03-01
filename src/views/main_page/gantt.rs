@@ -138,6 +138,12 @@ impl View for GanttChart {
                     self.options.see_all_res = false;
                 }
 
+                ui.checkbox(
+                    &mut self.options.squash_resources,
+                    t!("app.gantt.settings.squash_resources"),
+                );
+                ui.separator();
+
                 // Job color component (random, state)
                 self.options.job_color.ui(ui);
             });
@@ -276,19 +282,20 @@ impl Info {
  * Options struct
  */
 pub struct Options {
-    pub canvas_width_s: f32,                               // Canvas width
-    pub sideways_pan_in_points: f32,                       // Sideways pan in points
-    pub cull_width: f32,                                   // Culling width
-    pub min_width: f32,                                    // Minimum width of a job
-    pub rect_height: f32,                                  // Height of a job
-    pub spacing: f32,                                      // Vertical spacing between jobs
-    pub rounding: f32,                                     // Rounded corners
-    pub aggregate_by: AggregateBy,                         // Aggregate by
-    pub job_color: JobColor,                               // Job color
-    pub see_all_res: bool,                                 // See all resources
-    current_hovered_job: Option<Job>,                      // Current hovered job
-    previous_hovered_job: Option<Job>,                     // Previous hovered job
-    current_hovered_resource_state: Option<ResourceState>, // Current hovered resource state
+    pub canvas_width_s: f32,                                   // Canvas width
+    pub sideways_pan_in_points: f32,                           // Sideways pan in points
+    pub cull_width: f32,                                       // Culling width
+    pub min_width: f32,                                        // Minimum width of a job
+    pub rect_height: f32,                                      // Height of a job
+    pub spacing: f32,                                          // Vertical spacing between jobs
+    pub rounding: f32,                                         // Rounded corners
+    pub aggregate_by: AggregateBy,                             // Aggregate by
+    pub job_color: JobColor,                                   // Job color
+    pub see_all_res: bool,                                     // See all resources
+    pub current_hovered_job: Option<Job>,                      // Current hovered job
+    pub previous_hovered_job: Option<Job>,                     // Previous hovered job
+    pub current_hovered_resource_state: Option<ResourceState>, // Current hovered resource state
+    pub squash_resources: bool,                                // Squash resources
     #[cfg_attr(feature = "serde", serde(skip))]
     zoom_to_relative_s_range: Option<(f64, (f64, f64))>, // Zoom to relative s range
 }
@@ -311,6 +318,7 @@ impl Default for Options {
             zoom_to_relative_s_range: None,   // no zooming by default
             current_hovered_job: None,        // no hovered job by default
             previous_hovered_job: None,       // no previous hovered job by default
+            squash_resources: false,          // don't squash resources by default
             see_all_res: false,
             current_hovered_resource_state: None, // no hovered resource stae by default
         }
@@ -762,6 +770,11 @@ fn paint_aggregated_jobs_level_1(
     let mut sorted_level_1: Vec<String> = jobs.keys().cloned().collect();
     sorted_level_1.sort_by(|a, b| compare_string_with_number(&a, &b));
 
+    let aggregation_height = font_size as f32 + 5.0 + offset_level_1;
+
+    // Store header positions and data to draw them last if squashing is enabled
+    let mut header_data = Vec::new();
+
     // Display jobs
     for level_1 in sorted_level_1 {
         let job_list = jobs.get(&level_1).unwrap();
@@ -781,8 +794,13 @@ fn paint_aggregated_jobs_level_1(
         // Check if the section is collapsed
         let is_collapsed = collapsed_jobs.entry(level_1.clone()).or_insert(false);
 
-        // Paint the job info
-        paint_job_info(info, &level_1, text_pos, is_collapsed, 1);
+        // Store header info for later if squashing
+        if options.squash_resources {
+            header_data.push((level_1.clone(), text_pos, *is_collapsed));
+        } else {
+            // Paint the job info immediately if not squashing
+            paint_job_info(info, &level_1, text_pos, is_collapsed, 1);
+        }
 
         cursor_y += spacing_between_level_1; // Spacing after the owner
 
@@ -798,8 +816,16 @@ fn paint_aggregated_jobs_level_1(
 
         // Only show jobs if section is not collapsed
         if !*is_collapsed {
+            // Save the initial cursor position for squashed rendering
+            let initial_job_y = cursor_y;
+
             for job in job_list {
-                let job_start_y = cursor_y;
+                // When squashing, use the initial Y position for all jobs in this level
+                let job_start_y = if options.squash_resources {
+                    initial_job_y
+                } else {
+                    cursor_y
+                };
 
                 // Draw the job
                 paint_job(
@@ -810,15 +836,49 @@ fn paint_aggregated_jobs_level_1(
                     details_window,
                     all_cluster,
                     state,
+                    aggregation_height,
                 );
 
-                // Add spacing between jobs
+                // Only increment cursor if not squashing
+                if !options.squash_resources {
+                    cursor_y += info.text_height + spacing_between_jobs + options.spacing;
+                }
+            }
+
+            // If we're squashing, just add one line of spacing after all jobs
+            if options.squash_resources && !job_list.is_empty() {
                 cursor_y += info.text_height + spacing_between_jobs + options.spacing;
             }
+            if !options.squash_resources {
+                cursor_y += spacing_between_level_1;
+            }
+        }
+        if !options.squash_resources {
             cursor_y += spacing_between_level_1;
         }
+    }
 
-        cursor_y += spacing_between_level_1;
+    // Now draw all headers on top if squashing is enabled
+    if options.squash_resources {
+        for (name, pos, is_collapsed) in header_data {
+            // Create a background to make the text more readable
+            let galley = info.ctx.fonts(|f| {
+                let collapsed_symbol = if is_collapsed { "⏵" } else { "⏷" };
+                let label = format!("{} {}", collapsed_symbol, name);
+                f.layout_no_wrap(label, info.font_id.clone(), theme_colors.text_dim)
+            });
+            let rect = Rect::from_min_size(pos, galley.size());
+            info.painter
+                .rect_filled(rect.expand(4.0), 4.0, theme_colors.background_timeline);
+
+            // Then paint the job info
+            let mut is_collapsed_copy = is_collapsed;
+            paint_job_info(info, &name, pos, &mut is_collapsed_copy, 1);
+            // Update the real collapsed state if changed
+            if is_collapsed_copy != is_collapsed {
+                *collapsed_jobs.get_mut(&name).unwrap() = is_collapsed_copy;
+            }
+        }
     }
 
     cursor_y
@@ -853,6 +913,10 @@ fn paint_aggregated_jobs_level_2(
     let mut sorted_level_1: Vec<String> = jobs.keys().cloned().collect();
     sorted_level_1.sort_by(|a, b| compare_string_with_number(&a, &b));
 
+    // Store header positions and data to draw them last if squashing is enabled
+    let mut header_data_level_1 = Vec::new();
+    let mut header_data_level_2 = Vec::new();
+
     for level_1 in sorted_level_1 {
         let level_2_map = jobs.get(&level_1).unwrap();
         let level_1_key = level_1.clone();
@@ -875,8 +939,13 @@ fn paint_aggregated_jobs_level_2(
             .entry(level_1.clone())
             .or_insert(false);
 
-        // Paint the job info
-        paint_job_info(info, &level_1, text_pos, is_collapsed_level_1, 1);
+        // Either store header info for later or paint immediately
+        if options.squash_resources {
+            header_data_level_1.push((level_1.clone(), text_pos, *is_collapsed_level_1));
+        } else {
+            // Paint the job info immediately if not squashing
+            paint_job_info(info, &level_1, text_pos, is_collapsed_level_1, 1);
+        }
 
         cursor_y += spacing_between_level_1;
 
@@ -907,14 +976,24 @@ fn paint_aggregated_jobs_level_2(
                         .entry((level_1_key.to_string(), level_2.to_string()))
                         .or_insert(false);
 
-                    // Paint the job info
-                    paint_job_info(
-                        info,
-                        &level_2.to_string(),
-                        text_pos,
-                        is_collapsed_level_2,
-                        2,
-                    );
+                    // Either store header info for later or paint immediately
+                    if options.squash_resources {
+                        header_data_level_2.push((
+                            level_1_key.clone(),
+                            level_2.to_string(),
+                            text_pos,
+                            *is_collapsed_level_2,
+                        ));
+                    } else {
+                        // Paint the job info immediately if not squashing
+                        paint_job_info(
+                            info,
+                            &level_2.to_string(),
+                            text_pos,
+                            is_collapsed_level_2,
+                            2,
+                        );
+                    }
 
                     cursor_y += spacing_between_level_2;
 
@@ -936,29 +1015,91 @@ fn paint_aggregated_jobs_level_2(
 
                     // Only show jobs if section is not collapsed
                     if !*is_collapsed_level_2 {
+                        // Save the initial cursor position for squashed rendering
+                        let initial_job_y = cursor_y;
+
                         // Display jobs
-                        for job in job_list {
-                            let job_start_y = cursor_y; // Ensure vertical alignment
+                        for job in job_list.iter() {
+                            // When squashing, use the initial Y position for all jobs in this level
+                            let job_start_y = if options.squash_resources {
+                                initial_job_y
+                            } else {
+                                cursor_y
+                            };
+
+                            // Adjust aggregation height for the first job of the second level
+                            let adjusted_aggregation_height = spacing_between_level_2 * 2.0;
 
                             // Draw the job
                             paint_job(
                                 info,
                                 options,
-                                &job,
+                                job,
                                 job_start_y,
                                 details_window,
                                 all_cluster,
                                 state,
+                                adjusted_aggregation_height,
                             );
 
+                            // Only increment cursor if not squashing
+                            if !options.squash_resources && !job_list.is_empty() {
+                                cursor_y +=
+                                    info.text_height + spacing_between_jobs + options.spacing;
+                            }
+                        }
+
+                        // If we're squashing, just add one line of spacing after all jobs
+                        if options.squash_resources {
                             cursor_y += info.text_height + spacing_between_jobs + options.spacing;
                         }
                     }
-                    cursor_y += spacing_between_level_2;
+                    if !options.squash_resources {
+                        cursor_y += spacing_between_level_2;
+                    }
                 }
             }
         }
-        cursor_y += spacing_between_level_1;
+        if !options.squash_resources {
+            cursor_y += spacing_between_level_1;
+        }
+    }
+
+    // Now draw all headers on top if squashing is enabled
+    if options.squash_resources {
+        // First, draw level 1 headers
+        for (name, pos, is_collapsed) in header_data_level_1 {
+            // Create a background to make the text more readable
+            let galley = info.ctx.fonts(|f| {
+                let collapsed_symbol = if is_collapsed { "⏵" } else { "⏷" };
+                let label = format!("{} {}", collapsed_symbol, name);
+                f.layout_no_wrap(label, info.font_id.clone(), theme_colors.text_dim)
+            });
+            let rect = Rect::from_min_size(pos, galley.size());
+            info.painter
+                .rect_filled(rect.expand(4.0), 4.0, theme_colors.background_timeline);
+
+            // Then paint the job info
+            let mut is_collapsed_copy = is_collapsed;
+            paint_job_info(info, &name, pos, &mut is_collapsed_copy, 1);
+            // Update the real collapsed state if changed
+            if is_collapsed_copy != is_collapsed {
+                *collapsed_jobs_level_1.get_mut(&name).unwrap() = is_collapsed_copy;
+            }
+        }
+
+        // Then draw level 2 headers on top of everything
+        for (level_1_key, level_2_key, pos, is_collapsed) in header_data_level_2 {
+            // Then paint the job info
+            let mut is_collapsed_copy = is_collapsed;
+            paint_job_info(info, &level_2_key, pos, &mut is_collapsed_copy, 2);
+            // Update the real collapsed state if changed
+            if is_collapsed_copy != is_collapsed {
+                *collapsed_jobs_level_2
+                    .get_mut(&(level_1_key, level_2_key))
+                    .unwrap() = is_collapsed_copy;
+            }
+        }
     }
 
     cursor_y
@@ -982,6 +1123,7 @@ fn paint_job(
     details_window: &mut Vec<JobDetailsWindow>,
     all_cluster: &Vec<Cluster>,
     state: ResourceState,
+    aggregation_height: f32,
 ) -> PaintResult {
     let theme_colors = get_theme_colors(&info.ctx.style());
     let start_x = info.point_from_s(options, job.scheduled_start);
@@ -997,9 +1139,33 @@ fn paint_job(
         return PaintResult::Culled;
     }
 
-    let height = options.rect_height;
+    // Calculate the total line height including all spacing components
+    let spacing_between_jobs = 5.0;
+    let total_line_height = info.text_height + spacing_between_jobs + options.spacing;
+
+    // When squashing, use the full line height to completely eliminate gaps
+    let height = if options.squash_resources {
+        total_line_height + aggregation_height
+    } else {
+        options.rect_height
+    };
+
+    // Use no rounding when squashing
+    let rounding = if options.squash_resources {
+        0.0
+    } else {
+        options.rounding
+    };
+
     let rect = Rect::from_min_size(
-        pos2(start_x, top_y),
+        pos2(
+            start_x,
+            if options.squash_resources {
+                top_y - aggregation_height
+            } else {
+                top_y
+            },
+        ),
         egui::vec2(width.max(options.min_width), height),
     );
 
@@ -1069,7 +1235,7 @@ fn paint_job(
         normal_color
     };
 
-    info.painter.rect_filled(rect, options.rounding, fill_color);
+    info.painter.rect_filled(rect, rounding, fill_color);
 
     // paint hatch
     if state == ResourceState::Dead || state == ResourceState::Absent {
