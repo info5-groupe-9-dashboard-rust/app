@@ -1250,18 +1250,27 @@ fn paint_job(
         let mut x = info.canvas.min.x;
         let current_time_x = info.point_from_s(options, chrono::Utc::now().timestamp());
 
+        // Use the same y-position adjustment as the job rectangle
+        let hatch_y = if options.squash_resources {
+            top_y - aggregation_height
+        } else {
+            top_y
+        };
+
         // Define the rectangle where the hachure will be drawn
         let hover_rect = match state {
             ResourceState::Dead => Rect::from_min_max(
-                pos2(info.canvas.min.x, top_y),
-                pos2(info.canvas.max.x, top_y + height), // draw hachure until the canvas max visible x
+                pos2(info.canvas.min.x, hatch_y),
+                pos2(info.canvas.max.x, hatch_y + height), // draw hachure until the canvas max visible x
             ),
             ResourceState::Absent => Rect::from_min_max(
-                pos2(info.canvas.min.x, top_y),
-                pos2(current_time_x, top_y + height), // only draw hachure until current time
+                pos2(info.canvas.min.x, hatch_y),
+                pos2(current_time_x, hatch_y + height), // only draw hachure until current time
             ),
             _ => Rect::from_min_max(pos2(0.0, 0.0), pos2(0.0, 0.0)), // draw nothing
         };
+
+        // ...rest of the hatch drawing code...
 
         // We check if the mouse is hovering the hachure
         let is_hachure_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
@@ -1282,7 +1291,10 @@ fn paint_job(
                 break;
             }
             shapes.push(Shape::line_segment(
-                [pos2(x, top_y), pos2(x + hachure_spacing, top_y + height)],
+                [
+                    pos2(x, hatch_y),
+                    pos2(x + hachure_spacing, hatch_y + height),
+                ],
                 Stroke::new(4.0, final_hachure_color),
             ));
             x += hachure_spacing;
