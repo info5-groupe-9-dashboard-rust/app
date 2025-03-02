@@ -9,22 +9,22 @@ pub enum LanguageOption {
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub enum ThemeOption {
     Light,
-    Dark,
+    Dark
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ApplicationOptions {
     pub selected_language: LanguageOption,
-    pub selected_theme: ThemeOption,
     pub font_size: i32,
+    pub selected_theme: ThemeOption
 }
 
 impl Default for ApplicationOptions {
     fn default() -> Self {
         ApplicationOptions {
             selected_language: LanguageOption::English,
-            selected_theme: ThemeOption::Dark,
             font_size: 14,
+            selected_theme: ThemeOption::Dark
         }
     }
 }

@@ -24,7 +24,7 @@ impl View for Authentification {
             ui.add_space(50.0);
             
             // Title
-            ui.heading(RichText::new("Authentification").size(24.0));
+            ui.heading(RichText::new(t!("app.authentification.title")).size(24.0));
             ui.add_space(20.0);
 
             // Container of the form
@@ -36,13 +36,13 @@ impl View for Authentification {
                     ui.set_width(300.0);
                     
                     // username field
-                    ui.label(RichText::new("Nom d'utilisateur"));
+                    ui.label(RichText::new(t!("app.authentification.username")));
                     ui.add_space(4.0);
                     ui.text_edit_singleline(&mut self.username);
                     ui.add_space(12.0);
 
                     // password field
-                    ui.label(RichText::new("Mot de passe"));
+                    ui.label(RichText::new(t!("app.authentification.password")));
                     ui.add_space(4.0);
                     let password_edit = ui.add(egui::TextEdit::singleline(&mut self.password)
                         .password(true));
@@ -55,9 +55,9 @@ impl View for Authentification {
                     }
 
                     // Connect button
-                    if ui.button("Se connecter").clicked() || password_edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if ui.button(t!("app.authentification.login")).clicked() || password_edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                         if self.username == "admin" && self.password == "admin" {
-                            app.login();
+                            app.login(&self.username.clone());
                         } else {
                             self.error_message = Some("Identifiants incorrects".to_string());
                         }

@@ -1,3 +1,10 @@
+use crate::models::data_structure::job::Job;
+use crate::models::data_structure::job::JobState;
+use crate::models::data_structure::resource::ResourceState;
+use crate::models::utils::utils::get_all_clusters;
+use crate::models::utils::utils::get_all_hosts;
+use crate::models::utils::utils::get_all_resources;
+use crate::views::menu::tools::egui::Color32;
 use crate::{
     models::data_structure::application_context::ApplicationContext,
     views::view::{View, ViewType},
@@ -32,6 +39,11 @@ impl View for Tools {
             if ui.add(dashboard_btn).clicked() {
                 app.view_type = ViewType::Dashboard;
                 ui.close_menu();
+                if app.all_jobs.iter().any(|job| job.id == 0) {
+                    app.see_all_jobs = true;
+                }
+
+                app.all_jobs.retain(|job| job.id != 0);
             }
 
             // Gantt Button
@@ -39,6 +51,29 @@ impl View for Tools {
             if ui.add(gantt_btn).clicked() {
                 app.view_type = ViewType::Gantt;
                 ui.close_menu();
+
+                if app.see_all_jobs {
+                    app.see_all_jobs = false;
+                    app.all_jobs.push(Job {
+                        id: 0,
+                        owner: "all_resources".to_string(),
+                        state: JobState::Unknown,
+                        scheduled_start: 0,
+                        walltime: 0,
+                        hosts: get_all_hosts(&app.all_clusters),
+                        clusters: get_all_clusters(&app.all_clusters),
+                        command: String::new(),
+                        message: None,
+                        queue: String::new(),
+                        assigned_resources: get_all_resources(&app.all_clusters),
+                        submission_time: 0,
+                        start_time: 0,
+                        stop_time: 0,
+                        exit_code: None,
+                        gantt_color: Color32::TRANSPARENT,
+                        main_resource_state: ResourceState::Unknown,
+                    });
+                }
             }
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

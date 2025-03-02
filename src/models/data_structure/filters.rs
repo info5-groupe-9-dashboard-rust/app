@@ -1,9 +1,8 @@
 use super::{cluster::Cluster, job::JobState};
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 
 pub struct JobFilters {
-    pub job_id_range: Option<(u32, u32)>,
     pub owners: Option<Vec<String>>,
     pub states: Option<Vec<JobState>>,
     pub scheduled_start_time: Option<i64>,
@@ -19,17 +18,12 @@ impl JobFilters {
 
     pub fn copy(filter: &JobFilters) -> Self {
         JobFilters {
-            job_id_range: filter.job_id_range,
             owners: filter.owners.clone(),
             states: filter.states.clone(),
             scheduled_start_time: filter.scheduled_start_time,
             wall_time: filter.wall_time,
             clusters: filter.clusters.clone(),
         }
-    }
-
-    pub fn set_job_id_range(&mut self, start_id: u32, end_id: u32) {
-        self.job_id_range = Some((start_id, end_id));
     }
 
     pub fn set_owners(&mut self, owners: Option<Vec<String>>) {

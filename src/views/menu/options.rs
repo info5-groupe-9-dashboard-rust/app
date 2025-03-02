@@ -54,10 +54,10 @@ impl Options {
         }
     }
 
-    pub fn apply_options(&self, ctx: &egui::Context) {
+    pub fn apply_options(&self, ctx: &egui::Context, app_font_size: &mut i32) {
         self.apply_theme(ctx);
         self.apply_language();
-        self.apply_font_size(ctx);
+        self.apply_font_size(ctx, app_font_size);
     }
 
     fn apply_theme(&self, ctx: &egui::Context) {
@@ -78,7 +78,7 @@ impl Options {
         });
     }
 
-    fn apply_font_size(&self, ctx: &egui::Context) {
+    fn apply_font_size(&self, ctx: &egui::Context, app_font_size: &mut i32) {
         let mut style = (*ctx.style()).clone();
         let font_size = self.application_options.font_size;
 
@@ -96,11 +96,12 @@ impl Options {
         }
 
         ctx.set_style(style);
+        *app_font_size = font_size;
     }
 }
 
 impl Options {
-    pub fn ui(&mut self, ui: &mut egui::Ui) {
+    pub fn ui(&mut self, ui: &mut egui::Ui, app_font_size: &mut i32) {
         let mut open = self.open; // Local copy to avoid borrowing issues
 
         egui::Window::new(t!("app.options.title"))
@@ -116,7 +117,7 @@ impl Options {
                     .show(ui, |ui| {
                         self.render_theme_selector(ui);
                         self.render_language_selector(ui);
-                        self.render_font_size_selector(ui);
+                        self.render_font_size_selector(ui, app_font_size);
                     });
 
                 ui.add_space(10.0);
@@ -135,30 +136,6 @@ impl Options {
                 }
             });
         self.open = open;
-    }
-
-    fn render_theme_selector(&mut self, ui: &mut egui::Ui) {
-        ui.label(t!("app.options.theme.title"));
-        egui::ComboBox::from_label(t!("app.options.theme.choose"))
-            .selected_text(format!("{:?}", self.application_options.selected_theme))
-            .show_ui(ui, |ui| {
-                for (theme, label) in [
-                    (ThemeOption::Dark, t!("app.options.theme.dark")),
-                    (ThemeOption::Light, t!("app.options.theme.light")),
-                ] {
-                    if ui
-                        .selectable_value(
-                            &mut self.application_options.selected_theme,
-                            theme,
-                            label,
-                        )
-                        .clicked()
-                    {
-                        self.apply_theme(ui.ctx());
-                    }
-                }
-            });
-        ui.end_row();
     }
 
     fn render_language_selector(&mut self, ui: &mut egui::Ui) {
@@ -185,7 +162,7 @@ impl Options {
         ui.end_row();
     }
 
-    fn render_font_size_selector(&mut self, ui: &mut egui::Ui) {
+    fn render_font_size_selector(&mut self, ui: &mut egui::Ui, app_font_size: &mut i32) {
         ui.label(t!("app.options.font_size.title"));
         egui::ComboBox::from_label(t!("app.options.font_size.choose"))
             .selected_text(format!("{}", self.application_options.font_size))
@@ -199,7 +176,31 @@ impl Options {
                         )
                         .clicked()
                     {
-                        self.apply_font_size(ui.ctx());
+                        self.apply_font_size(ui.ctx(), app_font_size);
+                    }
+                }
+            });
+        ui.end_row();
+    }
+
+    fn render_theme_selector(&mut self, ui: &mut egui::Ui) {
+        ui.label(t!("app.options.theme.title"));
+        egui::ComboBox::from_label(t!("app.options.theme.choose"))
+            .selected_text(format!("{:?}", self.application_options.selected_theme))
+            .show_ui(ui, |ui| {
+                for (theme, label) in [
+                    (ThemeOption::Dark, t!("app.options.theme.dark")),
+                    (ThemeOption::Light, t!("app.options.theme.light")),
+                ] {
+                    if ui
+                        .selectable_value(
+                            &mut self.application_options.selected_theme,
+                            theme,
+                            label,
+                        )
+                        .clicked()
+                    {
+                        self.apply_theme(ui.ctx());
                     }
                 }
             });

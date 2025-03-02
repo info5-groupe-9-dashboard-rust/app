@@ -1,10 +1,10 @@
-use std::cmp::Ordering;
+use crate::models::utils::utils::compare_string_with_number;
 
 use crate::models::data_structure::{
     application_context::ApplicationContext, cluster::Cluster, filters::JobFilters, job::JobState,
 };
-use eframe::egui::{self, Grid, RichText};
-use egui::{ScrollArea, TextEdit};
+use eframe::egui::{self, Grid};
+use egui::ScrollArea;
 use strum::IntoEnumIterator;
 
 pub struct Filtering {
@@ -30,28 +30,24 @@ impl Filtering {
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         let mut open = self.open; // Copy the value of self.open to a mutable variable
         if self.open {
-            egui::Window::new("Filters")
+            egui::Window::new(t!("app.filter.page_title"))
                 .collapsible(true)
                 .movable(true)
                 .open(&mut open)
                 .default_size([600.0, 500.0])
                 .show(ui.ctx(), |ui| {
-                    ui.heading("Filter Options");
+                    ui.heading(t!("app.filter.title"));
 
                     ui.separator(); // Add a separator
 
-                    // Render the job id range
-                    self.render_job_id_range(ui);
-                    ui.add_space(10.0);
-
-                    egui::CollapsingHeader::new("Owners")
+                    egui::CollapsingHeader::new(t!("app.filter.owner"))
                         .default_open(false)
                         .show(ui, |ui| {
                             self.render_owners_selector(ui, app);
                         });
                     ui.add_space(10.0);
 
-                    egui::CollapsingHeader::new("Job States")
+                    egui::CollapsingHeader::new(t!("app.filter.state"))
                         .default_open(false)
                         .show(ui, |ui| {
                             self.render_states_selector(ui);
@@ -82,43 +78,6 @@ impl Filtering {
 
     pub fn reset_filters(&mut self) {
         self.temp_filters = JobFilters::default();
-    }
-
-    fn render_job_id_range(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            let mut start_id = self
-                .temp_filters
-                .job_id_range
-                .map(|(s, _)| s)
-                .unwrap_or(0)
-                .to_string();
-            let mut end_id = self
-                .temp_filters
-                .job_id_range
-                .map(|(_, e)| e)
-                .unwrap_or(0)
-                .to_string();
-
-            ui.label(RichText::new(t!("app.filters.from")).strong());
-            if ui
-                .add(TextEdit::singleline(&mut start_id).desired_width(50.0))
-                .changed()
-            {
-                if let (Ok(start), Ok(end)) = (start_id.parse(), end_id.parse()) {
-                    self.temp_filters.set_job_id_range(start, end);
-                }
-            }
-
-            ui.label(RichText::new(t!("app.filters.to")).strong());
-            if ui
-                .add(TextEdit::singleline(&mut end_id).desired_width(50.0))
-                .changed()
-            {
-                if let (Ok(start), Ok(end)) = (start_id.parse(), end_id.parse()) {
-                    self.temp_filters.set_job_id_range(start, end);
-                }
-            }
-        });
     }
 
     fn render_owners_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
@@ -159,10 +118,7 @@ impl Filtering {
             .show(ui, |ui| {
                 for (i, state) in JobState::iter().enumerate() {
                     let mut is_selected = selected_states.contains(&state);
-                    if ui
-                        .checkbox(&mut is_selected, format!("{:?}", state))
-                        .changed()
-                    {
+                    if ui.checkbox(&mut is_selected, state.get_label()).changed() {
                         if is_selected {
                             selected_states.push(state);
                         } else {
@@ -223,7 +179,7 @@ impl Filtering {
         ui.set_max_width(300.0);
 
         let mut hosts = cluster.hosts.clone();
-        hosts.sort_by(|a, b| compare_host_names(&a.name, &b.name));
+        hosts.sort_by(|a, b| compare_string_with_number(&a.name, &b.name));
 
         let mut selected_cluster = self
             .temp_filters
@@ -257,16 +213,5 @@ impl Filtering {
                     }
                 }
             });
-    }
-}
-
-fn extract_number(s: &str) -> Option<u32> {
-    s.split('-').nth(1)?.split('.').next()?.parse().ok()
-}
-
-fn compare_host_names(a: &str, b: &str) -> Ordering {
-    match (extract_number(a), extract_number(b)) {
-        (Some(num_a), Some(num_b)) => num_a.cmp(&num_b),
-        _ => a.cmp(b),
     }
 }

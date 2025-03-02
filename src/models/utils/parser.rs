@@ -1,26 +1,27 @@
 use crate::models::data_structure::job::{Job, JobState};
+use crate::models::data_structure::resource::ResourceState;
 use crate::models::data_structure::strata::Strata;
 use crate::models::utils::utils::convert_id_to_color;
-use chrono::{DateTime, Local};
 use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
 use std::process::Command;
 
+#[cfg(not(target_arch = "wasm32"))]
+use chrono::{DateTime, Local};
+
 /**
  * Test SSH connection to the specified host
  */
-pub fn test_connection(host: &str) -> bool {
+pub fn test_connection(host: &str) -> Result<(), String> {
     let ssh_test = Command::new("ssh")
-        .args([host, "echo 'Connection test'"])
+        .args([host, "true"])
         .status();
 
     match ssh_test {
-        Ok(_) => true,
-        Err(e) => {
-            println!("Connection test failed: {}", e);
-            false
-        }
+        Ok(status) if status.success() => Ok(()),
+        Ok(status) => Err(format!("SSH command failed with status: {}", status)),
+        Err(e) => Err(format!("Connection test failed: {}", e)),
     }
 }
 
@@ -33,9 +34,14 @@ pub fn test_connection(host: &str) -> bool {
  */
 #[cfg(not(target_arch = "wasm32"))]
 pub fn get_current_jobs_for_period(start_date: DateTime<Local>, end_date: DateTime<Local>) -> bool {
-    // Test connection first
+    // Add a margin to the interval
+    let interval = end_date - start_date;
+    let margin = interval.num_seconds() * 30 / 100;
+    let start_date = start_date - chrono::Duration::seconds(margin);
+    let end_date = end_date + chrono::Duration::seconds(margin);
 
-    if !test_connection("grenoble.g5k") {
+    // Test connection first
+    if test_connection("grenoble.g5k") != Ok(()) {
         return false;
     }
 
@@ -179,5 +185,6 @@ fn from_json_value(json: &Value) -> Job {
         ),
         clusters: Vec::new(),
         hosts: Vec::new(),
+        main_resource_state: ResourceState::Unknown,
     }
 }
