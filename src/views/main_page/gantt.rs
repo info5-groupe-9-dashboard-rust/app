@@ -151,6 +151,18 @@ impl View for GanttChart {
             ui.menu_button("❓", |ui| {
                 ui.label(t!("app.gantt.help"));
             });
+
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ui.button(t!("app.gantt.now")).clicked() {
+                    self.options.zoom_to_relative_s_range = Some((
+                        ui.ctx().input(|i| i.time),
+                        (
+                            0.,
+                            (self.initial_end_s.unwrap() - self.initial_start_s.unwrap()) as f64,
+                        ),
+                    ));
+                }
+            });
         });
 
         Frame::canvas(ui.style()).show(ui, |ui| {

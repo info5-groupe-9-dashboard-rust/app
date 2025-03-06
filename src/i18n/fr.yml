@@ -68,6 +68,7 @@ app:
       Clic gauche sur un job pour zoomer dessus.\n\
       Double clic gauche pour réinitialiser la vue.\n\
       Clic droit sur un job pour voir les détails"
+    now: "⌚ Centrer sur maintenant"
     title: "Diagramme de Gantt - Jobs OAR"
     zoom_in: "Zoom +"
     zoom_out: "Zoom -"

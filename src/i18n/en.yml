@@ -68,6 +68,7 @@ app:
       Left click on a job to zoom to it.\n\
       Double left click to reset view.\n\
       Right click on a job to see details"
+    now: "⌚ Center on now"
     title: "Gantt Chart"
     zoom_in: "Zoom +"
     zoom_out: "Zoom -"
