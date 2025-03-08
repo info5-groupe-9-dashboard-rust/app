@@ -25,10 +25,13 @@ impl Default for Tools {
     }
 }
 
+/*
+ * The Tools struct is a view that contains the common buttons between the Dashboard and Gantt views.
+ */
 impl View for Tools {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.horizontal(|ui| {
-            ui.set_height(25.0); // Set the height to 50.0
+            ui.set_height(25.0);
 
             ui.label(t!("app.mode"));
 
@@ -76,6 +79,7 @@ impl View for Tools {
                 }
             }
 
+            // On the right side
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 let refresh_btn = egui::Button::new("⟳");
                 let refresh_btn_response = if *app.is_refreshing.lock().unwrap() {
@@ -114,7 +118,7 @@ impl View for Tools {
                     },
                 );
 
-                // Filters
+                // Menu Filters
                 let filters_btn =
                     egui::Button::new("🔎 ".to_string() + &t!("app.menu.filters")).frame(true);
                 if ui.add(filters_btn).clicked() {
@@ -123,7 +127,6 @@ impl View for Tools {
             });
 
             // Show External Window
-            //self.time_selector.ui(ui, app);
             self.filtering_pane.ui(ui, app);
         });
     }

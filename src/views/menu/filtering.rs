@@ -26,9 +26,13 @@ impl Filtering {
         self.open = true;
     }
 
-    // If the window is open, render the filters
+    /*
+     * Render the filtering window
+     * This window is used to filter the jobs based on the owners, states, clusters and hosts
+     */
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        let mut open = self.open; // Copy the value of self.open to a mutable variable
+        let mut open = self.open;
+        // If the window is open, render the filters
         if self.open {
             egui::Window::new(t!("app.filter.page_title"))
                 .collapsible(true)
@@ -80,6 +84,10 @@ impl Filtering {
         self.temp_filters = JobFilters::default();
     }
 
+    /*
+     * Render the owners selector
+     * This selector is used to select the owners of the jobs on which the jobs will be filtered
+     */
     fn render_owners_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         let unique_owners = app.get_unique_owners();
         let mut selected_owners = self.temp_filters.owners.clone().unwrap_or_default();
@@ -109,6 +117,10 @@ impl Filtering {
             });
     }
 
+    /*
+     * Render the states selector
+     * This selector is used to select the states of the jobs on which the jobs will be filtered
+     */
     fn render_states_selector(&mut self, ui: &mut egui::Ui) {
         let mut selected_states = self.temp_filters.states.clone().unwrap_or_default();
 
@@ -137,6 +149,10 @@ impl Filtering {
             });
     }
 
+    /*
+     * Render the cluster menu
+     * This menu is used to select the clusters on which the jobs will be filtered
+     */
     fn render_cluster_menu(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.set_max_width(124.0);
 
@@ -175,6 +191,10 @@ impl Filtering {
         }
     }
 
+    /*
+     * Render the host menu
+     * This menu is used to select the hosts of a cluster on which the jobs will be filtered
+     */
     fn render_host_menu(&mut self, ui: &mut egui::Ui, cluster: &Cluster) {
         ui.set_max_width(300.0);
 

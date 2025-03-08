@@ -1,4 +1,4 @@
-use eframe::egui::{self, Color32, RichText, Widget, Vec2};
+use eframe::egui::{self, Color32, RichText, Vec2, Widget};
 use egui::Response;
 
 #[derive(Clone)]
@@ -11,9 +11,13 @@ pub struct MetricBox {
 impl MetricBox {
     pub const MIN_WIDTH: f32 = 180.0;
     pub const MIN_HEIGHT: f32 = 90.0;
-    
+
     pub fn new(title: String, value: String, color: Color32) -> Self {
-        MetricBox { title, value, color }
+        MetricBox {
+            title,
+            value,
+            color,
+        }
     }
 
     pub fn ui_sized(self, ui: &mut egui::Ui, size: Vec2) -> Response {
@@ -30,16 +34,20 @@ impl MetricBox {
                 ui.vertical_centered(|ui| {
                     let title_size = (13.0 * size.x / Self::MIN_WIDTH).min(16.0);
                     let value_size = (24.0 * size.x / Self::MIN_WIDTH).min(32.0);
-                    
+
                     ui.add_space(size.y * 0.1);
-                    ui.label(RichText::new(&self.title)
-                        .color(egui::Color32::from_gray(160))
-                        .size(title_size));
+                    ui.label(
+                        RichText::new(&self.title)
+                            .color(egui::Color32::from_gray(160))
+                            .size(title_size),
+                    );
                     ui.add_space(size.y * 0.15);
-                    ui.heading(RichText::new(&self.value)
-                        .color(self.color.gamma_multiply(0.8))
-                        .size(value_size)
-                        .strong());
+                    ui.heading(
+                        RichText::new(&self.value)
+                            .color(self.color.gamma_multiply(0.8))
+                            .size(value_size)
+                            .strong(),
+                    );
                 });
             })
             .response

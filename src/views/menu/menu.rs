@@ -16,6 +16,7 @@ impl Default for Menu {
     fn default() -> Self {
         let application_options = ApplicationOptions::default();
 
+        // Load saved options from file if it exists
         let options_pane = if std::path::Path::new("options.json").exists() {
             Options::load_from_file("options.json")
         } else {

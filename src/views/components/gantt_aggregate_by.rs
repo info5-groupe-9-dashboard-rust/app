@@ -26,6 +26,12 @@ impl Default for AggregateBy {
     }
 }
 
+/*
+ * To manage the aggregation levels, wich is similar to a vertical zoom in the Gantt chart (the horizontal zoom being the time range)
+ * The rule for aggregation is:
+ * The first level must be higher than the second level, the order is:
+ * Cluster -> Host -> Owner -> None
+ */
 impl AggregateBy {
     pub fn ui(&mut self, ui: &mut egui::Ui) {
         egui::Grid::new("aggregate_by_grid")
@@ -38,10 +44,18 @@ impl AggregateBy {
                     .radio_value(&mut self.level_1, AggregateByLevel1Enum::Cluster, "Cluster")
                     .clicked();
                 on_change_level_1 |= ui
-                    .radio_value(&mut self.level_1, AggregateByLevel1Enum::Host, t!("app.gantt.settings.host"))
+                    .radio_value(
+                        &mut self.level_1,
+                        AggregateByLevel1Enum::Host,
+                        t!("app.gantt.settings.host"),
+                    )
                     .clicked();
                 on_change_level_1 |= ui
-                    .radio_value(&mut self.level_1, AggregateByLevel1Enum::Owner, t!("app.gantt.settings.owner"))
+                    .radio_value(
+                        &mut self.level_1,
+                        AggregateByLevel1Enum::Owner,
+                        t!("app.gantt.settings.owner"),
+                    )
                     .clicked();
                 ui.end_row();
 
@@ -57,15 +71,35 @@ impl AggregateBy {
                 match self.level_1 {
                     AggregateByLevel1Enum::Cluster => {
                         ui.label(format!("{} 2:", t!("app.gantt.settings.level")));
-                        ui.radio_value(&mut self.level_2, AggregateByLevel2Enum::Host, t!("app.gantt.settings.host"));
-                        ui.radio_value(&mut self.level_2, AggregateByLevel2Enum::Owner, t!("app.gantt.settings.owner"));
-                        ui.radio_value(&mut self.level_2, AggregateByLevel2Enum::None, t!("app.gantt.settings.none"));
+                        ui.radio_value(
+                            &mut self.level_2,
+                            AggregateByLevel2Enum::Host,
+                            t!("app.gantt.settings.host"),
+                        );
+                        ui.radio_value(
+                            &mut self.level_2,
+                            AggregateByLevel2Enum::Owner,
+                            t!("app.gantt.settings.owner"),
+                        );
+                        ui.radio_value(
+                            &mut self.level_2,
+                            AggregateByLevel2Enum::None,
+                            t!("app.gantt.settings.none"),
+                        );
                     }
                     AggregateByLevel1Enum::Owner => {}
                     AggregateByLevel1Enum::Host => {
                         ui.label(format!("{} 2:", t!("app.gantt.settings.level")));
-                        ui.radio_value(&mut self.level_2, AggregateByLevel2Enum::Owner, t!("app.gantt.settings.owner"));
-                        ui.radio_value(&mut self.level_2, AggregateByLevel2Enum::None, t!("app.gantt.settings.none"));
+                        ui.radio_value(
+                            &mut self.level_2,
+                            AggregateByLevel2Enum::Owner,
+                            t!("app.gantt.settings.owner"),
+                        );
+                        ui.radio_value(
+                            &mut self.level_2,
+                            AggregateByLevel2Enum::None,
+                            t!("app.gantt.settings.none"),
+                        );
                     }
                 }
                 ui.end_row();

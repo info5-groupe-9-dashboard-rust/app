@@ -20,7 +20,6 @@ impl JobDetailsWindow {
 
     pub fn ui(&mut self, ui: &mut egui::Ui) {
         // If the window is not open, do not render it
-        // This is useful to avoid rendering the window when it is not needed
         if !self.open {
             return;
         }

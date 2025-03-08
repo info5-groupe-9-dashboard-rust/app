@@ -172,8 +172,6 @@ pub fn compare_string_with_number(a: &str, b: &str) -> Ordering {
 
     // Once the three vectors are created, we can compare them
     // the comparison will be done in the same order as the order vector
-    // if the order is the same, we will compare the strings
-
     let mut index_int = 0;
     let mut index_string = 0;
 

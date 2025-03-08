@@ -16,7 +16,7 @@ use std::sync::{Arc, Mutex};
 pub struct ApplicationContext {
     pub all_jobs: Vec<Job>,
     pub swap_all_jobs: Vec<Job>, // Used to store all jobs when refreshing (and swapped with all_jobs when refreshing is done)
-    pub filtered_jobs: Vec<Job>,
+    pub filtered_jobs: Vec<Job>, // Subset of all_jobs that match the filters
 
     pub all_clusters: Vec<Cluster>,
     pub swap_all_clusters: Vec<Cluster>, // Used to store all clusters when refreshing (and swapped with all_clusters when refreshing is done)
@@ -356,7 +356,7 @@ impl ApplicationContext {
         owners
     }
 
-    // Convert all_jobs to filtred_jobs applying some filters
+    // Convert all_jobs to filtred_jobs applying filters
     pub fn filter_jobs(&mut self) {
         self.filtered_jobs = self
             .all_jobs

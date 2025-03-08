@@ -36,7 +36,7 @@ impl MetricGrid {
         egui::Grid::new("metrics_grid")
             .spacing([self.spacing, self.spacing])
             .min_col_width(column_width)
-            .max_col_width(column_width) // Ajouter une largeur maximale
+            .max_col_width(column_width)
             .show(ui, |ui| {
                 let mut builder = MetricGridBuilder {
                     ui,
