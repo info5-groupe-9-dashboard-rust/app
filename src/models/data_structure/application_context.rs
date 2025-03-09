@@ -351,6 +351,8 @@ impl ApplicationContext {
     //gather all unique owners (for completion in filters)
     pub fn get_unique_owners(&self) -> Vec<String> {
         let mut owners: Vec<String> = self.all_jobs.iter().map(|job| job.owner.clone()).collect();
+        // remove the owner all_resources if it exists
+        owners.retain(|owner| owner != "all_resources");
         owners.sort();
         owners.dedup();
         owners
