@@ -707,11 +707,16 @@ fn paint_tooltip(info: &Info, options: &mut Options) {
     // Add job info if there's a hovered job
     if let Some(job) = &options.current_hovered_job {
         tooltip_text.push_str(&format!(
-            "Job ID: {}\nOwner: {:?}\nState: {}\nStart: {}\nWalltime: {} seconds",
+            "{}: {}\n{}: {:?}\n{}: {}\n{}: {}\n{}: {} seconds",
+            t!("app.details.tooltip.job_id"),
             job.id,
+            t!("app.details.tooltip.owner"),
             job.owner,
+            t!("app.details.tooltip.state"),
             job.state.get_label(),
+            t!("app.details.tooltip.start_time"),
             format_timestamp(job.scheduled_start),
+            t!("app.details.tooltip.walltime"),
             job.walltime
         ));
     }
