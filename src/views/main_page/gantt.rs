@@ -665,6 +665,7 @@ struct ThemeColors {
     aggregated_line_level_2: Rgba,
     background: Color32,
     background_timeline: Color32,
+    hatch: Color32,
 }
 
 /**
@@ -680,6 +681,7 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
             aggregated_line_level_2: Rgba::from_white_alpha(0.5),
             background: Color32::from_black_alpha(100),
             background_timeline: Color32::from_black_alpha(150),
+            hatch: Color32::from_rgba_premultiplied(0, 150, 150, 150),
         }
     } else {
         ThemeColors {
@@ -690,6 +692,7 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
             aggregated_line_level_2: Rgba::from_black_alpha(0.7),
             background: Color32::from_black_alpha(50),
             background_timeline: Color32::from_black_alpha(20),
+            hatch: Color32::from_rgba_premultiplied(0, 0, 139, 150),
         }
     }
 }
@@ -1259,7 +1262,7 @@ fn paint_job(
     if state == ResourceState::Dead || state == ResourceState::Absent {
         let hachure_color = match state {
             ResourceState::Dead => Color32::from_rgba_premultiplied(255, 0, 0, 150),
-            ResourceState::Absent => Color32::from_rgba_premultiplied(0, 150, 150, 150),
+            ResourceState::Absent => theme_colors.hatch,
             _ => Color32::TRANSPARENT,
         };
 
@@ -1313,7 +1316,7 @@ fn paint_job(
                     pos2(x, hatch_y),
                     pos2(x + hachure_spacing, hatch_y + height),
                 ],
-                Stroke::new(4.0, final_hachure_color),
+                Stroke::new(2.0, final_hachure_color),
             ));
             x += hachure_spacing;
         }
