@@ -782,7 +782,7 @@ fn paint_aggregated_jobs_level_1(
 
     let spacing_between_level_1 = 5.0 + font_size as f32;
     let spacing_between_jobs = 5.0;
-    let offset_level_1 = if options.squash_resources { -5.0 } else { 10.0 };
+    let offset_level_1 = 10.0;
 
     cursor_y += spacing_between_level_1;
 
@@ -924,7 +924,7 @@ fn paint_aggregated_jobs_level_2(
 
     let spacing_between_level_1 = font_size as f32;
     let spacing_between_level_2 =
-        font_size as f32 + if options.squash_resources { -10.0 } else { 5.0 };
+        font_size as f32 + 5.0;
     let spacing_between_jobs = 5.0;
     let offset_level_1 = 10.0;
 
