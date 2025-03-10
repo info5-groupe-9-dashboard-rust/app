@@ -10,7 +10,7 @@ use strum::IntoEnumIterator;
 pub struct Dashboard {
     job_table: JobTable,
     metric_grid: MetricGrid,
-    show_chart: bool, // Add this field
+    show_chart: bool,
 }
 
 impl Default for Dashboard {
@@ -18,7 +18,7 @@ impl Default for Dashboard {
         Dashboard {
             job_table: JobTable::default(),
             metric_grid: MetricGrid::default(),
-            show_chart: false, // Initialize the field
+            show_chart: false,
         }
     }
 }
@@ -28,7 +28,7 @@ impl View for Dashboard {
         egui::CentralPanel::default().show(ui.ctx(), |ui| {
             ui.heading(RichText::new(t!("app.dashboard.title")).strong().size(20.0));
 
-            // Add a button to toggle between the job chart and the job state metrics
+            // Button to toggle between the job chart and the job state metrics
             if ui
                 .button(if self.show_chart {
                     t!("app.dashboard.show_metrics")

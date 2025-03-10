@@ -7,8 +7,6 @@ use crate::models::data_structure::job::Job;
 
 pub enum ChartType {
     Bar(BarChart),
-    //Box(BoxPlot),
-    // Add more chart types here
 }
 
 pub struct MetricChart {
@@ -71,7 +69,6 @@ impl MetricChart {
                         })])
                         .show(ui, |plot_ui| match self.chart {
                             ChartType::Bar(bar_chart) => plot_ui.bar_chart(bar_chart),
-                            //ChartType::Box(boxplot_chart) => plot_ui.box_plot(boxplot_chart),
                         })
                         .response // Return the response from the Plot widget
                 });

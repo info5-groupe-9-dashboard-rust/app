@@ -7,6 +7,13 @@ use eframe::egui::{self, Grid};
 use egui::ScrollArea;
 use strum::IntoEnumIterator;
 
+/* `Filtering` manages the job filtering UI and functionality.
+ * It provides a modal window where users can select various criteria
+ * to filter jobs, including by owner, state, and resource (clusters/hosts).
+ *
+ * The component maintains temporary filter state until the user applies
+ * the selected filters, at which point they are transferred to the main application.
+ */
 pub struct Filtering {
     open: bool,
     temp_filters: JobFilters,
@@ -26,9 +33,15 @@ impl Filtering {
         self.open = true;
     }
 
-    // If the window is open, render the filters
+    /* Renders the filtering window and handles user interaction
+     *
+     * This window provides multiple filter categories (owners, states, clusters, hosts)
+     * that users can select to narrow down the jobs displayed in the application.
+     * Changes are only applied when the user clicks the Apply button.
+     */
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
-        let mut open = self.open; // Copy the value of self.open to a mutable variable
+        let mut open = self.open;
+        // If the window is open, render the filters
         if self.open {
             egui::Window::new(t!("app.filter.page_title"))
                 .collapsible(true)
@@ -80,6 +93,11 @@ impl Filtering {
         self.temp_filters = JobFilters::default();
     }
 
+    /* Renders the job owner selection grid
+     *
+     * This selector displays a grid of checkboxes for all unique job owners,
+     * allowing the user to filter jobs by one or more owners.
+     */
     fn render_owners_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         let unique_owners = app.get_unique_owners();
         let mut selected_owners = self.temp_filters.owners.clone().unwrap_or_default();
@@ -109,6 +127,10 @@ impl Filtering {
             });
     }
 
+    /*
+     * Render the states selector
+     * This selector is used to select the states of the jobs on which the jobs will be filtered
+     */
     fn render_states_selector(&mut self, ui: &mut egui::Ui) {
         let mut selected_states = self.temp_filters.states.clone().unwrap_or_default();
 
@@ -137,6 +159,10 @@ impl Filtering {
             });
     }
 
+    /*
+     * Render the cluster menu
+     * This menu is used to select the clusters on which the jobs will be filtered
+     */
     fn render_cluster_menu(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         ui.set_max_width(124.0);
 
@@ -175,6 +201,10 @@ impl Filtering {
         }
     }
 
+    /*
+     * Render the host menu
+     * This menu is used to select the hosts of a cluster on which the jobs will be filtered
+     */
     fn render_host_menu(&mut self, ui: &mut egui::Ui, cluster: &Cluster) {
         ui.set_max_width(300.0);
 

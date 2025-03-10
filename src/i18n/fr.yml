@@ -49,6 +49,34 @@ app:
     total_jobs: "Total des Jobs"
     show_metrics: "Afficher les métriques"
     show_charts: "Afficher les graphiques"
+  details:
+    general:
+      title: "Détails du job"
+    basic_info:
+      title: "Informations de base"
+      owner: "Propriétaire"
+      queue: "File d'attente"
+      command: "Commande"
+    status:
+      title: "Statut"
+      state: "État"
+      message: "Message"
+    timing_info:
+      title: "Informations de timing"
+      submission_time: "Heure de soumission"
+      scheduled_start_time: "Heure de début planifiée"
+      actual_start_time: "Heure de début"
+      stop_time: "Heure de fin"
+      wall_time: "Temps d'exécution"
+    resources:
+      title: "Ressources"
+      cluster: "Cluster"
+    tooltip:
+      job_id: "ID du job"
+      owner: "Propriétaire"
+      state: "État"
+      start_time: "Heure de début"
+      walltime: "Durée"
   gantt:
     settings:
       title: "🔧 Paramètres"
@@ -68,6 +96,7 @@ app:
       Clic gauche sur un job pour zoomer dessus.\n\
       Double clic gauche pour réinitialiser la vue.\n\
       Clic droit sur un job pour voir les détails"
+    now: "⌚ Centrer sur maintenant"
     title: "Diagramme de Gantt - Jobs OAR"
     zoom_in: "Zoom +"
     zoom_out: "Zoom -"

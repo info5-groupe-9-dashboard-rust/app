@@ -49,6 +49,34 @@ app:
     total_jobs: "Total Jobs"
     show_metrics: "Show metrics"
     show_charts: "Show charts"
+  details:
+    general:
+      title: "Job Details"
+    basic_info:
+      title: "Basic Information"
+      owner: "Owner"
+      queue: "Queue"
+      command: "Command"
+    status:
+      title: "Status"
+      state: "State"
+      message: "Message"
+    timing_info:
+      title: "Timing Information"
+      submission_time: "Submission Time"
+      scheduled_start_time: "Scheduled Start Time"
+      actual_start_time: "Actual Start Time"
+      stop_time: "Stop Time"
+      wall_time: "Wall Time"
+    resources:
+      title: "Resources"
+      cluster: "Cluster"
+    tooltip:
+      job_id: "Job ID"
+      owner: "Owner"
+      state: "State"
+      start_time: "Start Time"
+      walltime: "Walltime"
   gantt:
     settings:
       title: "🔧 Settings"
@@ -68,6 +96,7 @@ app:
       Left click on a job to zoom to it.\n\
       Double left click to reset view.\n\
       Right click on a job to see details"
+    now: "⌚ Center on now"
     title: "Gantt Chart"
     zoom_in: "Zoom +"
     zoom_out: "Zoom -"

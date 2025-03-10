@@ -1,6 +1,10 @@
 use chrono::Local;
 
-use crate::models::data_structure::{job::{Job, JobState}, strata::Strata, resource::ResourceState};
+use crate::models::data_structure::{
+    job::{Job, JobState},
+    resource::ResourceState,
+    strata::Strata,
+};
 
 // Mocking Job
 fn mock_job(id: u32) -> Job {
@@ -18,7 +22,7 @@ fn mock_job(id: u32) -> Job {
 
     // Possible clusters list
     let clusters_list = vec!["cluster1", "cluster2", "cluster3"];
-    
+
     // Possible hosts list
     let hosts_list = vec!["host1", "host2", "host3", "host4"];
 
@@ -95,14 +99,16 @@ fn mock_job(id: u32) -> Job {
 
     // Generate random clusters
     let num_clusters = random_index(2) + 1;
-    let clusters = clusters_list.iter()
+    let clusters = clusters_list
+        .iter()
         .take(num_clusters)
         .map(|&c| c.to_string())
         .collect();
 
     // Generate random hosts
     let num_hosts = random_index(3) + 1;
-    let hosts = hosts_list.iter()
+    let hosts = hosts_list
+        .iter()
         .take(num_hosts)
         .map(|&h| h.to_string())
         .collect();
@@ -153,7 +159,7 @@ pub fn mock_jobs() -> Vec<Job> {
 fn mock_strata(id: u32) -> Strata {
     // Possible cluster list
     let clusters_list = vec!["cluster1", "cluster2", "cluster3", "cluster4", "cluster5"];
-    
+
     // Possible hosts list
     let hosts_list = vec!["host1", "host2", "host3", "host4", "host5", "host6"];
 
@@ -161,7 +167,12 @@ fn mock_strata(id: u32) -> Strata {
     let states_list = vec!["Dead", "Alive", "Absent", "Unknown"];
 
     // Possible comments list
-    let comments_list = vec!["No issues", "Minor issues", "Major issues", "Critical issues"];
+    let comments_list = vec![
+        "No issues",
+        "Minor issues",
+        "Major issues",
+        "Critical issues",
+    ];
 
     // Function to generate a random number
     let random_index = |max: usize| -> usize {
@@ -184,9 +195,23 @@ fn mock_strata(id: u32) -> Strata {
         rconsole: Some(format!("rconsole{}", random_index(100))),
         memnode: Some(random_index(64000) as i64),
         cluster: Some(clusters_list[random_index(clusters_list.len())].to_string()),
-        desktop_computing: Some(if random_index(2) == 0 { "enabled" } else { "disabled" }.to_string()),
+        desktop_computing: Some(
+            if random_index(2) == 0 {
+                "enabled"
+            } else {
+                "disabled"
+            }
+            .to_string(),
+        ),
         memcore: Some(random_index(128) as i32),
-        production: Some(if random_index(2) == 0 { "production" } else { "development" }.to_string()),
+        production: Some(
+            if random_index(2) == 0 {
+                "production"
+            } else {
+                "development"
+            }
+            .to_string(),
+        ),
         eth_rate: Some(random_index(1000) as i32),
         chassis: Some(format!("chassis{}", random_index(10))),
         memcpu: Some(random_index(64000) as i64),
@@ -201,7 +226,11 @@ fn mock_strata(id: u32) -> Strata {
         cpuset: Some(format!("cpuset{}", random_index(10))),
         suspended_jobs: Some(format!("suspended_jobs{}", random_index(10))),
         state: Some(states_list[random_index(states_list.len())].to_string()),
-        ip: Some(format!("192.168.{}.{}", random_index(256), random_index(256))),
+        ip: Some(format!(
+            "192.168.{}.{}",
+            random_index(256),
+            random_index(256)
+        )),
         network_address: Some(format!("network_address{}", random_index(100))),
         resource_id: Some(id),
         host: Some(hosts_list[random_index(hosts_list.len())].to_string()),
@@ -213,160 +242,3 @@ fn mock_strata(id: u32) -> Strata {
 pub fn mock_stratas() -> Vec<Strata> {
     (1..=50).map(|id| mock_strata(id)).collect()
 }
-
-// Mocking Resource
-// fn mock_resource(id: u32) -> Resource {
-//     // Function to generate a random number
-//     let random_index = |max: usize| -> usize {
-//         let mut buf = [0u8; 8];
-//         getrandom::getrandom(&mut buf).unwrap();
-//         let value = u64::from_le_bytes(buf);
-//         (value % max as u64) as usize
-//     };
-
-//     // Randomly select the state
-//     let state = match random_index(4) {
-//         0 => ResourceState::Dead,
-//         1 => ResourceState::Alive,
-//         2 => ResourceState::Absent,
-//         _ => ResourceState::Unknown,
-//     };
-
-//     // Generate random thread count
-//     let thread_count = random_index(100) as i32;
-
-//     Resource {
-//         id,
-//         state,
-//         thread_count,
-//     }
-// }
-
-// pub fn mock_resources() -> Vec<Resource> {
-//     (1..=50).map(|id| mock_resource(id)).collect()
-// }
-
-// // Mocking Cpu
-// fn mock_cpu(id: u32) -> Cpu {
-//     // Possible names list
-//     let names = vec!["Intel Xeon", "AMD Ryzen", "ARM Cortex", "Qualcomm Snapdragon", "Apple M1"];
-
-//     // Possible chassis list
-//     let chassis_list = vec!["Chassis1", "Chassis2", "Chassis3"];
-
-//     // Function to generate a random number
-//     let random_index = |max: usize| -> usize {
-//         let mut buf = [0u8; 8];
-//         getrandom::getrandom(&mut buf).unwrap();
-//         let value = u64::from_le_bytes(buf);
-//         (value % max as u64) as usize
-//     };
-
-//     let random_float = || -> f32 {
-//         let mut buf = [0u8; 8];
-//         getrandom::getrandom(&mut buf).unwrap();
-//         let value = u64::from_le_bytes(buf);
-//         (value as f32) / (u64::MAX as f32)
-//     };
-
-//     // Generate random resources
-//     let resources = mock_resources();
-
-//     // Generate random resource ids
-//     let resource_ids: Vec<u32> = resources.iter().map(|r| r.id).collect();
-
-//     Cpu {
-//         name: names[random_index(names.len())].to_string(),
-//         resources,
-//         chassis: chassis_list[random_index(chassis_list.len())].to_string(),
-//         core_count: random_index(16) as i32 + 1,
-//         cpufreq: random_float() * 3.5 + 1.0,
-//         resource_ids,
-//     }
-// }
-
-// pub fn mock_cpus() -> Vec<Cpu> {
-//     (1..=50).map(|id| mock_cpu(id)).collect()
-// }
-
-// // Mocking Host
-// fn mock_host(id: u32) -> Host {
-//     // Possible host names
-//     let host_names = vec!["host1", "host2", "host3", "host4", "host5"];
-
-//     // Possible network addresses
-//     let network_addresses = vec![
-//         "192.168.1.1",
-//         "192.168.1.2",
-//         "192.168.1.3",
-//         "192.168.1.4",
-//         "192.168.1.5",
-//     ];
-
-//     // Function to generate a random number
-//     let random_index = |max: usize| -> usize {
-//         let mut buf = [0u8; 8];
-//         getrandom::getrandom(&mut buf).unwrap();
-//         let value = u64::from_le_bytes(buf);
-//         (value % max as u64) as usize
-//     };
-
-//     // Generate random resource IDs
-//     let num_resources = random_index(7) + 1;
-//     let resource_ids = (0..num_resources).map(|_| random_index(100) as u32).collect();
-
-//     // Generate random state
-//     let state = match random_index(3) {
-//         0 => ResourceState::Alive,
-//         1 => ResourceState::Dead,
-//         _ => ResourceState::Absent,
-//     };
-
-//     Host {
-//         name: host_names[random_index(host_names.len())].to_string(),
-//         cpus: mock_cpus(),
-//         network_address: network_addresses[random_index(network_addresses.len())].to_string(),
-//         resource_ids,
-//         state,
-//     }
-// }
-
-// pub fn mock_hosts() -> Vec<Host> {
-//     (1..=50).map(|id| mock_host(id)).collect()
-// }
-
-
-// fn mock_cluster(name: &str) -> Cluster {
-//     // Possible resource states
-//     let resource_states = vec![ResourceState::Alive, ResourceState::Dead, ResourceState::Absent];
-
-//     // Function to generate a random number
-//     let random_index = |max: usize| -> usize {
-//         let mut buf = [0u8; 8];
-//         getrandom::getrandom(&mut buf).unwrap();
-//         let value = u64::from_le_bytes(buf);
-//         (value % max as u64) as usize
-//     };
-
-//     // Generate random hosts
-//     let hosts = mock_hosts();
-
-//     // Generate random resource ids
-//     let num_resources = random_index(10) + 1;
-//     let resource_ids = (0..num_resources).map(|_| random_index(100) as u32).collect();
-
-//     // Generate random state
-//     let state = resource_states[random_index(resource_states.len())].clone();
-
-//     Cluster {
-//         name: name.to_string(),
-//         hosts,
-//         resource_ids,
-//         state,
-//     }
-// }
-
-// fn mock_clusters() -> Vec<Cluster> {
-//     let cluster_names = vec!["cluster1", "cluster2", "cluster3"];
-//     cluster_names.iter().map(|&name| mock_cluster(name)).collect()
-// }

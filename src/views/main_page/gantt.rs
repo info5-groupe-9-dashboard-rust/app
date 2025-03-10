@@ -49,8 +49,8 @@ pub struct GanttChart {
     // Value: true if collapsed (hidden), false if expanded (visible)
     collapsed_jobs_level_2: BTreeMap<(String, String), bool>,
 
-    initial_start_s: Option<i64>,
-    initial_end_s: Option<i64>,
+    initial_start_s: Option<i64>, // Initial start timestamp
+    initial_end_s: Option<i64>, // Initial end timestamp
 }
 
 /**
@@ -148,11 +148,26 @@ impl View for GanttChart {
                 self.options.job_color.ui(ui);
             });
 
+            // Help button
             ui.menu_button("❓", |ui| {
                 ui.label(t!("app.gantt.help"));
             });
+
+            // Reset to now button
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ui.button(t!("app.gantt.now")).clicked() {
+                    self.options.zoom_to_relative_s_range = Some((
+                        ui.ctx().input(|i| i.time),
+                        (
+                            0.,
+                            (self.initial_end_s.unwrap() - self.initial_start_s.unwrap()) as f64,
+                        ),
+                    ));
+                }
+            });
         });
 
+        // Canvas
         Frame::canvas(ui.style()).show(ui, |ui| {
             ui.visuals_mut().clip_rect_margin = 0.0;
 
@@ -351,19 +366,22 @@ fn ui_canvas(
     let mut cursor_y = info.canvas.top();
     cursor_y += info.text_height;
 
+    // Get filtered jobs to display
     let jobs = app.filtered_jobs.clone();
 
     match options.aggregate_by.level_1 {
-        // Aggregate by owner only
+
+        // Aggregate by owner as level 1 only
         AggregateByLevel1Enum::Owner => {
             let mut jobs_by_owner: BTreeMap<String, Vec<Job>> = BTreeMap::new();
+            // for each job, we add it to the corresponding owner
             for job in jobs {
                 jobs_by_owner
                     .entry(job.owner.clone())
                     .or_insert_with(Vec::new)
                     .push(job.clone());
             }
-
+            // Paint the aggregated jobs with owner as level 1
             cursor_y = paint_aggregated_jobs_level_1(
                 info,
                 options,
@@ -377,13 +395,16 @@ fn ui_canvas(
             );
         }
 
-        // Aggregate by host
+        // Aggregate by host as level 1
         AggregateByLevel1Enum::Host => {
             match options.aggregate_by.level_2 {
+
+                // Aggregate by owner as level 2
                 AggregateByLevel2Enum::Owner => {
                     let mut jobs_by_host_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
                         BTreeMap::new();
                     let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
+                    // for each job, we add it to the corresponding host and owner
                     for job in jobs {
                         for host in job.hosts.iter() {
                             if filtered_clusters.len() != 0
@@ -400,6 +421,7 @@ fn ui_canvas(
                         }
                     }
 
+                    // Paint the aggregated jobs with host as level 1 and owner as level 2
                     cursor_y = paint_aggregated_jobs_level_2(
                         info,
                         options,
@@ -414,9 +436,13 @@ fn ui_canvas(
                         AggregateByLevel2Enum::Owner,
                     );
                 }
+
+                // No aggregation as level 2 so we only aggregate by host as level 1
                 AggregateByLevel2Enum::None => {
                     let mut jobs_by_host: BTreeMap<String, Vec<Job>> = BTreeMap::new();
                     let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
+
+                    // for each job, we add it to the corresponding host
                     for job in jobs {
                         for host in job.hosts.iter() {
                             if filtered_clusters.len() != 0
@@ -431,6 +457,7 @@ fn ui_canvas(
                         }
                     }
 
+                    // Paint the aggregated jobs with host as level 1
                     cursor_y = paint_aggregated_jobs_level_1(
                         info,
                         options,
@@ -449,12 +476,16 @@ fn ui_canvas(
             }
         }
 
-        // Aggregate by cluster
+        // Aggregate by cluster as level 1
         AggregateByLevel1Enum::Cluster => match options.aggregate_by.level_2 {
+
+            // Aggregate by owner as level 2
             AggregateByLevel2Enum::Owner => {
                 let mut jobs_by_cluster_by_owner: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
                     BTreeMap::new();
                 let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
+
+                // for each job, we add it to the corresponding cluster and owner
                 for job in jobs {
                     for cluster in job.clusters.iter() {
                         if filtered_clusters.len() != 0
@@ -471,6 +502,7 @@ fn ui_canvas(
                     }
                 }
 
+                // Paint the aggregated jobs with cluster as level 1 and owner as level 2
                 cursor_y = paint_aggregated_jobs_level_2(
                     info,
                     options,
@@ -485,9 +517,13 @@ fn ui_canvas(
                     AggregateByLevel2Enum::Owner,
                 );
             }
+
+            // No aggregation as level 2 so we only aggregate by cluster as level 1
             AggregateByLevel2Enum::None => {
                 let mut jobs_by_cluster: BTreeMap<String, Vec<Job>> = BTreeMap::new();
                 let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
+
+                // for each job, we add it to the corresponding cluster
                 for job in jobs {
                     for cluster in job.clusters.iter() {
                         if filtered_clusters.len() != 0
@@ -502,6 +538,7 @@ fn ui_canvas(
                     }
                 }
 
+                // Paint the aggregated jobs with cluster as level 1
                 cursor_y = paint_aggregated_jobs_level_1(
                     info,
                     options,
@@ -514,10 +551,14 @@ fn ui_canvas(
                     AggregateByLevel1Enum::Cluster,
                 );
             }
+
+            // Aggregate by host as level 2
             AggregateByLevel2Enum::Host => {
                 let mut jobs_by_cluster_by_host: BTreeMap<String, BTreeMap<String, Vec<Job>>> =
                     BTreeMap::new();
                 let filtered_clusters = app.filters.clusters.clone().unwrap_or_default();
+
+                // for each job, we add it to the corresponding cluster and host
                 for job in jobs {
                     for cluster in job.clusters.iter() {
                         for host in job.hosts.iter() {
@@ -542,6 +583,7 @@ fn ui_canvas(
                     }
                 }
 
+                // Paint the aggregated jobs with cluster as level 1 and host as level 2
                 cursor_y = paint_aggregated_jobs_level_2(
                     info,
                     options,
@@ -645,6 +687,9 @@ fn interact_with_canvas(options: &mut Options, response: &Response, info: &Info)
     }
 }
 
+/**
+ * ThemeColors struct
+ */
 struct ThemeColors {
     text: Color32,
     text_dim: Color32,
@@ -653,13 +698,15 @@ struct ThemeColors {
     aggregated_line_level_2: Rgba,
     background: Color32,
     background_timeline: Color32,
+    hatch: Color32,
 }
 
 /**
  * Returns the theme colors for the Gantt chart
  */
 fn get_theme_colors(style: &egui::Style) -> ThemeColors {
-    if style.visuals.dark_mode {
+
+    if style.visuals.dark_mode { // Dark mode
         ThemeColors {
             text: Color32::WHITE,
             text_dim: Color32::from_white_alpha(229),
@@ -668,8 +715,9 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
             aggregated_line_level_2: Rgba::from_white_alpha(0.5),
             background: Color32::from_black_alpha(100),
             background_timeline: Color32::from_black_alpha(150),
+            hatch: Color32::from_rgba_premultiplied(0, 150, 150, 150),
         }
-    } else {
+    } else { // Light mode
         ThemeColors {
             text: Color32::BLACK,
             text_dim: Color32::from_black_alpha(229),
@@ -678,6 +726,7 @@ fn get_theme_colors(style: &egui::Style) -> ThemeColors {
             aggregated_line_level_2: Rgba::from_black_alpha(0.7),
             background: Color32::from_black_alpha(50),
             background_timeline: Color32::from_black_alpha(20),
+            hatch: Color32::from_rgba_premultiplied(0, 0, 139, 150),
         }
     }
 }
@@ -695,11 +744,16 @@ fn paint_tooltip(info: &Info, options: &mut Options) {
     // Add job info if there's a hovered job
     if let Some(job) = &options.current_hovered_job {
         tooltip_text.push_str(&format!(
-            "Job ID: {}\nOwner: {:?}\nState: {}\nStart: {}\nWalltime: {} seconds",
+            "{}: {}\n{}: {:?}\n{}: {}\n{}: {}\n{}: {} seconds",
+            t!("app.details.tooltip.job_id"),
             job.id,
+            t!("app.details.tooltip.owner"),
             job.owner,
+            t!("app.details.tooltip.state"),
             job.state.get_label(),
+            t!("app.details.tooltip.start_time"),
             format_timestamp(job.scheduled_start),
+            t!("app.details.tooltip.walltime"),
             job.walltime
         ));
     }
@@ -760,9 +814,9 @@ fn paint_aggregated_jobs_level_1(
 ) -> f32 {
     let theme_colors = get_theme_colors(&info.ctx.style());
 
-    let spacing_between_level_1 = 5.0 + font_size as f32;
-    let spacing_between_jobs = 5.0;
-    let offset_level_1 = 10.0;
+    let spacing_between_level_1 = 5.0 + font_size as f32; // Spacing between level 1 key
+    let spacing_between_jobs = 5.0; // Spacing between jobs
+    let offset_level_1 = 10.0; // Offset for level 1 key
 
     cursor_y += spacing_between_level_1;
 
@@ -806,6 +860,7 @@ fn paint_aggregated_jobs_level_1(
 
         let state;
 
+        // Get the state of the resource
         if aggregate_by == AggregateByLevel1Enum::Owner {
             state = ResourceState::Alive;
         } else if aggregate_by == AggregateByLevel1Enum::Host {
@@ -902,10 +957,10 @@ fn paint_aggregated_jobs_level_2(
 ) -> f32 {
     let theme_colors = get_theme_colors(&info.ctx.style());
 
-    let spacing_between_level_1 = font_size as f32;
-    let spacing_between_level_2 = 5.0 + font_size as f32;
-    let spacing_between_jobs = 5.0;
-    let offset_level_1 = 10.0;
+    let spacing_between_level_1 = font_size as f32; // Spacing between level 1 key
+    let spacing_between_level_2 = font_size as f32 + 5.0; // Spacing between level 2 key
+    let spacing_between_jobs = 5.0; // Spacing between jobs
+    let offset_level_1 = 10.0; // Offset for level 1 key
 
     cursor_y += spacing_between_level_1;
 
@@ -999,6 +1054,7 @@ fn paint_aggregated_jobs_level_2(
 
                     let state;
 
+                    // Get the state of the resource
                     if aggregate_by_level_2 == AggregateByLevel2Enum::Host {
                         state = get_host_state_from_name(all_cluster, &level_2);
                     } else if aggregate_by_level_2 == AggregateByLevel2Enum::None {
@@ -1126,14 +1182,15 @@ fn paint_job(
     aggregation_height: f32,
 ) -> PaintResult {
     let theme_colors = get_theme_colors(&info.ctx.style());
-    let start_x = info.point_from_s(options, job.scheduled_start);
+    let start_x = info.point_from_s(options, job.scheduled_start); // Start time
+    // If the job is not finished, we use the scheduled start time + walltime otherwise we use the stop time
     let stop_time = if job.stop_time > 0 {
         job.stop_time
     } else {
         job.scheduled_start + job.walltime
     };
     let end_x = info.point_from_s(options, stop_time);
-    let width = end_x - start_x;
+    let width = end_x - start_x; // Width of the job
 
     if width < options.cull_width {
         return PaintResult::Culled;
@@ -1157,6 +1214,7 @@ fn paint_job(
         options.rounding
     };
 
+    // Create the rectangle for the job
     let rect = Rect::from_min_size(
         pos2(
             start_x,
@@ -1223,29 +1281,34 @@ fn paint_job(
         ));
     }
 
+    // Caculate the color of the job depending the selected job color int gantt component
     let (hovered_color, normal_color) = if options.job_color.is_random() {
         job.get_gantt_color()
     } else {
         job.state.get_color()
     };
 
+    // If the job is hovered, we make it brighter
     let fill_color = if is_job_hovered {
         hovered_color
     } else {
         normal_color
     };
 
+    // Paint the job rectangle
     info.painter.rect_filled(rect, rounding, fill_color);
 
-    // paint hatch
+    // Paint ressource hatch
     if state == ResourceState::Dead || state == ResourceState::Absent {
+
+        // Define the color of the hachure depending the state of the resource
         let hachure_color = match state {
             ResourceState::Dead => Color32::from_rgba_premultiplied(255, 0, 0, 150),
-            ResourceState::Absent => Color32::from_rgba_premultiplied(0, 150, 150, 150),
+            ResourceState::Absent => theme_colors.hatch,
             _ => Color32::TRANSPARENT,
         };
 
-        let hachure_spacing = 10.0;
+        let hachure_spacing = 10.0; // Spacing between hachure lines
         let mut shapes = Vec::new();
         let mut x = info.canvas.min.x;
         let current_time_x = info.point_from_s(options, chrono::Utc::now().timestamp());
@@ -1270,8 +1333,6 @@ fn paint_job(
             _ => Rect::from_min_max(pos2(0.0, 0.0), pos2(0.0, 0.0)), // draw nothing
         };
 
-        // ...rest of the hatch drawing code...
-
         // We check if the mouse is hovering the hachure
         let is_hachure_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
             hover_rect.contains(mouse_pos)
@@ -1295,7 +1356,7 @@ fn paint_job(
                     pos2(x, hatch_y),
                     pos2(x + hachure_spacing, hatch_y + height),
                 ],
-                Stroke::new(4.0, final_hachure_color),
+                Stroke::new(2.0, final_hachure_color),
             ));
             x += hachure_spacing;
         }
@@ -1335,8 +1396,8 @@ fn paint_job(
  */
 fn paint_job_info(info: &Info, info_label: &str, pos: Pos2, collapsed: &mut bool, level: u8) {
     let theme_colors = get_theme_colors(&info.ctx.style());
-    let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" };
-    let label = format!("{} {}", collapsed_symbol, info_label);
+    let collapsed_symbol = if *collapsed { "⏵" } else { "⏷" }; // Symbol to show if the section is collapsed or not
+    let label = format!("{} {}", collapsed_symbol, info_label); // Add the symbol and the name of the section
 
     let galley = info
         .ctx
@@ -1345,23 +1406,27 @@ fn paint_job_info(info: &Info, info_label: &str, pos: Pos2, collapsed: &mut bool
     let offset_x = if level == 1 { 0.0 } else { 50.0 };
     let rect = Rect::from_min_size(pos2(pos.x + offset_x, pos.y), galley.size());
 
+    // Check if the section is hovered
     let is_hovered = if let Some(mouse_pos) = info.response.hover_pos() {
         rect.contains(mouse_pos)
     } else {
         false
     };
 
-    // Text color
+    // If the section is hovered, depending on the theme, we change the text color
     let text_color = if is_hovered {
         theme_colors.text
     } else {
         theme_colors.text_dim
     };
 
-    info.painter
-        .rect_filled(rect.expand(2.0), 0.0, theme_colors.background);
+    // Paint the background and the text
+    info.painter.rect_filled(rect.expand(2.0), 0.0, theme_colors.background);
+
+    // Paint the text
     info.painter.galley(rect.min, galley, text_color);
 
+    // If the section is hovered and clicked, we change the collapsed state (open/close)
     if is_hovered && info.response.clicked() {
         *collapsed = !(*collapsed);
     }
@@ -1388,16 +1453,23 @@ fn paint_timeline_text(
     let medium_alpha = remap_clamp(zoom_factor, 0.0..=1.0, 0.1..=0.5);
     let mut grid_s = 0;
 
+    // Paint the timeline text labels
     loop {
+
+        // Calculate the x position of the line
         let line_x = info.point_from_s(options, grid_s);
+
+        // If the line is out of the canvas, we stop
         if line_x > canvas.max.x {
             break;
         }
 
+        // If the line is inside the canvas, we paint it
         if canvas.min.x <= line_x {
             let big_line = grid_s % (grid_spacing_minutes * 20) == 0;
             let medium_line = grid_s % (grid_spacing_minutes * 10) == 0;
 
+            // Determine the alpha of the text
             let text_alpha = if big_line {
                 big_alpha
             } else if medium_line {
@@ -1406,6 +1478,7 @@ fn paint_timeline_text(
                 0.0
             };
 
+            // If the text is visible, we paint it
             if text_alpha > 0.0 {
                 let text = grid_text(grid_s);
                 let text_x = line_x + 4.0;
@@ -1419,6 +1492,7 @@ fn paint_timeline_text(
                     ))
                 };
 
+                // Paint the text
                 info.painter.fonts(|f| {
                     shapes.push(egui::Shape::text(
                         f,
@@ -1447,6 +1521,7 @@ fn paint_timeline_text_on_top(info: &Info, options: &Options, fixed_timeline_y: 
 
     let theme_colors = get_theme_colors(&info.ctx.style());
 
+    // Determine the alpha multiplier of the lines depending on the theme
     let alpha_multiplier = if info.ctx.style().visuals.dark_mode {
         0.3
     } else {
@@ -1475,9 +1550,11 @@ fn paint_timeline_text_on_top(info: &Info, options: &Options, fixed_timeline_y: 
         zoom_factor,
     );
 
+    // Add the shapes to the painter
     for shape in timeline_text {
         info.painter.add(shape);
     }
+
 }
 
 /**
@@ -1487,14 +1564,16 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
     let mut shapes = vec![];
     let theme_colors = get_theme_colors(&info.ctx.style());
 
+    // Determine the alpha multiplier of the lines depending on the theme
     let alpha_multiplier = if info.ctx.style().visuals.dark_mode {
         0.3
     } else {
         0.8
     };
 
-    let max_lines = canvas.width() / 4.0;
-    let mut grid_spacing_minutes = 180;
+    let max_lines = canvas.width() / 4.0; // Maximum number of lines that can be displayed
+    let mut grid_spacing_minutes = 180; // 180 seconds = 3 minutes repesenting the grid spacing
+
     while options.canvas_width_s / (grid_spacing_minutes as f32) > max_lines {
         grid_spacing_minutes *= 10;
     }
@@ -1508,17 +1587,23 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
 
     let mut grid_s = 0;
 
-    // Paint ONLY grid lines first
+    // Paint the timeline lines
     loop {
+
+        // Calculate the x position of the line
         let line_x = info.point_from_s(options, grid_s);
+
+        // If the line is out of the canvas, we stop
         if line_x > canvas.max.x {
             break;
         }
 
+        // If the line is inside the canvas, we paint it
         if canvas.min.x <= line_x {
             let big_line = grid_s % (grid_spacing_minutes * 20) == 0;
             let medium_line = grid_s % (grid_spacing_minutes * 10) == 0;
 
+            // Determine the alpha of the line
             let line_alpha = if big_line {
                 big_alpha
             } else if medium_line {
@@ -1527,6 +1612,7 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
                 tiny_alpha
             };
 
+            // Paint the line
             shapes.push(egui::Shape::line_segment(
                 [pos2(line_x, canvas.min.y), pos2(line_x, canvas.max.y)],
                 Stroke::new(
@@ -1548,9 +1634,10 @@ fn paint_timeline(info: &Info, canvas: Rect, options: &Options, _start_s: i64) -
  * Paints the current red time line on the canvas
  */
 fn paint_current_time_line(info: &Info, options: &Options, canvas: Rect) -> egui::Shape {
-    let current_time = chrono::Utc::now().timestamp();
-    let line_x = info.point_from_s(options, current_time);
+    let current_time = chrono::Utc::now().timestamp(); // Current time in seconds
+    let line_x = info.point_from_s(options, current_time); // Current time in pixels
 
+    // Paint the current time line
     egui::Shape::line_segment(
         [pos2(line_x, canvas.min.y), pos2(line_x, canvas.max.y)],
         Stroke::new(2.0, Color32::RED), // Keep red for both themes for better visibility

@@ -17,12 +17,17 @@ impl Default for Authentification {
     }
 }
 
+/*
+ * The Authentification view is a simple form with a username and a password field.
+ * Currently the form is hardcoded to accept only the username "admin" and the password "admin".
+ * This view is a proof of concept and can be replaced by a more complex authentication system if needed.
+ */
 impl View for Authentification {
     fn render(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         // Center the form
         ui.vertical_centered(|ui| {
             ui.add_space(50.0);
-            
+
             // Title
             ui.heading(RichText::new(t!("app.authentification.title")).size(24.0));
             ui.add_space(20.0);
@@ -34,7 +39,7 @@ impl View for Authentification {
                 .inner_margin(20.0)
                 .show(ui, |ui| {
                     ui.set_width(300.0);
-                    
+
                     // username field
                     ui.label(RichText::new(t!("app.authentification.username")));
                     ui.add_space(4.0);
@@ -44,8 +49,8 @@ impl View for Authentification {
                     // password field
                     ui.label(RichText::new(t!("app.authentification.password")));
                     ui.add_space(4.0);
-                    let password_edit = ui.add(egui::TextEdit::singleline(&mut self.password)
-                        .password(true));
+                    let password_edit =
+                        ui.add(egui::TextEdit::singleline(&mut self.password).password(true));
                     ui.add_space(20.0);
 
                     // Error message
@@ -55,7 +60,10 @@ impl View for Authentification {
                     }
 
                     // Connect button
-                    if ui.button(t!("app.authentification.login")).clicked() || password_edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if ui.button(t!("app.authentification.login")).clicked()
+                        || password_edit.lost_focus()
+                            && ui.input(|i| i.key_pressed(egui::Key::Enter))
+                    {
                         if self.username == "admin" && self.password == "admin" {
                             app.login(&self.username.clone());
                         } else {

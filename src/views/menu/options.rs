@@ -25,6 +25,7 @@ impl Options {
         }
     }
 
+    // Save the current options to a file for persistence
     pub fn save_to_file(&mut self, file_path: &str) {
         match serde_json::to_string(&self.application_options)
             .and_then(|json| std::fs::write(file_path, json).map_err(serde_json::Error::io))
@@ -39,6 +40,7 @@ impl Options {
         }
     }
 
+    // Load the options from a file, or fallback to default if file read fails
     pub fn load_from_file(file_path: &str) -> Self {
         let application_options = match std::fs::read_to_string(file_path) {
             Ok(json) => {

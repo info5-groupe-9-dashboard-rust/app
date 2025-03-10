@@ -20,110 +20,119 @@ impl JobDetailsWindow {
 
     pub fn ui(&mut self, ui: &mut egui::Ui) {
         // If the window is not open, do not render it
-        // This is useful to avoid rendering the window when it is not needed
         if !self.open {
             return;
         }
 
-        egui::Window::new(format!("Job Details: {}", self.job.id))
-            .collapsible(true)
-            .movable(true)
-            .open(&mut self.open)
-            .vscroll(true)
-            .show(ui.ctx(), |ui| {
-                // Base information
-                ui.group(|ui| {
-                    ui.heading("Basic Information");
-                    ui.horizontal(|ui| {
-                        ui.label("Owner: ");
-                        ui.strong(self.job.owner.to_string());
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Queue: ");
-                        ui.strong(self.job.queue.to_string());
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Command: ");
-                        ui.strong(self.job.command.to_string());
-                    });
+        egui::Window::new(format!(
+            "{}: {}",
+            t!("app.details.general.title"),
+            self.job.id
+        ))
+        .collapsible(true)
+        .movable(true)
+        .open(&mut self.open)
+        .vscroll(true)
+        .show(ui.ctx(), |ui| {
+            // Base information
+            ui.group(|ui| {
+                ui.heading(t!("app.details.basic_info.title"));
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}:", t!("app.details.basic_info.owner")));
+                    ui.strong(self.job.owner.to_string());
                 });
-
-                ui.add_space(8.0);
-
-                // Status
-                ui.group(|ui| {
-                    ui.heading("Status");
-                    ui.horizontal(|ui| {
-                        ui.label("State: ");
-                        let state_text = self.job.state.get_label();
-                        let (state_color, bg_color) = self.job.state.get_color();
-                        ui.label(
-                            egui::RichText::new(state_text)
-                                .color(state_color)
-                                .background_color(bg_color)
-                                .strong(),
-                        );
-                    });
-                    if let Some(exit_code) = self.job.exit_code {
-                        ui.horizontal(|ui| {
-                            ui.label("Exit Code: ");
-                            ui.strong(exit_code.to_string());
-                        });
-                    }
-                    if let Some(message) = &self.job.message {
-                        ui.horizontal(|ui| {
-                            ui.label("Message: ");
-                            ui.label(message);
-                        });
-                    }
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}:", t!("app.details.basic_info.queue")));
+                    ui.strong(self.job.queue.to_string());
                 });
-
-                ui.add_space(8.0);
-
-                // Timing information
-                ui.group(|ui| {
-                    ui.heading("Timing Information");
-
-                    ui.horizontal(|ui| {
-                        ui.label("Submission Time: ");
-                        ui.strong(format_timestamp(self.job.submission_time));
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Scheduled Start: ");
-                        ui.strong(format_timestamp(self.job.scheduled_start));
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Actual Start: ");
-                        ui.strong(format_timestamp(self.job.start_time));
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Stop Time: ");
-                        ui.strong(format_timestamp(self.job.stop_time));
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Walltime: ");
-                        ui.strong(format!("{} seconds", self.job.walltime));
-                    });
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}:", t!("app.details.basic_info.command")));
+                    ui.strong(self.job.command.to_string());
                 });
+            });
 
-                ui.add_space(8.0);
+            ui.add_space(8.0);
 
-                if !self.cluster.is_empty() {
-                    // Ressources
-                    ui.group(|ui| {
-                        ui.heading("Resources");
-                        egui::CollapsingHeader::new("Clusters")
-                            .default_open(false)
-                            .show(ui, |ui| {
-                                for cluster in &self.cluster {
-                                    egui::CollapsingHeader::new(format!("{}", cluster.name))
-                                        .default_open(false)
-                                        .show(ui, |ui| {
-                                            for host in &cluster.hosts {
-                                                egui::CollapsingHeader::new(format!(
-                                                    "{}",
-                                                    host.name
-                                                ))
+            // Status
+            ui.group(|ui| {
+                ui.heading(t!("app.details.status.title"));
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}:", t!("app.details.status.state")));
+                    let state_text = self.job.state.get_label();
+                    let (state_color, bg_color) = self.job.state.get_color();
+                    ui.label(
+                        egui::RichText::new(state_text)
+                            .color(state_color)
+                            .background_color(bg_color)
+                            .strong(),
+                    );
+                });
+                if let Some(exit_code) = self.job.exit_code {
+                    ui.horizontal(|ui| {
+                        ui.label("Exit Code: ");
+                        ui.strong(exit_code.to_string());
+                    });
+                }
+                if let Some(message) = &self.job.message {
+                    ui.horizontal(|ui| {
+                        ui.label(format!("{}:", t!("app.details.status.message")));
+                        ui.label(message);
+                    });
+                }
+            });
+
+            ui.add_space(8.0);
+
+            // Timing information
+            ui.group(|ui| {
+                ui.heading(t!("app.details.timing_info.title"));
+
+                ui.horizontal(|ui| {
+                    ui.label(format!(
+                        "{}:",
+                        t!("app.details.timing_info.submission_time")
+                    ));
+                    ui.strong(format_timestamp(self.job.submission_time));
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!(
+                        "{}:",
+                        t!("app.details.timing_info.scheduled_start_time")
+                    ));
+                    ui.strong(format_timestamp(self.job.scheduled_start));
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!(
+                        "{}:",
+                        t!("app.details.timing_info.actual_start_time")
+                    ));
+                    ui.strong(format_timestamp(self.job.start_time));
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}:", t!("app.details.timing_info.stop_time")));
+                    ui.strong(format_timestamp(self.job.stop_time));
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}:", t!("app.details.timing_info.wall_time")));
+                    ui.strong(format!("{} seconds", self.job.walltime));
+                });
+            });
+
+            ui.add_space(8.0);
+
+            if !self.cluster.is_empty() {
+                // Ressources
+                ui.group(|ui| {
+                    ui.heading(t!("app.details.resources.title"));
+                    egui::CollapsingHeader::new(t!("app.details.resources.cluster"))
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            for cluster in &self.cluster {
+                                egui::CollapsingHeader::new(format!("{}", cluster.name))
+                                    .default_open(false)
+                                    .show(ui, |ui| {
+                                        for host in &cluster.hosts {
+                                            egui::CollapsingHeader::new(format!("{}", host.name))
                                                 .default_open(false)
                                                 .show(ui, |ui| {
                                                     ui.horizontal(|ui| {
@@ -190,15 +199,15 @@ impl JobDetailsWindow {
                                                         });
                                                     }
                                                 });
-                                            }
-                                        });
-                                }
-                            });
-                    });
-                }
+                                        }
+                                    });
+                            }
+                        });
+                });
+            }
 
-                ui.add_space(8.0);
-            });
+            ui.add_space(8.0);
+        });
     }
 
     pub fn is_open(&self) -> bool {
