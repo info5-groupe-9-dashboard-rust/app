@@ -1,5 +1,5 @@
 app:
-  title: "Tableau de bord HPC"
+  title: "Goard"
   mode: "Mode :"
   refreshing: "Rafraîchissement des données..."
   menu:
