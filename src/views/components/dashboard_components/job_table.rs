@@ -8,34 +8,43 @@ use eframe::egui;
 use egui::{RichText, Sense, Ui};
 use egui_extras::{Column, TableBuilder};
 
+/**
+ * Struct for the job table
+ */
 pub struct JobTable {
-    page: usize,
-    jobs_per_page: usize,
-    details_window: Vec<JobDetailsWindow>,
-    start_idx: usize,
-    end_idx: usize,
-    displayed_jobs_per_page: Vec<Job>,
-    sort_key: SortKey,
-    sort_ascending: bool,
-    column_selection: ColumnSelection,
+    page: usize, // Current page
+    jobs_per_page: usize, // Number of jobs per page
+    details_window: Vec<JobDetailsWindow>, // Details window for the job
+    start_idx: usize, // Start index for the jobs
+    end_idx: usize, // End index for the jobs
+    displayed_jobs_per_page: Vec<Job>, // Jobs displayed per page
+    sort_key: SortKey, // Sort key for the jobs
+    sort_ascending: bool, // True if the sorting is ascending
+    column_selection: ColumnSelection, // Column selection for the table
 }
 
+/**
+ * Default implementation of the job table
+ */
 impl Default for JobTable {
     fn default() -> Self {
         JobTable {
-            page: 0,
-            jobs_per_page: 20,
-            details_window: Vec::new(),
-            start_idx: 0,
-            end_idx: 0,
-            displayed_jobs_per_page: Vec::new(),
-            sort_key: SortKey::Id,
-            sort_ascending: true,
-            column_selection: ColumnSelection::default(),
+            page: 0, // Default page is 0
+            jobs_per_page: 20, // Default number of jobs per page is 20
+            details_window: Vec::new(), // No details window by default
+            start_idx: 0, // Default start index is 0
+            end_idx: 0, // Default end index is 0
+            displayed_jobs_per_page: Vec::new(), // No jobs displayed by default
+            sort_key: SortKey::Id, // Default sort key is the job id
+            sort_ascending: true, // Default sorting is ascending
+            column_selection: ColumnSelection::default(), // Default column selection
         }
     }
 }
 
+/**
+ * Implementation of the job table
+ */
 impl JobTable {
     pub fn ui(&mut self, ui: &mut Ui, app: &mut ApplicationContext) {
         self.displayed_jobs_per_page = app.filtered_jobs.clone();
@@ -107,6 +116,7 @@ impl JobTable {
                 .sense(Sense::click())
                 .column(Column::auto().at_least(2.0).resizable(true));
 
+            // Add columns based on the selection
             for value in self.column_selection.values.values() {
                 if value.selected {
                     table = table.column(
@@ -118,12 +128,13 @@ impl JobTable {
                 }
             }
 
-            table
-                .header(20.0, |mut header| {
+            // Table header
+            table.header(20.0, |mut header| {
                     header.col(|ui| {
                         ui.label(RichText::new(t!("app.job_table.table.row")).strong());
                     });
 
+                    // Add columns in header based on the selection
                     for value in self.column_selection.values.values() {
                         if value.selected {
                             header.col(|ui| {
@@ -131,6 +142,7 @@ impl JobTable {
 
                                 let header_btn;
 
+                                // If the current column is selected, add an arrow to indicate the sorting direction
                                 if is_current_column {
                                     header_btn = egui::Button::new(format!(
                                         "{} {}",
@@ -138,11 +150,11 @@ impl JobTable {
                                         if self.sort_ascending { '⬆' } else { '⬇' }
                                     ))
                                     .frame(true);
-                                } else {
-                                    header_btn =
-                                        egui::Button::new(t!(value.name.clone())).frame(false);
+                                } else { // Otherwise, just add the column name
+                                    header_btn = egui::Button::new(t!(value.name.clone())).frame(false);
                                 }
 
+                                // If the column is clicked, change the sorting key and arrow direction
                                 if ui.add(header_btn).clicked() {
                                     self.sort_key = value.sort_key;
                                     self.sort_ascending = !self.sort_ascending;
@@ -152,6 +164,8 @@ impl JobTable {
                         }
                     }
                 })
+
+                // Table bodys
                 .body(|mut body| {
                     for job in self.displayed_jobs_per_page[self.start_idx..self.end_idx].iter() {
                         body.row(20.0, |mut row| {
@@ -244,6 +258,9 @@ impl JobTable {
         }
     }
 
+    /**
+     * Resets the pagination
+     */
     pub fn reset_pagination(&mut self) {
         self.page = 0;
         self.start_idx = 0;

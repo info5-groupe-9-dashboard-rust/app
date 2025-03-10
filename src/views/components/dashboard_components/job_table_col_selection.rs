@@ -2,16 +2,25 @@ use super::job_table_sorting::SortKey;
 use egui::Layout;
 use std::collections::BTreeMap;
 
+/**
+ * Struct for the column information
+ */
 pub struct ColumnInfo {
-    pub name: String,
-    pub selected: bool,
-    pub sort_key: SortKey,
+    pub name: String, // Name of the column
+    pub selected: bool, // True if the column is selected
+    pub sort_key: SortKey, // Sort key for the column
 }
 
+/**
+ * Struct for the column selection
+ */
 pub struct ColumnSelection {
-    pub values: BTreeMap<u8, ColumnInfo>,
+    pub values: BTreeMap<u8, ColumnInfo>, // Map of column index to column info
 }
 
+/**
+ * Default implementation of the column selection
+ */
 impl Default for ColumnSelection {
     fn default() -> Self {
         let mut instance = Self {
@@ -22,6 +31,9 @@ impl Default for ColumnSelection {
     }
 }
 
+/**
+ * Implementation of the column selection
+ */
 impl ColumnSelection {
     pub fn ui(&mut self, ui: &mut egui::Ui) {
         ui.vertical(|ui| {
