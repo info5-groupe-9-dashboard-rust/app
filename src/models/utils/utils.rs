@@ -22,6 +22,7 @@ pub fn convert_id_to_color(id: u32) -> egui::Color32 {
     egui::Color32::from_rgb(r, g, b)
 }
 
+/// Extracts all host names from a collection of clusters
 pub fn get_all_hosts(clusters: &Vec<Cluster>) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
 
@@ -52,6 +53,7 @@ pub fn get_cluster_from_name(clusters: &Vec<Cluster>, name: &str) -> Option<Clus
     None
 }
 
+/// Extracts all cluster names from a collection of clusters
 pub fn get_all_clusters(clusters: &Vec<Cluster>) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
 
@@ -62,6 +64,7 @@ pub fn get_all_clusters(clusters: &Vec<Cluster>) -> Vec<String> {
     result
 }
 
+/// Extracts all resource IDs from a collection of clusters
 pub fn get_all_resources(clusters: &Vec<Cluster>) -> Vec<u32> {
     let mut result: Vec<u32> = Vec::new();
 
@@ -112,7 +115,7 @@ pub fn contains_cluster(cluster: &Vec<Cluster>, cluster_name: &str) -> bool {
     false
 }
 
-// Compare two strings that may contain numbers
+// Compare two strings that may contain numbers (natural sort)
 pub fn compare_string_with_number(a: &str, b: &str) -> Ordering {
     let mut strings_a: Vec<String> = Vec::new();
     let mut strings_b: Vec<String> = Vec::new();
@@ -206,7 +209,9 @@ pub fn compare_string_with_number(a: &str, b: &str) -> Ordering {
     return Ordering::Equal;
 }
 
-// Return the name of all the clusters where the job is running
+/* Return the name of all the clusters where the job is running
+ * Used for job filtering and display in the UI
+ */
 pub fn get_clusters_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
 
@@ -221,6 +226,8 @@ pub fn get_clusters_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
     result
 }
 
+/* Returns the names of all hosts where a job is running
+ * Used for job filtering and display in the UI */
 pub fn get_hosts_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
 
@@ -239,6 +246,13 @@ pub fn get_hosts_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<String> {
     result
 }
 
+/*
+Creates a subset of the cluster hierarchy that only contains resources used by the job
+
+This is used to create a view of the infrastructure specific to a job, useful for
+job details and resource utilization displays. The returned structure mirrors the
+full cluster hierarchy but includes only the elements relevant to the job.
+ */
 pub fn get_tree_structure_for_job(job: &Job, clusters: &Vec<Cluster>) -> Vec<Cluster> {
     let mut result: Vec<Cluster> = Vec::new();
 

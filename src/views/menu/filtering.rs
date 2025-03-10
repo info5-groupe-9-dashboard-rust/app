@@ -7,6 +7,13 @@ use eframe::egui::{self, Grid};
 use egui::ScrollArea;
 use strum::IntoEnumIterator;
 
+/* `Filtering` manages the job filtering UI and functionality.
+ * It provides a modal window where users can select various criteria
+ * to filter jobs, including by owner, state, and resource (clusters/hosts).
+ *
+ * The component maintains temporary filter state until the user applies
+ * the selected filters, at which point they are transferred to the main application.
+ */
 pub struct Filtering {
     open: bool,
     temp_filters: JobFilters,
@@ -26,9 +33,11 @@ impl Filtering {
         self.open = true;
     }
 
-    /*
-     * Render the filtering window
-     * This window is used to filter the jobs based on the owners, states, clusters and hosts
+    /* Renders the filtering window and handles user interaction
+     *
+     * This window provides multiple filter categories (owners, states, clusters, hosts)
+     * that users can select to narrow down the jobs displayed in the application.
+     * Changes are only applied when the user clicks the Apply button.
      */
     pub fn ui(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         let mut open = self.open;
@@ -84,9 +93,10 @@ impl Filtering {
         self.temp_filters = JobFilters::default();
     }
 
-    /*
-     * Render the owners selector
-     * This selector is used to select the owners of the jobs on which the jobs will be filtered
+    /* Renders the job owner selection grid
+     *
+     * This selector displays a grid of checkboxes for all unique job owners,
+     * allowing the user to filter jobs by one or more owners.
      */
     fn render_owners_selector(&mut self, ui: &mut egui::Ui, app: &mut ApplicationContext) {
         let unique_owners = app.get_unique_owners();
