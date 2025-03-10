@@ -20,8 +20,8 @@ pub struct AggregateBy {
 impl Default for AggregateBy {
     fn default() -> Self {
         Self {
-            level_1: AggregateByLevel1Enum::Cluster,
-            level_2: AggregateByLevel2Enum::Host,
+            level_1: AggregateByLevel1Enum::Cluster, // Default value for the first level is Cluster
+            level_2: AggregateByLevel2Enum::Host, // Default value for the second level is Host
         }
     }
 }
