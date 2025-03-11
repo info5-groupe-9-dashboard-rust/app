@@ -149,6 +149,11 @@ pub fn compare_string_with_number(a: &str, b: &str) -> Ordering {
         }
     }
 
+    if curr != 0 {
+        int_a.push(curr);
+        order_a.push("int".to_string());
+    }
+
     curr = 0;
     string_count = 0;
 
@@ -171,6 +176,11 @@ pub fn compare_string_with_number(a: &str, b: &str) -> Ordering {
             order_b.push("string".to_string());
             curr = 0;
         }
+    }
+
+    if curr != 0 {
+        int_b.push(curr);
+        order_b.push("int".to_string());
     }
 
     // Once the three vectors are created, we can compare them

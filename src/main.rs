@@ -11,13 +11,11 @@ fn main() -> Result<(), eframe::Error> {
     // Configure the native options
     let options = eframe::NativeOptions::default();
 
-    // Start the native app 
+    // Start the native app
     eframe::run_native(
         &t!("app.title"),
         options,
-        Box::new(|_cc| {
-            Ok(Box::new(app::App::new()))
-        }),
+        Box::new(|_cc| Ok(Box::new(app::App::new()))),
     )
 }
 
@@ -67,3 +65,6 @@ fn main() {
         }
     });
 }
+
+#[cfg(test)]
+mod tests;
