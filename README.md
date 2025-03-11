@@ -1,18 +1,18 @@
-# 🚀 Rust Dashboard App
+# Goard
 
-A modern, blazing-fast dashboard application built with Rust, powered by Eframe and Egui. This elegantly structured MVC project delivers stunning data visualization through an interactive dashboard and Gantt chart interface.
+A modern, blazing-fast dashboard application built with Rust, powered by Eframe and Egui libraries. This elegantly structured MVC project delivers stunning data visualization through an interactive dashboard and Gantt chart interface.
 
-## ✨ Key Features
+## Key Features
 
-- 📊 Real-time job monitoring
-- 🎯 Interactive dashboard view
-- 📅 Gantt chart visualization
-- ⏰ Period-based job filtering
-- 🔒 Secure SSH-based data retrieval from HPC clusters
-- ⚡ Loading state indicators
-- 📱 Responsive UI with resizable components
+- Real-time job monitoring
+- Interactive dashboard view
+- Gantt chart visualization
+- Period-based job filtering
+- Secure SSH-based data retrieval from HPC clusters
+- Loading state indicators
+- Responsive UI with resizable components
 
-## 🏗 Project Architecture
+## Project Architecture
 
 ```
 src/
@@ -22,17 +22,17 @@ src/
 ├── views/          # UI components & layouts
 ```
 
-## 🛠 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- 🦀 Rust and Cargo installed
-- 🔑 SSH access to HPC cluster
-- 📦 Git
+- Rust and Cargo installed
+- SSH access to HPC cluster
+- Git
 
-### 🚀 Quick Start
+### Quick Start
 
-#### 🧪 Testing Locally
+#### Testing Locally
 
 1. Set up SSH access to your HPC cluster (default configuration: "grenoble.g5k").
 
@@ -46,7 +46,7 @@ src/
     cargo run --release
     ```
 
-#### 🌐 Web Development
+#### Web Development
 
 Build and run as a web application using WebAssembly:
 
@@ -64,11 +64,11 @@ Build and run as a web application using WebAssembly:
     ```bash
     trunk serve
     ```
-    📝 Access at `http://127.0.0.1:8080/index.html#dev`
+    Access at `http://127.0.0.1:8080/index.html#dev`
 
-> 💡 Append `#dev` to skip PWA caching during development
+> Append `#dev` to skip PWA caching during development
 
-#### 🚀 Web Deployment
+#### Web Deployment
 
 1. Build for production:
     ```bash
@@ -77,22 +77,22 @@ Build and run as a web application using WebAssembly:
 
 2. Deploy the generated `dist` directory to your preferred hosting platform
 
-> 🔥 The app supports offline functionality through service worker caching!
+> The app supports offline functionality through service worker caching!
 
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Here's how you can help:
 
-- 🐛 Report bugs
-- 💡 Propose features
-- 🔧 Submit PRs
+- Report bugs
+- Propose features
+- Submit PRs
 
-## 📝 License
+## License
 
-This project is open source and available under the MIT License.
+This project is open source and available under the LGPL-2.1 license.
 
-## 💖 Support
+## Support
 
 Star this repo if you find it helpful!
 
