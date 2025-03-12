@@ -1,6 +1,6 @@
 # Goard
 
-A modern, blazing-fast dashboard application built with Rust, powered by Eframe and Egui libraries. This elegantly structured MVC project delivers stunning data visualization through an interactive dashboard and Gantt chart interface.
+Goard (pronounced "guard") is a modern, blazing-fast dashboard application built with Rust, powered by Eframe and Egui libraries. This elegantly structured MVC project delivers stunning data visualization through an interactive dashboard and Gantt chart interface.
 
 ## Key Features
 
